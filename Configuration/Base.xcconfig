@@ -1,0 +1,4 @@
+// Local.xcconfig is deliberately excluded from Git.
+OAUTH_HOST = example.invalid
+CODE_SIGN_ENTITLEMENTS =
+#include? "Local.xcconfig"
