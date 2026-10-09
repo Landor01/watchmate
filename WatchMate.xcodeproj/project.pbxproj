@@ -1,556 +1,514 @@
 // !$*UTF8*$!
 {
 	archiveVersion = 1;
-	classes = {};
+	classes = {
+	};
 	objectVersion = 56;
 	objects = {
-		57976B484DECB7004B959FAC = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = "Models/Models.swift";
-			sourceTree = "<group>";
-		};
-		463C8A3596FE6ED5E96A5954 = {
-			isa = PBXBuildFile;
-			fileRef = 57976B484DECB7004B959FAC;
-		};
-		64D2459121925EA2803D8968 = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = "Services/AppStore.swift";
-			sourceTree = "<group>";
-		};
-		E3AF2C55741CD8C5390D4F99 = {
-			isa = PBXBuildFile;
-			fileRef = 64D2459121925EA2803D8968;
-		};
-		33BEC4DFE192EFD7108703D9 = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = "Services/HTTP.swift";
-			sourceTree = "<group>";
-		};
-		3E326800C84DBE53E116482E = {
-			isa = PBXBuildFile;
-			fileRef = 33BEC4DFE192EFD7108703D9;
-		};
-		FB300F21C584734D1430D367 = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = "Services/Notifications.swift";
-			sourceTree = "<group>";
-		};
-		2F2EA2352A80F0173FDF3530 = {
-			isa = PBXBuildFile;
-			fileRef = FB300F21C584734D1430D367;
-		};
-		F503BFDD7F59B2193EA96385 = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = "Services/TMDBService.swift";
-			sourceTree = "<group>";
-		};
-		3F873DE132C8C0B41E228ED0 = {
-			isa = PBXBuildFile;
-			fileRef = F503BFDD7F59B2193EA96385;
-		};
-		61409427C699B984DC7910AD = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = "Services/TraktAuth.swift";
-			sourceTree = "<group>";
-		};
-		72628838C4C4BB1F2BCDDF8A = {
-			isa = PBXBuildFile;
-			fileRef = 61409427C699B984DC7910AD;
-		};
-		548A697AEF311701C54F765F = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = "Services/TraktService.swift";
-			sourceTree = "<group>";
-		};
-		F34AFFECFD1959AE3999051A = {
-			isa = PBXBuildFile;
-			fileRef = 548A697AEF311701C54F765F;
-		};
-		9085691E67096E53A32080E3 = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = "Support/Keychain.swift";
-			sourceTree = "<group>";
-		};
-		5B1C78E91039DD577E26FCF0 = {
-			isa = PBXBuildFile;
-			fileRef = 9085691E67096E53A32080E3;
-		};
-		4F0623C83C971DDA964E1C91 = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = "Support/Settings.swift";
-			sourceTree = "<group>";
-		};
-		D834B843137E69BAA72C11E0 = {
-			isa = PBXBuildFile;
-			fileRef = 4F0623C83C971DDA964E1C91;
-		};
-		1F4B7AEC72E6FC332C0AFB6D = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = "Views/RootView.swift";
-			sourceTree = "<group>";
-		};
-		2B2D8A727500A0FF8DB22401 = {
-			isa = PBXBuildFile;
-			fileRef = 1F4B7AEC72E6FC332C0AFB6D;
-		};
-		43919EBF0801FCDE1CB8B9B6 = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = "Views/SearchView.swift";
-			sourceTree = "<group>";
-		};
-		1A51C207E31750744E3BE5B2 = {
-			isa = PBXBuildFile;
-			fileRef = 43919EBF0801FCDE1CB8B9B6;
-		};
-		F8A0A99D2C2F1A4A5B2D120A = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = "Views/SettingsView.swift";
-			sourceTree = "<group>";
-		};
-		2598EE02638D60E1A65086EA = {
-			isa = PBXBuildFile;
-			fileRef = F8A0A99D2C2F1A4A5B2D120A;
-		};
-		AA9022F687AB7BC56F5AA0C0 = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = "Views/ShowDetailView.swift";
-			sourceTree = "<group>";
-		};
-		8C1DA9181713B16062F59E38 = {
-			isa = PBXBuildFile;
-			fileRef = AA9022F687AB7BC56F5AA0C0;
-		};
-		B00E167B0832C9923CDDDF0F = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = "Views/UpNextView.swift";
-			sourceTree = "<group>";
-		};
-		A81FDE9A850CB98552B5C68D = {
-			isa = PBXBuildFile;
-			fileRef = B00E167B0832C9923CDDDF0F;
-		};
-		87B8B7D2C35ADA798366B316 = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = "WatchMateApp.swift";
-			sourceTree = "<group>";
-		};
-		D0E9BA09D5C348F7E4D7B604 = {
-			isa = PBXBuildFile;
-			fileRef = 87B8B7D2C35ADA798366B316;
-		};
-		84FB02352EF4F8E2D71114EF = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = "EpisodeRulesTests.swift";
-			sourceTree = "<group>";
-		};
-		162F4FF742B833CF527DFE05 = {
-			isa = PBXBuildFile;
-			fileRef = 84FB02352EF4F8E2D71114EF;
-		};
-		A7AE616FDA1B489B228DC162 = {
-			isa = PBXFileReference;
-			lastKnownFileType = folder.assetcatalog;
-			path = "Assets.xcassets";
-			sourceTree = "<group>";
-		};
-		0EE1E90C5C4AEA2FF8D2A125 = {
-			isa = PBXFileReference;
-			lastKnownFileType = text.xml;
-			path = "PrivacyInfo.xcprivacy";
-			sourceTree = "<group>";
-		};
-		CD7002024504104520470147 = {
-			isa = PBXFileReference;
-			lastKnownFileType = text.plist.xml;
-			path = "Info.plist";
-			sourceTree = "<group>";
-		};
-		3196C2D2EAC35E17C980BB80 = {
-			isa = PBXFileReference;
-			lastKnownFileType = text.plist.entitlements;
-			path = "WatchMate.entitlements";
-			sourceTree = "<group>";
-		};
-		4F4F102FCA65F9ED71FF36F9 = {
-			isa = PBXFileReference;
-			lastKnownFileType = text.xcconfig;
-			path = "Base.xcconfig";
-			sourceTree = "<group>";
-		};
-		67860262FAAC8F40D30B9064 = {
-			isa = PBXBuildFile;
-			fileRef = A7AE616FDA1B489B228DC162;
-		};
-		64D6E73FCD49866D06D2482D = {
-			isa = PBXBuildFile;
-			fileRef = 0EE1E90C5C4AEA2FF8D2A125;
-		};
-		47A7F57E33A200FD7F90886A = {
-			isa = PBXFileReference;
-			explicitFileType = wrapper.application;
-			includeInIndex = 0;
-			path = "WatchMate.app";
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		7FFE5E16CB7AF58727B1BE6B = {
-			isa = PBXFileReference;
-			explicitFileType = wrapper.cfbundle;
-			includeInIndex = 0;
-			path = "WatchMateTests.xctest";
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		E50290A24C49A459B43487C5 = {
-			isa = PBXGroup;
-			children = (
-				1BDBD24583AAF7F81F76B976,
-				BFC937463906E5DB7A02A37C,
-				8C3CAE929B92155BEC14CDAB,
-				FBDC4F23F93125BBEEAE800C,
-			);
-			sourceTree = "<group>";
-		};
-		1BDBD24583AAF7F81F76B976 = {
-			isa = PBXGroup;
-			children = (
-				57976B484DECB7004B959FAC,
-				64D2459121925EA2803D8968,
-				33BEC4DFE192EFD7108703D9,
-				FB300F21C584734D1430D367,
-				F503BFDD7F59B2193EA96385,
-				61409427C699B984DC7910AD,
-				548A697AEF311701C54F765F,
-				9085691E67096E53A32080E3,
-				4F0623C83C971DDA964E1C91,
-				1F4B7AEC72E6FC332C0AFB6D,
-				43919EBF0801FCDE1CB8B9B6,
-				F8A0A99D2C2F1A4A5B2D120A,
-				AA9022F687AB7BC56F5AA0C0,
-				B00E167B0832C9923CDDDF0F,
-				87B8B7D2C35ADA798366B316,
-				A7AE616FDA1B489B228DC162,
-				0EE1E90C5C4AEA2FF8D2A125,
-				CD7002024504104520470147,
-				3196C2D2EAC35E17C980BB80,
-			);
-			path = WatchMate;
-			sourceTree = "<group>";
-		};
-		BFC937463906E5DB7A02A37C = {
-			isa = PBXGroup;
-			children = (
-				84FB02352EF4F8E2D71114EF,
-			);
-			path = WatchMateTests;
-			sourceTree = "<group>";
-		};
-		8C3CAE929B92155BEC14CDAB = {
-			isa = PBXGroup;
-			children = (
-				4F4F102FCA65F9ED71FF36F9,
-			);
-			path = Configuration;
-			sourceTree = "<group>";
-		};
-		FBDC4F23F93125BBEEAE800C = {
-			isa = PBXGroup;
-			children = (
-				47A7F57E33A200FD7F90886A,
-				7FFE5E16CB7AF58727B1BE6B,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-		2D764CD838DB39F040AA7EC4 = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				463C8A3596FE6ED5E96A5954,
-				E3AF2C55741CD8C5390D4F99,
-				3E326800C84DBE53E116482E,
-				2F2EA2352A80F0173FDF3530,
-				3F873DE132C8C0B41E228ED0,
-				72628838C4C4BB1F2BCDDF8A,
-				F34AFFECFD1959AE3999051A,
-				5B1C78E91039DD577E26FCF0,
-				D834B843137E69BAA72C11E0,
-				2B2D8A727500A0FF8DB22401,
-				1A51C207E31750744E3BE5B2,
-				2598EE02638D60E1A65086EA,
-				8C1DA9181713B16062F59E38,
-				A81FDE9A850CB98552B5C68D,
-				D0E9BA09D5C348F7E4D7B604,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		12384B5908BE5FE5B3301CEE = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		06F5DC629BD46AAFD46564D1 = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				67860262FAAC8F40D30B9064,
-				64D6E73FCD49866D06D2482D,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		9F3002A5D69B22D357A58AA9 = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				162F4FF742B833CF527DFE05,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		99C7943D90D870A50ADE9160 = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C584AE92222380FB29B6223F = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		D799BAE6088A90139B415FCC = {
+
+/* Begin PBXBuildFile section */
+		162F4FF742B833CF527DFE05 /* EpisodeRulesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FB02352EF4F8E2D71114EF /* EpisodeRulesTests.swift */; };
+		1A51C207E31750744E3BE5B2 /* Views/SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43919EBF0801FCDE1CB8B9B6 /* Views/SearchView.swift */; };
+		2598EE02638D60E1A65086EA /* Views/SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8A0A99D2C2F1A4A5B2D120A /* Views/SettingsView.swift */; };
+		2B2D8A727500A0FF8DB22401 /* Views/RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F4B7AEC72E6FC332C0AFB6D /* Views/RootView.swift */; };
+		2F2EA2352A80F0173FDF3530 /* Services/Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB300F21C584734D1430D367 /* Services/Notifications.swift */; };
+		3E326800C84DBE53E116482E /* Services/HTTP.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33BEC4DFE192EFD7108703D9 /* Services/HTTP.swift */; };
+		3F873DE132C8C0B41E228ED0 /* Services/TMDBService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F503BFDD7F59B2193EA96385 /* Services/TMDBService.swift */; };
+		463C8A3596FE6ED5E96A5954 /* Models/Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57976B484DECB7004B959FAC /* Models/Models.swift */; };
+		5B1C78E91039DD577E26FCF0 /* Support/Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9085691E67096E53A32080E3 /* Support/Keychain.swift */; };
+		64D6E73FCD49866D06D2482D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 0EE1E90C5C4AEA2FF8D2A125 /* PrivacyInfo.xcprivacy */; };
+		67860262FAAC8F40D30B9064 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A7AE616FDA1B489B228DC162 /* Assets.xcassets */; };
+		72628838C4C4BB1F2BCDDF8A /* Services/TraktAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61409427C699B984DC7910AD /* Services/TraktAuth.swift */; };
+		8C1DA9181713B16062F59E38 /* Views/ShowDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA9022F687AB7BC56F5AA0C0 /* Views/ShowDetailView.swift */; };
+		A81FDE9A850CB98552B5C68D /* Views/UpNextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00E167B0832C9923CDDDF0F /* Views/UpNextView.swift */; };
+		D0E9BA09D5C348F7E4D7B604 /* WatchMateApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B8B7D2C35ADA798366B316 /* WatchMateApp.swift */; };
+		D834B843137E69BAA72C11E0 /* Support/Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F0623C83C971DDA964E1C91 /* Support/Settings.swift */; };
+		E3AF2C55741CD8C5390D4F99 /* Services/AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64D2459121925EA2803D8968 /* Services/AppStore.swift */; };
+		F34AFFECFD1959AE3999051A /* Services/TraktService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 548A697AEF311701C54F765F /* Services/TraktService.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		D799BAE6088A90139B415FCC /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = 98F54143AB4E86B28C3AFEE0;
+			containerPortal = 98F54143AB4E86B28C3AFEE0 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = C13732C8E715C9BEE4FA51C9;
 			remoteInfo = WatchMate;
 		};
-		DE58E2B17C19600779694943 = {
-			isa = PBXTargetDependency;
-			target = C13732C8E715C9BEE4FA51C9;
-			targetProxy = D799BAE6088A90139B415FCC;
-		};
-		C13732C8E715C9BEE4FA51C9 = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 8A8642C6B28662881237D956;
-			buildPhases = (
-				2D764CD838DB39F040AA7EC4,
-				12384B5908BE5FE5B3301CEE,
-				06F5DC629BD46AAFD46564D1,
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		0EE1E90C5C4AEA2FF8D2A125 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		1F4B7AEC72E6FC332C0AFB6D /* Views/RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/RootView.swift; sourceTree = "<group>"; };
+		3196C2D2EAC35E17C980BB80 /* WatchMate.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WatchMate.entitlements; sourceTree = "<group>"; };
+		33BEC4DFE192EFD7108703D9 /* Services/HTTP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/HTTP.swift; sourceTree = "<group>"; };
+		43919EBF0801FCDE1CB8B9B6 /* Views/SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/SearchView.swift; sourceTree = "<group>"; };
+		47A7F57E33A200FD7F90886A /* WatchMate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WatchMate.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4F0623C83C971DDA964E1C91 /* Support/Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support/Settings.swift; sourceTree = "<group>"; };
+		4F4F102FCA65F9ED71FF36F9 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
+		548A697AEF311701C54F765F /* Services/TraktService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/TraktService.swift; sourceTree = "<group>"; };
+		57976B484DECB7004B959FAC /* Models/Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/Models.swift; sourceTree = "<group>"; };
+		61409427C699B984DC7910AD /* Services/TraktAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/TraktAuth.swift; sourceTree = "<group>"; };
+		64D2459121925EA2803D8968 /* Services/AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/AppStore.swift; sourceTree = "<group>"; };
+		7FFE5E16CB7AF58727B1BE6B /* WatchMateTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WatchMateTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		84FB02352EF4F8E2D71114EF /* EpisodeRulesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EpisodeRulesTests.swift; sourceTree = "<group>"; };
+		87B8B7D2C35ADA798366B316 /* WatchMateApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchMateApp.swift; sourceTree = "<group>"; };
+		9085691E67096E53A32080E3 /* Support/Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support/Keychain.swift; sourceTree = "<group>"; };
+		A7AE616FDA1B489B228DC162 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AA9022F687AB7BC56F5AA0C0 /* Views/ShowDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/ShowDetailView.swift; sourceTree = "<group>"; };
+		B00E167B0832C9923CDDDF0F /* Views/UpNextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/UpNextView.swift; sourceTree = "<group>"; };
+		CD7002024504104520470147 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		F503BFDD7F59B2193EA96385 /* Services/TMDBService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/TMDBService.swift; sourceTree = "<group>"; };
+		F8A0A99D2C2F1A4A5B2D120A /* Views/SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/SettingsView.swift; sourceTree = "<group>"; };
+		FB300F21C584734D1430D367 /* Services/Notifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/Notifications.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		12384B5908BE5FE5B3301CEE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
-			buildRules = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		99C7943D90D870A50ADE9160 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1BDBD24583AAF7F81F76B976 /* WatchMate */ = {
+			isa = PBXGroup;
+			children = (
+				57976B484DECB7004B959FAC /* Models/Models.swift */,
+				64D2459121925EA2803D8968 /* Services/AppStore.swift */,
+				33BEC4DFE192EFD7108703D9 /* Services/HTTP.swift */,
+				FB300F21C584734D1430D367 /* Services/Notifications.swift */,
+				F503BFDD7F59B2193EA96385 /* Services/TMDBService.swift */,
+				61409427C699B984DC7910AD /* Services/TraktAuth.swift */,
+				548A697AEF311701C54F765F /* Services/TraktService.swift */,
+				9085691E67096E53A32080E3 /* Support/Keychain.swift */,
+				4F0623C83C971DDA964E1C91 /* Support/Settings.swift */,
+				1F4B7AEC72E6FC332C0AFB6D /* Views/RootView.swift */,
+				43919EBF0801FCDE1CB8B9B6 /* Views/SearchView.swift */,
+				F8A0A99D2C2F1A4A5B2D120A /* Views/SettingsView.swift */,
+				AA9022F687AB7BC56F5AA0C0 /* Views/ShowDetailView.swift */,
+				B00E167B0832C9923CDDDF0F /* Views/UpNextView.swift */,
+				87B8B7D2C35ADA798366B316 /* WatchMateApp.swift */,
+				A7AE616FDA1B489B228DC162 /* Assets.xcassets */,
+				0EE1E90C5C4AEA2FF8D2A125 /* PrivacyInfo.xcprivacy */,
+				CD7002024504104520470147 /* Info.plist */,
+				3196C2D2EAC35E17C980BB80 /* WatchMate.entitlements */,
+			);
+			path = WatchMate;
+			sourceTree = "<group>";
+		};
+		8C3CAE929B92155BEC14CDAB /* Configuration */ = {
+			isa = PBXGroup;
+			children = (
+				4F4F102FCA65F9ED71FF36F9 /* Base.xcconfig */,
+			);
+			path = Configuration;
+			sourceTree = "<group>";
+		};
+		BFC937463906E5DB7A02A37C /* WatchMateTests */ = {
+			isa = PBXGroup;
+			children = (
+				84FB02352EF4F8E2D71114EF /* EpisodeRulesTests.swift */,
+			);
+			path = WatchMateTests;
+			sourceTree = "<group>";
+		};
+		E50290A24C49A459B43487C5 = {
+			isa = PBXGroup;
+			children = (
+				1BDBD24583AAF7F81F76B976 /* WatchMate */,
+				BFC937463906E5DB7A02A37C /* WatchMateTests */,
+				8C3CAE929B92155BEC14CDAB /* Configuration */,
+				FBDC4F23F93125BBEEAE800C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		FBDC4F23F93125BBEEAE800C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				47A7F57E33A200FD7F90886A /* WatchMate.app */,
+				7FFE5E16CB7AF58727B1BE6B /* WatchMateTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		64BCB755386F844C96A2A5B0 /* WatchMateTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 72C322F0960ECAD6090B486F /* Build configuration list for PBXNativeTarget "WatchMateTests" */;
+			buildPhases = (
+				9F3002A5D69B22D357A58AA9 /* Sources */,
+				99C7943D90D870A50ADE9160 /* Frameworks */,
+				C584AE92222380FB29B6223F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				DE58E2B17C19600779694943 /* PBXTargetDependency */,
+			);
+			name = WatchMateTests;
+			productName = WatchMateTests;
+			productReference = 7FFE5E16CB7AF58727B1BE6B /* WatchMateTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		C13732C8E715C9BEE4FA51C9 /* WatchMate */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8A8642C6B28662881237D956 /* Build configuration list for PBXNativeTarget "WatchMate" */;
+			buildPhases = (
+				2D764CD838DB39F040AA7EC4 /* Sources */,
+				12384B5908BE5FE5B3301CEE /* Frameworks */,
+				06F5DC629BD46AAFD46564D1 /* Resources */,
+			);
+			buildRules = (
+			);
 			dependencies = (
 			);
 			name = WatchMate;
 			productName = WatchMate;
-			productReference = 47A7F57E33A200FD7F90886A;
+			productReference = 47A7F57E33A200FD7F90886A /* WatchMate.app */;
 			productType = "com.apple.product-type.application";
 		};
-		64BCB755386F844C96A2A5B0 = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 72C322F0960ECAD6090B486F;
-			buildPhases = (
-				9F3002A5D69B22D357A58AA9,
-				99C7943D90D870A50ADE9160,
-				C584AE92222380FB29B6223F,
-			);
-			buildRules = ();
-			dependencies = (
-				DE58E2B17C19600779694943,
-			);
-			name = WatchMateTests;
-			productName = WatchMateTests;
-			productReference = 7FFE5E16CB7AF58727B1BE6B;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
-		89E1FD6268CC0F221A2BE178 = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				SDKROOT = iphoneos;
-				SWIFT_VERSION = 5.0;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu17;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				GCC_OPTIMIZATION_LEVEL = 0;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
-			};
-			name = Debug;
-		};
-		E6DE6C99132752C914FEF632 = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				SDKROOT = iphoneos;
-				SWIFT_VERSION = 5.0;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu17;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
-			};
-			name = Release;
-		};
-		49EA05A46B1A86EA7E413B43 = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				89E1FD6268CC0F221A2BE178,
-				E6DE6C99132752C914FEF632,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		E9B2E96ABC5F6856F2BE79CF = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				MARKETING_VERSION = 0.1.0;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = WatchMate/Info.plist;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.WatchMate;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				TARGETED_DEVICE_FAMILY = "1";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				ENABLE_PREVIEWS = YES;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				GCC_OPTIMIZATION_LEVEL = 0;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
-			};
-			name = Debug;
-			baseConfigurationReference = 4F4F102FCA65F9ED71FF36F9;
-		};
-		5A8C91857F674E16E2724F47 = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				MARKETING_VERSION = 0.1.0;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = WatchMate/Info.plist;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.WatchMate;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				TARGETED_DEVICE_FAMILY = "1";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				ENABLE_PREVIEWS = YES;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
-			};
-			name = Release;
-			baseConfigurationReference = 4F4F102FCA65F9ED71FF36F9;
-		};
-		8A8642C6B28662881237D956 = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				E9B2E96ABC5F6856F2BE79CF,
-				5A8C91857F674E16E2724F47,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		FCB48D8F88BCDB0ED9FADFD7 = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				GENERATE_INFOPLIST_FILE = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.WatchMateTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				TARGETED_DEVICE_FAMILY = "1";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WatchMate.app/WatchMate";
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				GCC_OPTIMIZATION_LEVEL = 0;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
-			};
-			name = Debug;
-		};
-		942EEBBACD6C88CAE7F29B29 = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				GENERATE_INFOPLIST_FILE = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.WatchMateTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				TARGETED_DEVICE_FAMILY = "1";
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WatchMate.app/WatchMate";
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
-			};
-			name = Release;
-		};
-		72C322F0960ECAD6090B486F = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				FCB48D8F88BCDB0ED9FADFD7,
-				942EEBBACD6C88CAE7F29B29,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		98F54143AB4E86B28C3AFEE0 = {
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		98F54143AB4E86B28C3AFEE0 /* Project object */ = {
 			isa = PBXProject;
-			attributes = { LastUpgradeCheck = 1600; LastSwiftUpdateCheck = 1600; BuildIndependentTargetsInParallel = 1; TargetAttributes = { C13732C8E715C9BEE4FA51C9 = { CreatedOnToolsVersion = 16.0; }; 64BCB755386F844C96A2A5B0 = { CreatedOnToolsVersion = 16.0; TestTargetID = C13732C8E715C9BEE4FA51C9; }; }; };
-			buildConfigurationList = 49EA05A46B1A86EA7E413B43;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					64BCB755386F844C96A2A5B0 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = C13732C8E715C9BEE4FA51C9;
+					};
+					C13732C8E715C9BEE4FA51C9 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+				};
+			};
+			buildConfigurationList = 49EA05A46B1A86EA7E413B43 /* Build configuration list for PBXProject "WatchMate" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
-			knownRegions = (en, Base);
+			knownRegions = (
+				en,
+				Base,
+			);
 			mainGroup = E50290A24C49A459B43487C5;
-			productRefGroup = FBDC4F23F93125BBEEAE800C;
+			productRefGroup = FBDC4F23F93125BBEEAE800C /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				C13732C8E715C9BEE4FA51C9,
-				64BCB755386F844C96A2A5B0,
+				C13732C8E715C9BEE4FA51C9 /* WatchMate */,
+				64BCB755386F844C96A2A5B0 /* WatchMateTests */,
 			);
 		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		06F5DC629BD46AAFD46564D1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				67860262FAAC8F40D30B9064 /* Assets.xcassets in Resources */,
+				64D6E73FCD49866D06D2482D /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C584AE92222380FB29B6223F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		2D764CD838DB39F040AA7EC4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				463C8A3596FE6ED5E96A5954 /* Models/Models.swift in Sources */,
+				E3AF2C55741CD8C5390D4F99 /* Services/AppStore.swift in Sources */,
+				3E326800C84DBE53E116482E /* Services/HTTP.swift in Sources */,
+				2F2EA2352A80F0173FDF3530 /* Services/Notifications.swift in Sources */,
+				3F873DE132C8C0B41E228ED0 /* Services/TMDBService.swift in Sources */,
+				72628838C4C4BB1F2BCDDF8A /* Services/TraktAuth.swift in Sources */,
+				F34AFFECFD1959AE3999051A /* Services/TraktService.swift in Sources */,
+				5B1C78E91039DD577E26FCF0 /* Support/Keychain.swift in Sources */,
+				D834B843137E69BAA72C11E0 /* Support/Settings.swift in Sources */,
+				2B2D8A727500A0FF8DB22401 /* Views/RootView.swift in Sources */,
+				1A51C207E31750744E3BE5B2 /* Views/SearchView.swift in Sources */,
+				2598EE02638D60E1A65086EA /* Views/SettingsView.swift in Sources */,
+				8C1DA9181713B16062F59E38 /* Views/ShowDetailView.swift in Sources */,
+				A81FDE9A850CB98552B5C68D /* Views/UpNextView.swift in Sources */,
+				D0E9BA09D5C348F7E4D7B604 /* WatchMateApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9F3002A5D69B22D357A58AA9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				162F4FF742B833CF527DFE05 /* EpisodeRulesTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		DE58E2B17C19600779694943 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C13732C8E715C9BEE4FA51C9 /* WatchMate */;
+			targetProxy = D799BAE6088A90139B415FCC /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		5A8C91857F674E16E2724F47 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 4F4F102FCA65F9ED71FF36F9 /* Base.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 76XP2MF734;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = WatchMate/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = net.andrewroland.WatchMate;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		89E1FD6268CC0F221A2BE178 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		942EEBBACD6C88CAE7F29B29 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.WatchMateTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WatchMate.app/WatchMate";
+			};
+			name = Release;
+		};
+		E6DE6C99132752C914FEF632 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		E9B2E96ABC5F6856F2BE79CF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 4F4F102FCA65F9ED71FF36F9 /* Base.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 76XP2MF734;
+				ENABLE_PREVIEWS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = WatchMate/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = net.andrewroland.WatchMate;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		FCB48D8F88BCDB0ED9FADFD7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.WatchMateTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WatchMate.app/WatchMate";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		49EA05A46B1A86EA7E413B43 /* Build configuration list for PBXProject "WatchMate" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				89E1FD6268CC0F221A2BE178 /* Debug */,
+				E6DE6C99132752C914FEF632 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		72C322F0960ECAD6090B486F /* Build configuration list for PBXNativeTarget "WatchMateTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FCB48D8F88BCDB0ED9FADFD7 /* Debug */,
+				942EEBBACD6C88CAE7F29B29 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8A8642C6B28662881237D956 /* Build configuration list for PBXNativeTarget "WatchMate" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E9B2E96ABC5F6856F2BE79CF /* Debug */,
+				5A8C91857F674E16E2724F47 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
 	};
-	rootObject = 98F54143AB4E86B28C3AFEE0;
+	rootObject = 98F54143AB4E86B28C3AFEE0 /* Project object */;
 }

@@ -3,7 +3,7 @@ import Foundation
 @MainActor
 final class TMDBService: CatalogueService {
     var configured: Bool { !Keychain.string("tmdb.token").isEmpty }
-    private func get<T: Decodable>(_ path: String, query: [URLQueryItem] = [], type: T.Type) async throws -> T {
+    private func get<T: Decodable & Sendable>(_ path: String, query: [URLQueryItem] = [], type: T.Type) async throws -> T {
         let token = Keychain.string("tmdb.token")
         guard !token.isEmpty else { throw APIError.message("Add your TMDB API Read Access Token in Settings.") }
         var components = URLComponents(string: "https://api.themoviedb.org/3/\(path)")!
