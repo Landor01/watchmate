@@ -3,6 +3,16 @@ import UserNotifications
 
 @MainActor
 enum Notifications {
+    // Device-only preference; per-show reminder choices still sync through iCloud.
+    static var deviceRemindersEnabled: Bool {
+        UserDefaults.standard.object(forKey: "deviceRemindersEnabled") as? Bool ?? true
+    }
+
+    static func hasPermission() async -> Bool {
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        return settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional
+    }
+
     static func requestPermission() async throws -> Bool {
         try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
     }
@@ -10,7 +20,7 @@ enum Notifications {
         let center = UNUserNotificationCenter.current()
         let pending = await center.pendingNotificationRequests()
         center.removePendingNotificationRequests(withIdentifiers: pending.filter { $0.identifier.hasPrefix("watchmate.") }.map(\.identifier))
-        guard !demo else { return }
+        guard !demo, deviceRemindersEnabled else { return }
         let settings = await center.notificationSettings()
         guard settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else { return }
         let now = Date()
@@ -22,6 +32,7 @@ enum Notifications {
         }.sorted { $0.1.firstAired! < $1.1.firstAired! }
         // iOS has a finite local notification budget; schedule the nearest dates.
         for (title, episode) in candidates.prefix(60) {
+            guard deviceRemindersEnabled else { return }
             guard let date = episode.firstAired else { continue }
             let content = UNMutableNotificationContent()
             content.title = "\(title) · \(episode.label)"
@@ -30,6 +41,11 @@ enum Notifications {
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1, date.timeIntervalSince(now)), repeats: false)
             let request = UNNotificationRequest(identifier: "watchmate.\(episode.key)", content: content, trigger: trigger)
             try? await center.add(request)
+            // Disabling reminders may happen while adding a request is suspended.
+            if !deviceRemindersEnabled {
+                center.removePendingNotificationRequests(withIdentifiers: [request.identifier])
+                return
+            }
         }
     }
 }

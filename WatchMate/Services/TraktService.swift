@@ -8,7 +8,7 @@ final class TraktService: ViewingService {
 
     private func request(_ path: String, query: [URLQueryItem] = [], authenticated: Bool = true,
                          method: String = "GET", body: Data? = nil) async throws -> URLRequest {
-        guard !auth.clientID.isEmpty else { throw APIError.message("Add a Trakt client ID in Settings.") }
+        guard !auth.clientID.isEmpty else { throw APIError.message("Trakt is unavailable in this version of WatchMate. Please contact support.") }
         var components = URLComponents(string: "https://api.trakt.tv/\(path)")!
         if !query.isEmpty { components.queryItems = query }
         var request = URLRequest(url: components.url!)
@@ -37,6 +37,32 @@ final class TraktService: ViewingService {
         }
         return output
     }
+    func accountID() async throws -> String {
+        struct AccountSettings: Decodable {
+            struct User: Decodable {
+                struct UserIDs: Decodable { let uuid: String }
+                let ids: UserIDs
+            }
+            let user: User
+        }
+        let request = try await request("users/settings")
+        let settings = try await HTTP.decode(AccountSettings.self, request: request)
+        guard !settings.user.ids.uuid.isEmpty else { throw APIError.message("Trakt did not return an account identifier.") }
+        return settings.user.ids.uuid
+    }
+
+    #if DEBUG
+    func testConnection() async throws -> String {
+        let request = try await request("shows/popular", query: [URLQueryItem(name: "limit", value: "1")], authenticated: false)
+        _ = try await HTTP.decode([RemoteShow].self, request: request)
+        if auth.connected {
+            _ = try await accountID()
+            return "Connected. Client ID and account sign-in are valid."
+        }
+        return "Connected. Client ID is valid; account sign-in was not tested."
+    }
+    #endif
+
     func watchedShows() async throws -> [WatchedShow] {
         try await page("sync/watched/shows", query: [URLQueryItem(name: "extended", value: "progress")], as: WatchedShow.self)
     }

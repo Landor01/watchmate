@@ -1,0 +1,61 @@
+{
+  "identifier": "C44A85D9-6D83-4D6A-A2BC-6675A8A25807",
+  "nonRenewingSubscriptions": [],
+  "products": [
+    {
+      "displayPrice": "1.99",
+      "familyShareable": false,
+      "internalID": "910001",
+      "localizations": [
+        {
+          "description": "An optional, one-off tip to support WatchMate. No features are unlocked.",
+          "displayName": "Small coffee",
+          "locale": "en_GB"
+        }
+      ],
+      "productID": "watchmate.tip.sml",
+      "referenceName": "Small coffee",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "3.99",
+      "familyShareable": false,
+      "internalID": "910002",
+      "localizations": [
+        {
+          "description": "An optional, one-off tip to support WatchMate. No features are unlocked.",
+          "displayName": "Medium coffee",
+          "locale": "en_GB"
+        }
+      ],
+      "productID": "watchmate.tip.med",
+      "referenceName": "Medium coffee",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "5.99",
+      "familyShareable": false,
+      "internalID": "910003",
+      "localizations": [
+        {
+          "description": "An optional, one-off tip to support WatchMate. No features are unlocked.",
+          "displayName": "Large coffee",
+          "locale": "en_GB"
+        }
+      ],
+      "productID": "watchmate.tip.lrg",
+      "referenceName": "Large coffee",
+      "type": "Consumable"
+    }
+  ],
+  "settings": {
+    "_failTransactionsEnabled": false,
+    "_locale": "en_GB",
+    "_storefront": "GBR"
+  },
+  "subscriptionGroups": [],
+  "version": {
+    "major": 3,
+    "minor": 0
+  }
+}

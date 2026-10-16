@@ -19,8 +19,8 @@ For a physical iPhone, choose your Apple signing team and a unique bundle identi
 - **Coming Soon**: scheduled episodes over the next 30 days.
 - **My Shows**: programmes, per-episode history and progress.
 - **Search**: search Trakt and add a programme to your Trakt watchlist.
-- **Show detail**: mark watched/unwatched, skip locally, hide locally, provider links and opt-in local reminders.
-- **Settings**: OAuth connection, Keychain credentials, region, providers, specials, demo reset and credits.
+- **Show detail**: mark watched/unwatched, skip and hide across devices through iCloud, provider links and opt-in local reminders.
+- **Settings**: OAuth connection, region, providers, specials, demo reset and credits.
 - Trakt Authorization Code + **S256 PKCE**, HTTPS callback matching, OAuth state validation and single-flight refresh token rotation.
 - Paginated history/watchlist import. Watched imports explicitly use `extended=progress` for Trakt's current response format.
 - Local SwiftData cache. Existing data renders before a foreground refresh.
@@ -61,20 +61,22 @@ Apple's [Associated Domains documentation](https://developer.apple.com/documenta
 
 Create a [TMDB developer API application](https://developer.themoviedb.org/docs/getting-started). Copy the **API Read Access Token** (the long bearer token, not the shorter v3 API key).
 
-### 4. Enter credentials in WatchMate
+### 4. Bundle the app credentials
 
-Run the app, open Settings, enter the Trakt client ID and TMDB Read Access Token, and tap **Save credentials**. Tap **Connect Trakt** and authorise WatchMate. A successful connection clears fictional demo viewing data and imports your watched programmes plus watchlist.
+Set `TRAKT_CLIENT_ID` and `TMDB_READ_ACCESS_TOKEN` in the Git-ignored `Configuration/Local.xcconfig` before building. Both Debug and Release embed these values into the app's Info.plist. CI must supply the same build settings or create the private configuration file. Release builds reject missing credentials or an unconfigured callback host.
 
-Trakt can work without TMDB; posters, descriptions and provider listings will be absent until you add a TMDB token and refresh. Choose your region and load/select streaming providers in Settings.
+These are app-wide credentials; customers never enter them. Values previously entered in Settings on a device must be copied into the build configuration manually. The app no longer reads developer credentials from the device Keychain. Bundled values can be extracted from an app; never put a Trakt client secret here.
 
-User tokens and API credentials are stored in the device Keychain. Do not commit real credentials. Disconnect clears the local viewing cache and tokens, while retaining the developer credentials and your remote Trakt data. You can revoke the application separately through your Trakt account.
+Run the app, open Settings and tap **Connect Trakt**. A successful connection clears fictional demo viewing data and imports your watched programmes plus watchlist. Choose your region and streaming providers in Settings as desired.
+
+Personal Trakt access and refresh tokens remain in the device Keychain. Disconnect clears local viewing data and those tokens while retaining the bundled app configuration and remote Trakt data. You can revoke the application separately through your Trakt account.
 
 ## What “Up Next” means
 
 The algorithm selects the **set** of episodes that:
 
 1. Have not been watched.
-2. Have not been skipped locally.
+2. Have not been skipped in WatchMate.
 3. Have a known first-air timestamp at or before the current time.
 4. Are not specials unless the user includes specials.
 
@@ -91,6 +93,25 @@ It sorts that set by season and episode number. Gaps in viewing history are reta
 - Watch/unwatch writes are confirmed by Trakt before changing local state. There is no offline mutation queue; failed writes show an error and should be retried after reconnecting.
 - An unfollow/hide action affects WatchMate only and preserves Trakt's history/watchlist. A later Follow action restores the show. Removed API catalogue entries are deleted on catalogue refresh.
 - One account per device. Reconnecting clears the old account cache so viewing histories are not mixed.
+
+## iCloud sync
+
+WatchMate keeps its existing SwiftData cache on each device and synchronizes app choices through the private CloudKit database in `iCloud.net.andrewroland.WatchMate`. Existing local data is imported without changing or deleting the SwiftData schema. The local container explicitly disables automatic SwiftData CloudKit mirroring.
+
+Synced choices include region, specials, streaming-service filters, followed/hidden shows, skipped/unskipped episodes and per-show reminder preferences. A history revision signals other devices to reload watched history from Trakt; Trakt remains authoritative for watched dates and episode catalogues. Sign into the **same Apple Account and Trakt account on every device**. Each Trakt UUID has a separate CloudKit record zone. OAuth tokens, demo data, sync timestamps and notification permission remain device-specific.
+
+The app syncs on launch/foreground, approximately every minute while open, after local changes, and during pull-to-refresh. Settings → iCloud sync shows progress, queued changes, errors and a Sync now button. It does not use background push delivery. Enable notifications separately on each device using the Settings button if desired.
+
+Each preference has a separate revision. Changes to different episodes/shows merge independently; concurrent edits to the same preference use modification time with a deterministic tie-breaker. Initial imports yield to existing cloud values. Offline edits are saved in an atomic, account-specific journal under Application Support/CloudSync and retried automatically. False values explicitly preserve unskip/unhide changes. Clearing the local cache never deletes cloud records. Signing out/demo mode pauses the library; queued edits remain available when that Trakt account reconnects. If the Apple Account changes, synchronization pauses rather than uploading the previous account's data to another account.
+
+### Apple setup and release verification
+
+1. In the app target's Signing & Capabilities, enable **iCloud → CloudKit** and select/create `iCloud.net.andrewroland.WatchMate` under the app's signing team. The entitlement is already included. If changing this identifier, also update `CloudSync.swift`.
+2. Run a development build on an iCloud-signed-in device, connect Trakt, and use **Sync now**. This creates a private custom record zone and the `WatchMatePreference` record type. Fields: `key` (String), `data` (Bytes), `modifiedAt` (Date/Time), `revision` (String). No query indexes are needed: fetching uses paginated record-zone changes.
+3. In CloudKit Console, deploy the development schema to **Production** before TestFlight/App Store builds. Building successfully does not verify schema deployment or a two-device transfer.
+4. With two devices using the same accounts, verify skip/unskip, hide/follow, region/services/specials, reminder choices, and watch/unwatch propagation. Try edits on both devices, offline edits and relaunch, reconnect, and demo mode. Confirm signing out on one device does not remove the other device's data.
+
+The sync journal tests cover initial import precedence, independent merges, offline edits, unskip persistence, no echo uploads, cache clearing and deterministic conflict resolution. Live CloudKit provisioning and two-device tests require signed-in devices and the developer's CloudKit environment.
 
 ## Reminders
 
@@ -132,4 +153,24 @@ This is an implementation starter, not an already approved production app. Compl
 
 The [approved TMDB logo](https://www.themoviedb.org/about/logos-attribution) and required notice are included in Settings → Credits. The logo is TMDB's trademark and is bundled solely for API attribution. JustWatch attribution is displayed in Settings and programme details. A revenue-generating app needs an appropriate TMDB commercial agreement; a private/TestFlight development build is not itself proof that any planned commercial use is covered. See [TMDB's FAQ](https://developer.themoviedb.org/docs/faq), [TMDB watch-provider requirements](https://developer.themoviedb.org/reference/tv-series-watch-providers), and [Trakt's API use policy](https://developer.trakt.tv/docs/api-use-policy).
 
-No monetisation, direct streaming-service login, analytics, cloud sync, remote push backend or episode-specific streaming availability is implemented.
+No monetisation, direct streaming-service login, analytics, remote push backend or episode-specific streaming availability is implemented.
+
+## Optional coffee tips
+
+Settings includes small, medium and large one-off tips using StoreKit 2. Tips unlock nothing and do not require Trakt sign-in. They are consumable purchases, so users can tip again and there is no restorable entitlement.
+
+Tips are enabled in Debug. Release builds hide them unless `ENABLE_TIPS` is added to the app target's Swift Active Compilation Conditions. Leave that condition absent while awaiting TMDB's licensing clarification.
+
+The shared WatchMate Run scheme uses `Configuration/CoffeeTips.storekit` for local purchases with no real charge:
+
+| Product ID | Type | Local UK price |
+| --- | --- | --- |
+| `watchmate.tip.sml` | Consumable | £1.99 |
+| `watchmate.tip.med` | Consumable | £3.99 |
+| `watchmate.tip.lrg` | Consumable | £5.99 |
+
+For distribution, create these exact three consumable product IDs in App Store Connect, supply names/descriptions and review screenshots, choose actual prices and complete Apple's paid-app agreements and banking/tax setup. Displayed names and prices come from StoreKit, not hardcoded production amounts. Submit the products for review with the app. The local configuration does not create App Store Connect products.
+
+For sandbox testing of the real products, change Edit Scheme → Run → Options → StoreKit Configuration to None. The local configuration is not used by TestFlight or App Store installations.
+
+Before release, exercise all three purchases, repeated tipping, cancellation, Ask to Buy pending/approval, failed purchases, unavailable products and finishing interrupted transactions after relaunch. Pending transactions are handled by the app-wide transaction listener, even after Settings closes. Verified tips are finished without changing app features. Use Xcode's StoreKit transaction manager to simulate these cases.

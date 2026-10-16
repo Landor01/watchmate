@@ -44,6 +44,7 @@ enum HTTP {
 
 @MainActor
 protocol ViewingService {
+    func accountID() async throws -> String
     func watchedShows() async throws -> [WatchedShow]
     func watchlist() async throws -> [RemoteShow]
     func episodes(showID: Int) async throws -> [RemoteEpisode]

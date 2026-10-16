@@ -2,80 +2,128 @@ import SwiftUI
 import SwiftData
 
 struct UpNextView: View {
+    @State private var showingAirDateInfo = false
     @Environment(AppStore.self) private var store
     @Query(sort: \Show.title) private var shows: [Show]
-    @State private var onlyMyServices = false
-    private var waitingShows: [Show] {
-        shows.filter { $0.isFollowing && !store.waiting($0).isEmpty && (!onlyMyServices || store.matchesServices($0)) }
+
+    private var waitingEntries: [UpNextEntry] {
+        shows.compactMap { show in
+            guard show.isFollowing, store.passesServiceFilter(show) else { return nil }
+            let episodes = store.waiting(show)
+            guard let episode = episodes.first else { return nil }
+            return UpNextEntry(show: show, episode: episode, waitingCount: episodes.count)
+        }
     }
+
     var body: some View {
-        List {
+        let entries = waitingEntries
+        ThemedList {
             Section {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Your next great watch.").font(.largeTitle.bold())
-                    Text("\(waitingShows.reduce(0) { $0 + store.waiting($1).count }) aired episodes unwatched")
-                        .font(.title3).foregroundStyle(.mint)
-                    Text("Air dates from Trakt. Streaming listings apply to the series; check your service for this episode.")
-                        .font(.caption).foregroundStyle(.secondary)
-                }.padding(.vertical, 8)
-                Toggle("Filter to my services", isOn: $onlyMyServices)
-                    .disabled(store.settings.selectedProviders.isEmpty)
+                HStack(spacing: 12) {
+                    let count = entries.reduce(0) { $0 + $1.waitingCount }
+                    Text("^[\(count) episode](inflect: true) left to watch")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Spacer(minLength: 0)
+                    Button {
+                        showingAirDateInfo = true
+                    } label: {
+                        Image(systemName: "info.circle")
+                            .frame(minWidth: 44, minHeight: 44)
+                    }
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel("About air dates and streaming availability")
+                }
             }
-            if waitingShows.isEmpty {
-                ContentUnavailableView("You're caught up", systemImage: "checkmark.circle", description: Text("Follow shows in Search, connect Trakt, or change your service filter."))
+            if entries.isEmpty {
+                if store.settings.onlyMyServices {
+                    ContentUnavailableView("No shows on your services", systemImage: "line.3.horizontal.decrease.circle", description: Text("Choose services in Settings or turn off the service filter to see other shows."))
+                } else {
+                    ContentUnavailableView("You're caught up", systemImage: "checkmark.circle", description: Text("Add programmes using + in My Shows, or connect Trakt."))
+                }
             }
-            ForEach(waitingShows) { show in
-                if let episode = store.waiting(show).first {
-                    Section {
-                        NavigationLink { ShowDetailView(show: show) } label: { ShowRow(show: show, episode: episode) }
-                        HStack {
-                            Text("\(store.waiting(show).count) to watch").font(.caption.bold()).foregroundStyle(.mint)
-                            Spacer()
-                            Button("Mark watched", systemImage: "checkmark") { Task { await store.setWatched(episode, watched: true) } }
-                                .buttonStyle(.bordered).disabled(store.busy)
+            Section {
+                ForEach(entries) { entry in
+                    VStack(spacing: 8) {
+                        NavigationLink {
+                            EpisodeDetailView(episode: entry.episode)
+                        } label: {
+                            ShowRow(show: entry.show, episode: entry.episode, onlyMyServices: store.settings.onlyMyServices, squareArtwork: true, showsAiredPrefix: true, squareArtworkSize: 96)
                         }
+                        HStack {
+                            Text("\(entry.waitingCount) to watch").font(.caption.bold()).foregroundStyle(.tint)
+                            Spacer()
+                            Button("Mark watched") {
+                                Task { await store.setWatched(entry.episode, watched: true) }
+                            }
+                            Button("Skip") {
+                                Task { await store.skip(entry.episode) }
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .font(.caption)
+                        .disabled(store.busy)
+                    }
+                    .alignmentGuide(.listRowSeparatorLeading) { dimensions in
+                        dimensions[.leading]
+                    }
+                    .alignmentGuide(.listRowSeparatorTrailing) { dimensions in
+                        dimensions[.trailing]
                     }
                 }
             }
-            if !store.status.isEmpty { Text(store.status).font(.caption).foregroundStyle(.secondary) }
         }
-        .navigationTitle("WatchMate").navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Up Next").navigationBarTitleDisplayMode(.inline)
+        .alert("Air dates and streaming", isPresented: $showingAirDateInfo) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Air dates from Trakt. Streaming listings apply to the series; check your service for this episode.")
+        }
         .refreshable { await store.refresh() }
     }
 }
 
-struct ComingSoonView: View {
-    @Environment(AppStore.self) private var store
-    @Query(sort: \Show.title) private var shows: [Show]
-    private var entries: [(show: Show, episode: Episode)] {
-        shows.filter(\.isFollowing).flatMap { show in store.upcoming(show).map { (show: show, episode: $0) } }
-            .sorted { $0.episode.firstAired! < $1.episode.firstAired! }
-    }
-    var body: some View {
-        List {
-            Section {
-                Text("Scheduled over the next 30 days. Air dates can change and may differ from local streaming release dates.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            if entries.isEmpty { ContentUnavailableView("Nothing scheduled yet", systemImage: "calendar", description: Text("New air dates will appear when supplied by Trakt.")) }
-            ForEach(entries, id: \.episode.key) { entry in
-                NavigationLink { ShowDetailView(show: entry.show) } label: { ShowRow(show: entry.show, episode: entry.episode) }
-            }
-        }.navigationTitle("Coming Soon").refreshable { await store.refresh() }
-    }
+private struct UpNextEntry: Identifiable {
+    let show: Show
+    let episode: Episode
+    let waitingCount: Int
+    var id: String { episode.key }
 }
 
 struct MyShowsView: View {
+    @State private var showToRemove: Show?
+    @State private var confirmRemoval = false
     @Query(sort: \Show.title) private var shows: [Show]
     @Environment(AppStore.self) private var store
     var body: some View {
-        List {
-            if shows.filter(\.isFollowing).isEmpty {
-                ContentUnavailableView("Your shows live here", systemImage: "tv", description: Text("Connect Trakt to import your history and watchlist."))
+        ThemedList {
+            if shows.filter({ $0.isFollowing && store.passesServiceFilter($0) }).isEmpty {
+                if store.settings.onlyMyServices && !store.settings.selectedProviders.isEmpty {
+                    ContentUnavailableView("No shows on your services", systemImage: "tv", description: Text("Change your service filter in Settings to see other programmes."))
+                } else {
+                    ContentUnavailableView("Your shows live here", systemImage: "tv", description: Text("Tap + to find and add programmes, or connect Trakt in Settings to import your history and watchlist."))
+                }
             }
-            ForEach(shows.filter(\.isFollowing)) { show in
+            ForEach(shows.filter { $0.isFollowing && store.passesServiceFilter($0) }) { show in
                 NavigationLink { ShowDetailView(show: show) } label: { ShowRow(show: show) }
+                    .alignmentGuide(.listRowSeparatorLeading) { dimensions in
+                        dimensions[.leading]
+                    }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button("Remove", systemImage: "trash", role: .destructive) {
+                            showToRemove = show
+                            confirmRemoval = true
+                        }
+                        .disabled(store.busy)
+                    }
             }
         }.navigationTitle("My Shows").refreshable { await store.refresh() }
+            .confirmationDialog("Remove from My Shows?", isPresented: $confirmRemoval, titleVisibility: .visible, presenting: showToRemove) { show in
+                Button("Remove", role: .destructive) {
+                    Task { await store.hide(show) }
+                }
+            } message: { show in
+                Text("Remove \(show.title) from WatchMate? Your Trakt history and watchlist will be kept. You can add it again using +.")
+            }
     }
 }

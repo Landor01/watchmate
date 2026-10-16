@@ -5,17 +5,33 @@ import SwiftData
 struct WatchMateApp: App {
     private let container: ModelContainer
     @State private var store: AppStore
+    @State private var tips = TipStore()
     init() {
         do {
-            let container = try ModelContainer(for: Show.self, Episode.self)
-            self.container = container
-            _store = State(initialValue: AppStore(context: container.mainContext, settings: Settings()))
+            let services = try AppServices.shared()
+            self.container = services.container
+            let store = services.store
+            store.publishWidgetSnapshot()
+            // Preserve the startup experience for people already using the app.
+            if !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding"),
+               !UserDefaults.standard.bool(forKey: "onboardingStarted"),
+               (store.connected && !store.settings.demoMode) || ((try? store.allShows().isEmpty) == false) {
+                UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+            }
+            _store = State(initialValue: store)
         } catch { fatalError("WatchMate could not open its local database: \(error)") }
     }
     var body: some Scene {
         WindowGroup {
-            RootView().environment(store).modelContainer(container).tint(.mint)
-                .task { await store.start() }
+            AppEntryView().environment(store).modelContainer(container)
+                .modifier(AppAppearanceModifier())
+                .environment(tips)
+                .task { await tips.finishUnfinishedTransactions() }
+                .onOpenURL { url in
+                    if let link = WidgetEpisodeLink(url: url) {
+                        store.widgetEpisodeLink = link
+                    }
+                }
         }
     }
 }

@@ -17,7 +17,7 @@ final class TraktAuth: NSObject, ASWebAuthenticationPresentationContextProviding
     private var session: ASWebAuthenticationSession?
     private var refreshTask: Task<OAuthTokens, Error>?
     var connected: Bool { Keychain.read("trakt.tokens") != nil }
-    var clientID: String { Keychain.string("trakt.clientID") }
+    var clientID: String { Configuration.traktClientID }
 
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
         let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
@@ -32,7 +32,7 @@ final class TraktAuth: NSObject, ASWebAuthenticationPresentationContextProviding
     }
     func signIn() async throws {
         guard !clientID.isEmpty && Configuration.callbackConfigured else {
-            throw APIError.message("Add your Trakt client ID and configure your HTTPS callback first. See the setup guide.")
+            throw APIError.message("Trakt sign-in is unavailable in this version of WatchMate. Please contact support.")
         }
         guard session == nil else { throw APIError.message("Sign-in is already in progress.") }
         let verifier = try randomString(), state = try randomString()

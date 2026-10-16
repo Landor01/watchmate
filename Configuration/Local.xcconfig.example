@@ -3,3 +3,7 @@ OAUTH_HOST = auth.your-domain.example
 DEVELOPMENT_TEAM = YOUR_APPLE_TEAM_ID
 CODE_SIGN_ENTITLEMENTS = WatchMate/WatchMate.entitlements
 // Set the app target's bundle identifier in Xcode as well.
+
+// App credentials embedded in every build. Never add a Trakt client secret.
+TRAKT_CLIENT_ID =
+TMDB_READ_ACCESS_TOKEN =

@@ -1,4 +1,6 @@
 // Local.xcconfig is deliberately excluded from Git.
 OAUTH_HOST = example.invalid
+TRAKT_CLIENT_ID =
+TMDB_READ_ACCESS_TOKEN =
 CODE_SIGN_ENTITLEMENTS =
 #include? "Local.xcconfig"

@@ -3,31 +3,59 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		162F4FF742B833CF527DFE05 /* EpisodeRulesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FB02352EF4F8E2D71114EF /* EpisodeRulesTests.swift */; };
-		1A51C207E31750744E3BE5B2 /* Views/SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43919EBF0801FCDE1CB8B9B6 /* Views/SearchView.swift */; };
-		2598EE02638D60E1A65086EA /* Views/SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8A0A99D2C2F1A4A5B2D120A /* Views/SettingsView.swift */; };
-		2B2D8A727500A0FF8DB22401 /* Views/RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F4B7AEC72E6FC332C0AFB6D /* Views/RootView.swift */; };
-		2F2EA2352A80F0173FDF3530 /* Services/Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB300F21C584734D1430D367 /* Services/Notifications.swift */; };
-		3E326800C84DBE53E116482E /* Services/HTTP.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33BEC4DFE192EFD7108703D9 /* Services/HTTP.swift */; };
-		3F873DE132C8C0B41E228ED0 /* Services/TMDBService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F503BFDD7F59B2193EA96385 /* Services/TMDBService.swift */; };
-		463C8A3596FE6ED5E96A5954 /* Models/Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57976B484DECB7004B959FAC /* Models/Models.swift */; };
-		5B1C78E91039DD577E26FCF0 /* Support/Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9085691E67096E53A32080E3 /* Support/Keychain.swift */; };
 		64D6E73FCD49866D06D2482D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 0EE1E90C5C4AEA2FF8D2A125 /* PrivacyInfo.xcprivacy */; };
 		67860262FAAC8F40D30B9064 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A7AE616FDA1B489B228DC162 /* Assets.xcassets */; };
-		72628838C4C4BB1F2BCDDF8A /* Services/TraktAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61409427C699B984DC7910AD /* Services/TraktAuth.swift */; };
-		8C1DA9181713B16062F59E38 /* Views/ShowDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA9022F687AB7BC56F5AA0C0 /* Views/ShowDetailView.swift */; };
-		A81FDE9A850CB98552B5C68D /* Views/UpNextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00E167B0832C9923CDDDF0F /* Views/UpNextView.swift */; };
+		C34073EB307A217200957700 /* HTTP.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34073DC307A217200957700 /* HTTP.swift */; };
+		C34073EC307A217200957700 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34073E2307A217200957700 /* Keychain.swift */; };
+		C34073ED307A217200957700 /* TraktService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34073E0307A217200957700 /* TraktService.swift */; };
+		C34073EE307A217200957700 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34073E6307A217200957700 /* SearchView.swift */; };
+		C34073EF307A217200957700 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34073E5307A217200957700 /* RootView.swift */; };
+		C34073F0307A217200957700 /* TMDBService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34073DE307A217200957700 /* TMDBService.swift */; };
+		C34073F1307A217200957700 /* UpNextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34073E9307A217200957700 /* UpNextView.swift */; };
+		C34073F2307A217200957700 /* ShowDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34073E8307A217200957700 /* ShowDetailView.swift */; };
+		C34073F3307A217200957700 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34073E7307A217200957700 /* SettingsView.swift */; };
+		C34073F4307A217200957700 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34073D9307A217200957700 /* Models.swift */; };
+		C34073F5307A217200957700 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34073E3307A217200957700 /* Settings.swift */; };
+		C34073F6307A217200957700 /* TraktAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34073DF307A217200957700 /* TraktAuth.swift */; };
+		C34073F7307A217200957700 /* Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34073DD307A217200957700 /* Notifications.swift */; };
+		C34073F8307A217200957700 /* AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34073DB307A217200957700 /* AppStore.swift */; };
+		C3407486307E450600957700 /* EpisodeDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3407485307E450600957700 /* EpisodeDetailView.swift */; };
+		C3407488307E461D00957700 /* CloudSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3407487307E461D00957700 /* CloudSync.swift */; };
+		C340748A307E46DB00957700 /* CloudSyncTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3407489307E46DB00957700 /* CloudSyncTests.swift */; };
+		C340748C307E6FBC00957700 /* TipStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C340748B307E6FBC00957700 /* TipStore.swift */; };
+		C340748E307E6FBC00957700 /* CoffeeTipSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C340748D307E6FBC00957700 /* CoffeeTipSection.swift */; };
+		C39EB388307FB83C005923E9 /* ProfilePhotoSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C39EB387307FB83C005923E9 /* ProfilePhotoSection.swift */; };
+		C39EB38A307FBD15005923E9 /* ComingSoonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C39EB389307FBD15005923E9 /* ComingSoonView.swift */; };
+		C39EB38C307FBFAD005923E9 /* EpisodeArtworkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C39EB38B307FBFAD005923E9 /* EpisodeArtworkView.swift */; };
+		C39EB38E307FC30A005923E9 /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C39EB38D307FC30A005923E9 /* AppTheme.swift */; };
+		C39EB3903080F3EF005923E9 /* WatchMate.icon in Resources */ = {isa = PBXBuildFile; fileRef = C39EB38F3080F3EF005923E9 /* WatchMate.icon */; };
+		C39EB3923080FB51005923E9 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C39EB3913080FB51005923E9 /* OnboardingView.swift */; };
+		C39EB3943080FBF8005923E9 /* WhatsNewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C39EB3933080FBF8005923E9 /* WhatsNewView.swift */; };
+		C39EB39630810CD4005923E9 /* StreamingRegionPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = C39EB39530810CD4005923E9 /* StreamingRegionPicker.swift */; };
+		C39EB39830810E86005923E9 /* StreamingServicesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C39EB39730810E86005923E9 /* StreamingServicesView.swift */; };
+		C39EB3A03081F0F5005923E9 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C39EB39F3081F0F5005923E9 /* WidgetKit.framework */; };
+		C39EB3A23081F0F5005923E9 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C39EB3A13081F0F5005923E9 /* SwiftUI.framework */; };
+		C39EB3AF3081F0F6005923E9 /* WatchMateWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C39EB39D3081F0F5005923E9 /* WatchMateWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C39EB3B73081F185005923E9 /* WidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = C39EB3B63081F185005923E9 /* WidgetShared.swift */; };
+		C39EB3BB3081F185005923E9 /* AppServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = C39EB3BA3081F185005923E9 /* AppServices.swift */; };
+		C39EB3BD3081F26D005923E9 /* HelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C39EB3BC3081F26D005923E9 /* HelpView.swift */; };
+		C39EB3C13081F329005923E9 /* WidgetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C39EB3C03081F329005923E9 /* WidgetTests.swift */; };
 		D0E9BA09D5C348F7E4D7B604 /* WatchMateApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B8B7D2C35ADA798366B316 /* WatchMateApp.swift */; };
-		D834B843137E69BAA72C11E0 /* Support/Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F0623C83C971DDA964E1C91 /* Support/Settings.swift */; };
-		E3AF2C55741CD8C5390D4F99 /* Services/AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64D2459121925EA2803D8968 /* Services/AppStore.swift */; };
-		F34AFFECFD1959AE3999051A /* Services/TraktService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 548A697AEF311701C54F765F /* Services/TraktService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		C39EB3AD3081F0F6005923E9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 98F54143AB4E86B28C3AFEE0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C39EB39C3081F0F5005923E9;
+			remoteInfo = WatchMateWidgetExtension;
+		};
 		D799BAE6088A90139B415FCC /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 98F54143AB4E86B28C3AFEE0 /* Project object */;
@@ -37,31 +65,82 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		C39EB3B43081F0F6005923E9 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				C39EB3AF3081F0F6005923E9 /* WatchMateWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		0EE1E90C5C4AEA2FF8D2A125 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		1F4B7AEC72E6FC332C0AFB6D /* Views/RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/RootView.swift; sourceTree = "<group>"; };
 		3196C2D2EAC35E17C980BB80 /* WatchMate.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WatchMate.entitlements; sourceTree = "<group>"; };
-		33BEC4DFE192EFD7108703D9 /* Services/HTTP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/HTTP.swift; sourceTree = "<group>"; };
-		43919EBF0801FCDE1CB8B9B6 /* Views/SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/SearchView.swift; sourceTree = "<group>"; };
 		47A7F57E33A200FD7F90886A /* WatchMate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WatchMate.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		4F0623C83C971DDA964E1C91 /* Support/Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support/Settings.swift; sourceTree = "<group>"; };
 		4F4F102FCA65F9ED71FF36F9 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
-		548A697AEF311701C54F765F /* Services/TraktService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/TraktService.swift; sourceTree = "<group>"; };
-		57976B484DECB7004B959FAC /* Models/Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/Models.swift; sourceTree = "<group>"; };
-		61409427C699B984DC7910AD /* Services/TraktAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/TraktAuth.swift; sourceTree = "<group>"; };
-		64D2459121925EA2803D8968 /* Services/AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/AppStore.swift; sourceTree = "<group>"; };
 		7FFE5E16CB7AF58727B1BE6B /* WatchMateTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WatchMateTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		84FB02352EF4F8E2D71114EF /* EpisodeRulesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EpisodeRulesTests.swift; sourceTree = "<group>"; };
 		87B8B7D2C35ADA798366B316 /* WatchMateApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchMateApp.swift; sourceTree = "<group>"; };
-		9085691E67096E53A32080E3 /* Support/Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Support/Keychain.swift; sourceTree = "<group>"; };
 		A7AE616FDA1B489B228DC162 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		AA9022F687AB7BC56F5AA0C0 /* Views/ShowDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/ShowDetailView.swift; sourceTree = "<group>"; };
-		B00E167B0832C9923CDDDF0F /* Views/UpNextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/UpNextView.swift; sourceTree = "<group>"; };
+		C34073D9307A217200957700 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		C34073DB307A217200957700 /* AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStore.swift; sourceTree = "<group>"; };
+		C34073DC307A217200957700 /* HTTP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTP.swift; sourceTree = "<group>"; };
+		C34073DD307A217200957700 /* Notifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notifications.swift; sourceTree = "<group>"; };
+		C34073DE307A217200957700 /* TMDBService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TMDBService.swift; sourceTree = "<group>"; };
+		C34073DF307A217200957700 /* TraktAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TraktAuth.swift; sourceTree = "<group>"; };
+		C34073E0307A217200957700 /* TraktService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TraktService.swift; sourceTree = "<group>"; };
+		C34073E2307A217200957700 /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
+		C34073E3307A217200957700 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
+		C34073E5307A217200957700 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		C34073E6307A217200957700 /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
+		C34073E7307A217200957700 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		C34073E8307A217200957700 /* ShowDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowDetailView.swift; sourceTree = "<group>"; };
+		C34073E9307A217200957700 /* UpNextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpNextView.swift; sourceTree = "<group>"; };
+		C3407485307E450600957700 /* EpisodeDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EpisodeDetailView.swift; sourceTree = "<group>"; };
+		C3407487307E461D00957700 /* CloudSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSync.swift; sourceTree = "<group>"; };
+		C3407489307E46DB00957700 /* CloudSyncTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSyncTests.swift; sourceTree = "<group>"; };
+		C340748B307E6FBC00957700 /* TipStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TipStore.swift; sourceTree = "<group>"; };
+		C340748D307E6FBC00957700 /* CoffeeTipSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoffeeTipSection.swift; sourceTree = "<group>"; };
+		C340748F307E6FFE00957700 /* CoffeeTips.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = CoffeeTips.storekit; sourceTree = "<group>"; };
+		C39EB387307FB83C005923E9 /* ProfilePhotoSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilePhotoSection.swift; sourceTree = "<group>"; };
+		C39EB389307FBD15005923E9 /* ComingSoonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComingSoonView.swift; sourceTree = "<group>"; };
+		C39EB38B307FBFAD005923E9 /* EpisodeArtworkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EpisodeArtworkView.swift; sourceTree = "<group>"; };
+		C39EB38D307FC30A005923E9 /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		C39EB38F3080F3EF005923E9 /* WatchMate.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = WatchMate.icon; sourceTree = "<group>"; };
+		C39EB3913080FB51005923E9 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		C39EB3933080FBF8005923E9 /* WhatsNewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewView.swift; sourceTree = "<group>"; };
+		C39EB39530810CD4005923E9 /* StreamingRegionPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingRegionPicker.swift; sourceTree = "<group>"; };
+		C39EB39730810E86005923E9 /* StreamingServicesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingServicesView.swift; sourceTree = "<group>"; };
+		C39EB39D3081F0F5005923E9 /* WatchMateWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WatchMateWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C39EB39F3081F0F5005923E9 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = /System/Library/Frameworks/WidgetKit.framework; sourceTree = "<absolute>"; };
+		C39EB3A13081F0F5005923E9 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = /System/Library/Frameworks/SwiftUI.framework; sourceTree = "<absolute>"; };
+		C39EB3B53081F131005923E9 /* WatchMateWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WatchMateWidgetExtension.entitlements; sourceTree = "<group>"; };
+		C39EB3B63081F185005923E9 /* WidgetShared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetShared.swift; sourceTree = "<group>"; };
+		C39EB3BA3081F185005923E9 /* AppServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppServices.swift; sourceTree = "<group>"; };
+		C39EB3BC3081F26D005923E9 /* HelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpView.swift; sourceTree = "<group>"; };
+		C39EB3C03081F329005923E9 /* WidgetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetTests.swift; sourceTree = "<group>"; };
 		CD7002024504104520470147 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		F503BFDD7F59B2193EA96385 /* Services/TMDBService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/TMDBService.swift; sourceTree = "<group>"; };
-		F8A0A99D2C2F1A4A5B2D120A /* Views/SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views/SettingsView.swift; sourceTree = "<group>"; };
-		FB300F21C584734D1430D367 /* Services/Notifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/Notifications.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		C39EB3B03081F0F6005923E9 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C39EB39C3081F0F5005923E9 /* WatchMateWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		C39EB3A33081F0F5005923E9 /* WatchMateWidget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C39EB3B03081F0F6005923E9 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = WatchMateWidget; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		12384B5908BE5FE5B3301CEE /* Frameworks */ = {
@@ -78,31 +157,31 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C39EB39A3081F0F5005923E9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C39EB3A23081F0F5005923E9 /* SwiftUI.framework in Frameworks */,
+				C39EB3A03081F0F5005923E9 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		1BDBD24583AAF7F81F76B976 /* WatchMate */ = {
 			isa = PBXGroup;
 			children = (
-				57976B484DECB7004B959FAC /* Models/Models.swift */,
-				64D2459121925EA2803D8968 /* Services/AppStore.swift */,
-				33BEC4DFE192EFD7108703D9 /* Services/HTTP.swift */,
-				FB300F21C584734D1430D367 /* Services/Notifications.swift */,
-				F503BFDD7F59B2193EA96385 /* Services/TMDBService.swift */,
-				61409427C699B984DC7910AD /* Services/TraktAuth.swift */,
-				548A697AEF311701C54F765F /* Services/TraktService.swift */,
-				9085691E67096E53A32080E3 /* Support/Keychain.swift */,
-				4F0623C83C971DDA964E1C91 /* Support/Settings.swift */,
-				1F4B7AEC72E6FC332C0AFB6D /* Views/RootView.swift */,
-				43919EBF0801FCDE1CB8B9B6 /* Views/SearchView.swift */,
-				F8A0A99D2C2F1A4A5B2D120A /* Views/SettingsView.swift */,
-				AA9022F687AB7BC56F5AA0C0 /* Views/ShowDetailView.swift */,
-				B00E167B0832C9923CDDDF0F /* Views/UpNextView.swift */,
+				C34073DA307A217200957700 /* Models */,
+				C34073E1307A217200957700 /* Services */,
+				C34073E4307A217200957700 /* Support */,
+				C34073EA307A217200957700 /* Views */,
 				87B8B7D2C35ADA798366B316 /* WatchMateApp.swift */,
 				A7AE616FDA1B489B228DC162 /* Assets.xcassets */,
 				0EE1E90C5C4AEA2FF8D2A125 /* PrivacyInfo.xcprivacy */,
 				CD7002024504104520470147 /* Info.plist */,
 				3196C2D2EAC35E17C980BB80 /* WatchMate.entitlements */,
+				C39EB38F3080F3EF005923E9 /* WatchMate.icon */,
 			);
 			path = WatchMate;
 			sourceTree = "<group>";
@@ -111,6 +190,7 @@
 			isa = PBXGroup;
 			children = (
 				4F4F102FCA65F9ED71FF36F9 /* Base.xcconfig */,
+				C340748F307E6FFE00957700 /* CoffeeTips.storekit */,
 			);
 			path = Configuration;
 			sourceTree = "<group>";
@@ -119,16 +199,87 @@
 			isa = PBXGroup;
 			children = (
 				84FB02352EF4F8E2D71114EF /* EpisodeRulesTests.swift */,
+				C3407489307E46DB00957700 /* CloudSyncTests.swift */,
+				C39EB3C03081F329005923E9 /* WidgetTests.swift */,
 			);
 			path = WatchMateTests;
+			sourceTree = "<group>";
+		};
+		C34073DA307A217200957700 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				C34073D9307A217200957700 /* Models.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		C34073E1307A217200957700 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				C34073DB307A217200957700 /* AppStore.swift */,
+				C34073DC307A217200957700 /* HTTP.swift */,
+				C34073DD307A217200957700 /* Notifications.swift */,
+				C34073DE307A217200957700 /* TMDBService.swift */,
+				C34073DF307A217200957700 /* TraktAuth.swift */,
+				C34073E0307A217200957700 /* TraktService.swift */,
+				C3407487307E461D00957700 /* CloudSync.swift */,
+				C340748B307E6FBC00957700 /* TipStore.swift */,
+				C39EB3BA3081F185005923E9 /* AppServices.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		C34073E4307A217200957700 /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				C34073E2307A217200957700 /* Keychain.swift */,
+				C34073E3307A217200957700 /* Settings.swift */,
+				C39EB38D307FC30A005923E9 /* AppTheme.swift */,
+				C39EB3B63081F185005923E9 /* WidgetShared.swift */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
+		C34073EA307A217200957700 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				C34073E5307A217200957700 /* RootView.swift */,
+				C34073E6307A217200957700 /* SearchView.swift */,
+				C34073E7307A217200957700 /* SettingsView.swift */,
+				C34073E8307A217200957700 /* ShowDetailView.swift */,
+				C34073E9307A217200957700 /* UpNextView.swift */,
+				C3407485307E450600957700 /* EpisodeDetailView.swift */,
+				C340748D307E6FBC00957700 /* CoffeeTipSection.swift */,
+				C39EB387307FB83C005923E9 /* ProfilePhotoSection.swift */,
+				C39EB389307FBD15005923E9 /* ComingSoonView.swift */,
+				C39EB38B307FBFAD005923E9 /* EpisodeArtworkView.swift */,
+				C39EB3913080FB51005923E9 /* OnboardingView.swift */,
+				C39EB3933080FBF8005923E9 /* WhatsNewView.swift */,
+				C39EB39530810CD4005923E9 /* StreamingRegionPicker.swift */,
+				C39EB39730810E86005923E9 /* StreamingServicesView.swift */,
+				C39EB3BC3081F26D005923E9 /* HelpView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		C39EB39E3081F0F5005923E9 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				C39EB39F3081F0F5005923E9 /* WidgetKit.framework */,
+				C39EB3A13081F0F5005923E9 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		E50290A24C49A459B43487C5 = {
 			isa = PBXGroup;
 			children = (
+				C39EB3B53081F131005923E9 /* WatchMateWidgetExtension.entitlements */,
 				1BDBD24583AAF7F81F76B976 /* WatchMate */,
 				BFC937463906E5DB7A02A37C /* WatchMateTests */,
 				8C3CAE929B92155BEC14CDAB /* Configuration */,
+				C39EB3A33081F0F5005923E9 /* WatchMateWidget */,
+				C39EB39E3081F0F5005923E9 /* Frameworks */,
 				FBDC4F23F93125BBEEAE800C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -138,6 +289,7 @@
 			children = (
 				47A7F57E33A200FD7F90886A /* WatchMate.app */,
 				7FFE5E16CB7AF58727B1BE6B /* WatchMateTests.xctest */,
+				C39EB39D3081F0F5005923E9 /* WatchMateWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -167,18 +319,43 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8A8642C6B28662881237D956 /* Build configuration list for PBXNativeTarget "WatchMate" */;
 			buildPhases = (
+				A1B2C3D4E5F607182930ABCD /* Validate app configuration */,
 				2D764CD838DB39F040AA7EC4 /* Sources */,
 				12384B5908BE5FE5B3301CEE /* Frameworks */,
 				06F5DC629BD46AAFD46564D1 /* Resources */,
+				C39EB3B43081F0F6005923E9 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				C39EB3AE3081F0F6005923E9 /* PBXTargetDependency */,
 			);
 			name = WatchMate;
 			productName = WatchMate;
 			productReference = 47A7F57E33A200FD7F90886A /* WatchMate.app */;
 			productType = "com.apple.product-type.application";
+		};
+		C39EB39C3081F0F5005923E9 /* WatchMateWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C39EB3B13081F0F6005923E9 /* Build configuration list for PBXNativeTarget "WatchMateWidgetExtension" */;
+			buildPhases = (
+				C39EB3993081F0F5005923E9 /* Sources */,
+				C39EB39A3081F0F5005923E9 /* Frameworks */,
+				C39EB39B3081F0F5005923E9 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				C39EB3A33081F0F5005923E9 /* WatchMateWidget */,
+			);
+			name = WatchMateWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = WatchMateWidgetExtension;
+			productReference = C39EB39D3081F0F5005923E9 /* WatchMateWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -187,7 +364,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1600;
+				LastSwiftUpdateCheck = 2710;
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					64BCB755386F844C96A2A5B0 = {
@@ -196,6 +373,9 @@
 					};
 					C13732C8E715C9BEE4FA51C9 = {
 						CreatedOnToolsVersion = 16.0;
+					};
+					C39EB39C3081F0F5005923E9 = {
+						CreatedOnToolsVersion = 27.1;
 					};
 				};
 			};
@@ -214,6 +394,7 @@
 			targets = (
 				C13732C8E715C9BEE4FA51C9 /* WatchMate */,
 				64BCB755386F844C96A2A5B0 /* WatchMateTests */,
+				C39EB39C3081F0F5005923E9 /* WatchMateWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -223,8 +404,16 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C39EB3903080F3EF005923E9 /* WatchMate.icon in Resources */,
 				67860262FAAC8F40D30B9064 /* Assets.xcassets in Resources */,
 				64D6E73FCD49866D06D2482D /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C39EB39B3081F0F5005923E9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -237,26 +426,60 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		A1B2C3D4E5F607182930ABCD /* Validate app configuration */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Validate app configuration";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"$CONFIGURATION\" != \"Release\" ]; then exit 0; fi\nmissing=0\nfor key in TRAKT_CLIENT_ID TMDB_READ_ACCESS_TOKEN OAUTH_HOST; do\n    value=$(/usr/bin/printenv \"$key\")\n    case \"$value\" in\n        \"\"|*'$('*|*example*|*YOUR_*)\n            echo \"error: Configure $key in Configuration/Local.xcconfig or CI build settings before distributing WatchMate.\"\n            missing=1\n            ;;\n    esac\ndone\nexit \"$missing\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		2D764CD838DB39F040AA7EC4 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				463C8A3596FE6ED5E96A5954 /* Models/Models.swift in Sources */,
-				E3AF2C55741CD8C5390D4F99 /* Services/AppStore.swift in Sources */,
-				3E326800C84DBE53E116482E /* Services/HTTP.swift in Sources */,
-				2F2EA2352A80F0173FDF3530 /* Services/Notifications.swift in Sources */,
-				3F873DE132C8C0B41E228ED0 /* Services/TMDBService.swift in Sources */,
-				72628838C4C4BB1F2BCDDF8A /* Services/TraktAuth.swift in Sources */,
-				F34AFFECFD1959AE3999051A /* Services/TraktService.swift in Sources */,
-				5B1C78E91039DD577E26FCF0 /* Support/Keychain.swift in Sources */,
-				D834B843137E69BAA72C11E0 /* Support/Settings.swift in Sources */,
-				2B2D8A727500A0FF8DB22401 /* Views/RootView.swift in Sources */,
-				1A51C207E31750744E3BE5B2 /* Views/SearchView.swift in Sources */,
-				2598EE02638D60E1A65086EA /* Views/SettingsView.swift in Sources */,
-				8C1DA9181713B16062F59E38 /* Views/ShowDetailView.swift in Sources */,
-				A81FDE9A850CB98552B5C68D /* Views/UpNextView.swift in Sources */,
 				D0E9BA09D5C348F7E4D7B604 /* WatchMateApp.swift in Sources */,
+				C34073EB307A217200957700 /* HTTP.swift in Sources */,
+				C34073EC307A217200957700 /* Keychain.swift in Sources */,
+				C34073ED307A217200957700 /* TraktService.swift in Sources */,
+				C39EB3B73081F185005923E9 /* WidgetShared.swift in Sources */,
+				C39EB388307FB83C005923E9 /* ProfilePhotoSection.swift in Sources */,
+				C34073EE307A217200957700 /* SearchView.swift in Sources */,
+				C34073EF307A217200957700 /* RootView.swift in Sources */,
+				C39EB38C307FBFAD005923E9 /* EpisodeArtworkView.swift in Sources */,
+				C34073F0307A217200957700 /* TMDBService.swift in Sources */,
+				C39EB3BB3081F185005923E9 /* AppServices.swift in Sources */,
+				C34073F1307A217200957700 /* UpNextView.swift in Sources */,
+				C34073F2307A217200957700 /* ShowDetailView.swift in Sources */,
+				C39EB3BD3081F26D005923E9 /* HelpView.swift in Sources */,
+				C39EB3943080FBF8005923E9 /* WhatsNewView.swift in Sources */,
+				C39EB39830810E86005923E9 /* StreamingServicesView.swift in Sources */,
+				C39EB38A307FBD15005923E9 /* ComingSoonView.swift in Sources */,
+				C3407486307E450600957700 /* EpisodeDetailView.swift in Sources */,
+				C34073F3307A217200957700 /* SettingsView.swift in Sources */,
+				C340748C307E6FBC00957700 /* TipStore.swift in Sources */,
+				C39EB38E307FC30A005923E9 /* AppTheme.swift in Sources */,
+				C34073F4307A217200957700 /* Models.swift in Sources */,
+				C34073F5307A217200957700 /* Settings.swift in Sources */,
+				C34073F6307A217200957700 /* TraktAuth.swift in Sources */,
+				C34073F7307A217200957700 /* Notifications.swift in Sources */,
+				C340748E307E6FBC00957700 /* CoffeeTipSection.swift in Sources */,
+				C39EB39630810CD4005923E9 /* StreamingRegionPicker.swift in Sources */,
+				C39EB3923080FB51005923E9 /* OnboardingView.swift in Sources */,
+				C34073F8307A217200957700 /* AppStore.swift in Sources */,
+				C3407488307E461D00957700 /* CloudSync.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -264,13 +487,27 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C340748A307E46DB00957700 /* CloudSyncTests.swift in Sources */,
+				C39EB3C13081F329005923E9 /* WidgetTests.swift in Sources */,
 				162F4FF742B833CF527DFE05 /* EpisodeRulesTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C39EB3993081F0F5005923E9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		C39EB3AE3081F0F6005923E9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C39EB39C3081F0F5005923E9 /* WatchMateWidgetExtension */;
+			targetProxy = C39EB3AD3081F0F6005923E9 /* PBXContainerItemProxy */;
+		};
 		DE58E2B17C19600779694943 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = C13732C8E715C9BEE4FA51C9 /* WatchMate */;
@@ -283,10 +520,11 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 4F4F102FCA65F9ED71FF36F9 /* Base.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = WatchMate;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = WatchMate/WatchMate.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 76XP2MF734;
 				ENABLE_PREVIEWS = YES;
@@ -299,12 +537,13 @@
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.andrewroland.WatchMate;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -374,8 +613,128 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WatchMate.app/WatchMate";
+			};
+			name = Release;
+		};
+		C39EB3B23081F0F6005923E9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = WatchMateWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = 76XP2MF734;
+				ENABLE_APP_SANDBOX = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WatchMateWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = WatchMateWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = net.andrewroland.WatchMate.WatchMateWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) WIDGET_EXTENSION";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				XROS_DEPLOYMENT_TARGET = 27.0;
+			};
+			name = Debug;
+		};
+		C39EB3B33081F0F6005923E9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = WatchMateWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = 76XP2MF734;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WatchMateWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = WatchMateWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = net.andrewroland.WatchMate.WatchMateWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) WIDGET_EXTENSION";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				XROS_DEPLOYMENT_TARGET = 27.0;
 			};
 			name = Release;
 		};
@@ -429,10 +788,11 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 4F4F102FCA65F9ED71FF36F9 /* Base.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = WatchMate;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = WatchMate/WatchMate.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 76XP2MF734;
 				ENABLE_PREVIEWS = YES;
@@ -446,12 +806,13 @@
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.andrewroland.WatchMate;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -473,7 +834,7 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WatchMate.app/WatchMate";
 			};
 			name = Debug;
@@ -504,6 +865,15 @@
 			buildConfigurations = (
 				E9B2E96ABC5F6856F2BE79CF /* Debug */,
 				5A8C91857F674E16E2724F47 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C39EB3B13081F0F6005923E9 /* Build configuration list for PBXNativeTarget "WatchMateWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C39EB3B23081F0F6005923E9 /* Debug */,
+				C39EB3B33081F0F6005923E9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -2,17 +2,101 @@ import Foundation
 
 @MainActor
 final class TMDBService: CatalogueService {
-    var configured: Bool { !Keychain.string("tmdb.token").isEmpty }
+    var configured: Bool { !Configuration.tmdbReadAccessToken.isEmpty }
     private func get<T: Decodable & Sendable>(_ path: String, query: [URLQueryItem] = [], type: T.Type) async throws -> T {
-        let token = Keychain.string("tmdb.token")
-        guard !token.isEmpty else { throw APIError.message("Add your TMDB API Read Access Token in Settings.") }
+        let token = Configuration.tmdbReadAccessToken
+        guard !token.isEmpty else { throw APIError.message("Show information is unavailable in this version of WatchMate. Please contact support.") }
         var components = URLComponents(string: "https://api.themoviedb.org/3/\(path)")!
         components.queryItems = query
         var request = URLRequest(url: components.url!)
         request.httpMethod = "GET"; request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        return try await HTTP.decode(type, request: request)
+        do {
+            return try await HTTP.decode(type, request: request)
+        } catch APIError.http(401, _) {
+            throw APIError.message("Artwork and show information are unavailable because the TMDB credential is invalid.")
+        }
     }
-    private struct TVDetails: Decodable { let overview: String?; let posterPath: String? }
+    #if DEBUG
+    func testConnection() async throws -> String {
+        // Make a fresh request rather than using the poster cache.
+        _ = try await get("tv/1399", type: TVDetails.self)
+        return "Connected. TMDB token is valid."
+    }
+    #endif
+
+    private var posterCache: [Int: String] = [:]
+
+    func posterPath(tmdbID: Int) async throws -> String? {
+        if let cached = posterCache[tmdbID] { return cached.isEmpty ? nil : cached }
+        let details = try await get("tv/\(tmdbID)", type: TVDetails.self)
+        try Task.checkCancellation()
+        posterCache[tmdbID] = details.posterPath ?? ""
+        return details.posterPath
+    }
+
+    private struct TVDetails: Decodable {
+        let overview: String?
+        let posterPath: String?
+        let seasons: [SeasonArtwork]?
+    }
+    private struct SeasonArtwork: Decodable {
+        let seasonNumber: Int
+        let posterPath: String?
+    }
+
+    func seasonPosters(tmdbID: Int) async throws -> [Int: String] {
+        let details = try await get("tv/\(tmdbID)", type: TVDetails.self)
+        var posters: [Int: String] = [:]
+        for season in details.seasons ?? [] {
+            posters[season.seasonNumber] = season.posterPath
+        }
+        return posters
+    }
+    private struct SeasonDetails: Decodable, Sendable {
+        struct EpisodeArtwork: Decodable, Sendable {
+            let episodeNumber: Int
+            let stillPath: String?
+        }
+        let posterPath: String?
+        let episodes: [EpisodeArtwork]
+    }
+    private var seasonArtworkCache: [String: (date: Date, details: SeasonDetails)] = [:]
+    private var seasonArtworkRequests: [String: Task<SeasonDetails, Error>] = [:]
+
+    func episodeArtwork(tmdbID: Int, season: Int, episode: Int) async throws -> [String] {
+        let key = "\(tmdbID):\(season)"
+        let details: SeasonDetails
+        if let cached = seasonArtworkCache[key], Date().timeIntervalSince(cached.date) < 3600 {
+            details = cached.details
+        } else if let request = seasonArtworkRequests[key] {
+            details = try await request.value
+        } else {
+            // Share one season request across all episode rows, including concurrent appearances.
+            let request = Task {
+                try await self.get("tv/\(tmdbID)/season/\(season)", type: SeasonDetails.self)
+            }
+            seasonArtworkRequests[key] = request
+            defer { seasonArtworkRequests[key] = nil }
+            details = try await request.value
+            seasonArtworkCache[key] = (Date(), details)
+        }
+        return [details.episodes.first { $0.episodeNumber == episode }?.stillPath, details.posterPath]
+            .compactMap { $0 }
+    }
+
+    private struct WatchRegionResults: Decodable {
+        struct Region: Decodable {
+            // HTTP.decoder converts TMDB's iso_3166_1 key to iso31661.
+            let iso31661: String
+        }
+        let results: [Region]
+    }
+
+    func availableRegions() async throws -> [String] {
+        let response = try await get("watch/providers/regions", type: WatchRegionResults.self)
+        return Array(Set(response.results.map(\.iso31661))).sorted()
+    }
+
     private struct WatchProvider: Decodable { let providerId: Int; let providerName: String }
     private struct Country: Decodable {
         let link: String?

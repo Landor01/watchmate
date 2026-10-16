@@ -81,6 +81,10 @@ enum EpisodeRules {
 }
 
 extension Episode {
+    var isScheduledInFuture: Bool {
+        firstAired.map { $0 > Date() } ?? false
+    }
+
     var state: EpisodeState {
         EpisodeState(season: season, number: number, firstAired: firstAired,
                      watched: watchedAt != nil, skipped: isSkipped)
