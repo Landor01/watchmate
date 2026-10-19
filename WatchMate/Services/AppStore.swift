@@ -10,6 +10,8 @@ final class AppStore {
     let auth: TraktAuth
     let catalogue = TMDBService()
     let cloud = CloudSync()
+    let sharedShows = SharedShows()
+    let sharedHistoryImport = SharedHistoryImport()
     private var applyingCloudChanges = false
     private var widgetArtworkTask: Task<Void, Never>?
     private var cloudTask: Task<Void, Never>?
@@ -46,20 +48,14 @@ final class AppStore {
         let states = EpisodeRules.upcoming(show.episodes.map(\.state), now: Date(), includeSpecials: settings.includeSpecials)
         return states.compactMap { state in show.episodes.first { $0.season == state.season && $0.number == state.number } }
     }
-    func passesServiceFilter(_ show: Show) -> Bool {
-        !settings.onlyMyServices || settings.selectedProviders.isEmpty || matchesServices(show)
-    }
-
-    func matchesServices(_ show: Show) -> Bool {
-        show.providerRegion == settings.region &&
-            show.providers.contains { settings.selectedProviders.contains($0.id) }
-    }
     func start() async {
         defer { publishWidgetSnapshot() }
         guard !busy else { return }
         if settings.demoMode {
             do { if try allShows().isEmpty { try seedDemo() } } catch { errorMessage = error.localizedDescription }
         } else if connected {
+            sharedShows.activate(accountID: settings.traktAccountID)
+            await sharedShows.refresh(reportErrors: false, automatic: true)
             await syncCloud(automatic: true)
             let needsCatalogue = (try? allShows().contains { $0.isFollowing && $0.catalogueUpdatedAt == nil }) ?? false
             if needsCatalogue || settings.lastSync == nil || settings.lastSync.map({ Date().timeIntervalSince($0) > 900 }) == true {
@@ -88,6 +84,7 @@ final class AppStore {
                 try clearData()
             }
             settings.traktAccountID = accountID
+            sharedShows.activate(accountID: accountID)
             settings.demoMode = false; connected = true
         } catch {
             if signedIn {
@@ -96,6 +93,7 @@ final class AppStore {
                 connected = false
                 cloud.deactivate()
                 settings.traktAccountID = nil
+                sharedShows.activate(accountID: nil)
             }
             errorMessage = error.localizedDescription
         }
@@ -109,6 +107,7 @@ final class AppStore {
             cloudTask?.cancel()
             cloud.deactivate()
             settings.traktAccountID = nil
+            sharedShows.activate(accountID: nil)
             try auth.disconnect(); connected = false
             try clearData(); settings.demoMode = false
             await reschedule()
@@ -121,6 +120,7 @@ final class AppStore {
             cloudTask?.cancel()
             cloud.deactivate()
             settings.traktAccountID = nil
+            sharedShows.activate(accountID: nil)
             try auth.disconnect(); connected = false
             try clearData(); settings.demoMode = true
             try seedDemo(); await reschedule()
@@ -321,7 +321,7 @@ final class AppStore {
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
         var snapshot: [String: Data] = [
-            "onlyMyServices": try encoder.encode(settings.onlyMyServices),
+            "onlyMyServices": try encoder.encode(settings.highlightAvailableServices),
             "region": try encoder.encode(settings.region),
             "specials": try encoder.encode(settings.includeSpecials),
             "providers": try encoder.encode(settings.selectedProviders.sorted())
@@ -360,7 +360,7 @@ final class AppStore {
             settings.historyRevision = revision
             settings.lastSync = nil
         }
-        if let filter = cloudDecode(Bool.self, key: "onlyMyServices") { settings.onlyMyServices = filter }
+        if let filter = cloudDecode(Bool.self, key: "onlyMyServices") { settings.highlightAvailableServices = filter }
         if let region = cloudDecode(String.self, key: "region") { settings.region = region }
         if let specials = cloudDecode(Bool.self, key: "specials") { settings.includeSpecials = specials }
         if let providers = cloudDecode([Int].self, key: "providers") { settings.selectedProviders = Set(providers) }

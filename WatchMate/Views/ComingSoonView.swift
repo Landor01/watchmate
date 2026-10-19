@@ -9,7 +9,7 @@ struct ComingSoonView: View {
     @State private var selectedDate = Date()
 
     private var scheduledEntries: [ScheduledProgramme] {
-        shows.filter { $0.isFollowing && store.passesServiceFilter($0) }.flatMap { show in
+        shows.filter { $0.isFollowing }.flatMap { show in
             show.episodes.compactMap { episode -> ScheduledProgramme? in
                 guard let date = episode.firstAired, episode.watchedAt == nil, !episode.isSkipped,
                       store.settings.includeSpecials || episode.season > 0 else { return nil }

@@ -12,16 +12,8 @@ struct SearchView: View {
     @State private var message: String?
     @State private var artworkMessage: String?
 
-    private var visibleResults: [RemoteShow] {
-        guard store.settings.onlyMyServices, !store.settings.selectedProviders.isEmpty else { return results }
-        return results.filter { show in
-            details[show.id]?.providers.contains { store.settings.selectedProviders.contains($0.id) } == true
-        }
-    }
-
     var body: some View {
         let addedShowIDs = Set(followedShows.map(\.traktID)).subtracting(store.settings.hiddenShowIDs)
-        let visible = visibleResults
         ThemedList {
             if store.settings.demoMode {
                 ContentUnavailableView("Connect to discover shows", systemImage: "magnifyingglass", description: Text("Search uses Trakt. Connect your account in Settings to add real programmes."))
@@ -32,16 +24,10 @@ struct SearchView: View {
                 if loadingAvailability { ProgressView("Checking streaming availability…") }
                 if let message { Text(message).foregroundStyle(.secondary) }
                 if let artworkMessage { Text(artworkMessage).font(.caption).foregroundStyle(.secondary) }
-                if store.settings.onlyMyServices && !store.settings.selectedProviders.isEmpty {
-                    Text("Filtered to your services. Change this in Settings.")
-                        .font(.caption).foregroundStyle(.secondary)
+                if !searching && !loadingAvailability && results.isEmpty && query.count >= 2 && message == nil {
+                    Text("No shows found.")
                 }
-                if !searching && !loadingAvailability && visible.isEmpty && query.count >= 2 && message == nil {
-                    Text(store.settings.onlyMyServices && !store.settings.selectedProviders.isEmpty
-                         ? "No matching programmes with confirmed availability on your services."
-                         : "No shows found.")
-                }
-                ForEach(visible) { show in
+                ForEach(results) { show in
                     NavigationLink {
                         if let saved = followedShows.first(where: { $0.traktID == show.id && !store.settings.hiddenShowIDs.contains($0.traktID) }) {
                             ShowDetailView(show: saved)
@@ -150,7 +136,7 @@ struct ProgrammeAvailabilityView: View {
                 if details.providers.isEmpty {
                     Text("No streaming services listed in your region.")
                 } else {
-                    Text(details.providers.map(\.name).joined(separator: " · "))
+                    ProviderNamesView(providers: details.providers)
                 }
                 if !store.settings.selectedProviders.isEmpty &&
                     !details.providers.contains(where: { store.settings.selectedProviders.contains($0.id) }) {

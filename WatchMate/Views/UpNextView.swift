@@ -8,7 +8,7 @@ struct UpNextView: View {
 
     private var waitingEntries: [UpNextEntry] {
         shows.compactMap { show in
-            guard show.isFollowing, store.passesServiceFilter(show) else { return nil }
+            guard show.isFollowing else { return nil }
             let episodes = store.waiting(show)
             guard let episode = episodes.first else { return nil }
             return UpNextEntry(show: show, episode: episode, waitingCount: episodes.count)
@@ -36,11 +36,7 @@ struct UpNextView: View {
                 }
             }
             if entries.isEmpty {
-                if store.settings.onlyMyServices {
-                    ContentUnavailableView("No shows on your services", systemImage: "line.3.horizontal.decrease.circle", description: Text("Choose services in Settings or turn off the service filter to see other shows."))
-                } else {
-                    ContentUnavailableView("You're caught up", systemImage: "checkmark.circle", description: Text("Add programmes using + in My Shows, or connect Trakt."))
-                }
+                ContentUnavailableView("You're caught up", systemImage: "checkmark.circle", description: Text("Add programmes using + in My Shows, or connect Trakt."))
             }
             Section {
                 ForEach(entries) { entry in
@@ -48,7 +44,7 @@ struct UpNextView: View {
                         NavigationLink {
                             EpisodeDetailView(episode: entry.episode)
                         } label: {
-                            ShowRow(show: entry.show, episode: entry.episode, onlyMyServices: store.settings.onlyMyServices, squareArtwork: true, showsAiredPrefix: true, squareArtworkSize: 96)
+                            ShowRow(show: entry.show, episode: entry.episode, squareArtwork: true, showsAiredPrefix: true, squareArtworkSize: 96)
                         }
                         HStack {
                             Text("\(entry.waitingCount) to watch").font(.caption.bold()).foregroundStyle(.tint)
@@ -93,21 +89,23 @@ private struct UpNextEntry: Identifiable {
 struct MyShowsView: View {
     @State private var showToRemove: Show?
     @State private var confirmRemoval = false
+    @State private var showToShare: Show?
     @Query(sort: \Show.title) private var shows: [Show]
     @Environment(AppStore.self) private var store
     var body: some View {
+        let personalShows = shows.filter { $0.isFollowing && !store.sharedShows.showIDs.contains($0.traktID) }
         ThemedList {
-            if shows.filter({ $0.isFollowing && store.passesServiceFilter($0) }).isEmpty {
-                if store.settings.onlyMyServices && !store.settings.selectedProviders.isEmpty {
-                    ContentUnavailableView("No shows on your services", systemImage: "tv", description: Text("Change your service filter in Settings to see other programmes."))
-                } else {
-                    ContentUnavailableView("Your shows live here", systemImage: "tv", description: Text("Tap + to find and add programmes, or connect Trakt in Settings to import your history and watchlist."))
-                }
+            if personalShows.isEmpty {
+                ContentUnavailableView("Your shows live here", systemImage: "tv", description: Text("Tap + to find and add programmes, or connect Trakt in Settings to import your history and watchlist."))
             }
-            ForEach(shows.filter { $0.isFollowing && store.passesServiceFilter($0) }) { show in
+            ForEach(personalShows) { show in
                 NavigationLink { ShowDetailView(show: show) } label: { ShowRow(show: show) }
                     .alignmentGuide(.listRowSeparatorLeading) { dimensions in
                         dimensions[.leading]
+                    }
+                    .contextMenu {
+                        Button("Move to Shared Shows", systemImage: "person.2") { showToShare = show }
+                            .disabled(store.busy || store.settings.demoMode || !store.connected)
                     }
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         Button("Remove", systemImage: "trash", role: .destructive) {
@@ -118,6 +116,9 @@ struct MyShowsView: View {
                     }
             }
         }.navigationTitle("My Shows").refreshable { await store.refresh() }
+            .sheet(item: $showToShare) { show in
+                NavigationStack { MoveToSharedListView(show: show) }
+            }
             .confirmationDialog("Remove from My Shows?", isPresented: $confirmRemoval, titleVisibility: .visible, presenting: showToRemove) { show in
                 Button("Remove", role: .destructive) {
                     Task { await store.hide(show) }

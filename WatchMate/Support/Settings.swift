@@ -68,8 +68,8 @@ final class Settings {
     var traktAccountID: String? {
         didSet { UserDefaults.standard.set(traktAccountID, forKey: "traktAccountID") }
     }
-    var onlyMyServices = UserDefaults.standard.bool(forKey: "onlyMyServices") {
-        didSet { UserDefaults.standard.set(onlyMyServices, forKey: "onlyMyServices"); onPreferencesChanged?() }
+    var highlightAvailableServices = UserDefaults.standard.bool(forKey: "onlyMyServices") {
+        didSet { UserDefaults.standard.set(highlightAvailableServices, forKey: "onlyMyServices"); onPreferencesChanged?() }
     }
     var region: String { didSet { UserDefaults.standard.set(region, forKey: "region"); onPreferencesChanged?() } }
     var includeSpecials: Bool { didSet { UserDefaults.standard.set(includeSpecials, forKey: "specials"); onPreferencesChanged?() } }

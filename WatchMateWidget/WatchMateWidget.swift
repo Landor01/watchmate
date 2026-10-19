@@ -100,6 +100,7 @@ struct WatchMateWidgetEntryView: View {
                         Text(message).font(.caption2).foregroundStyle(.secondary).lineLimit(2)
                     }
                     WidgetEpisodeActions(showID: show.id, episodeKey: episode.id, accountScope: entry.accountScope, compact: family == .systemSmall)
+                        .invalidatableContent()
                 } else {
                     Spacer(minLength: 0)
                     Label("You’re all caught up", systemImage: "checkmark.circle")
@@ -186,12 +187,28 @@ private struct WidgetEpisodeDetails: View {
 }
 
 private struct WidgetEpisodeActions: View {
+    @Environment(\.redactionReasons) private var redactionReasons
     let showID: Int
     let episodeKey: String
     let accountScope: String
     var compact = false
 
     var body: some View {
+        Group {
+            if redactionReasons.contains(.invalidated) {
+                Label("Updating…", systemImage: "arrow.triangle.2.circlepath")
+                    .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
+                    .accessibilityLabel("Updating episode. Please wait.")
+                    // Keep the explanation readable instead of applying the default pulsing effect.
+                    .unredacted()
+            } else {
+                actions
+            }
+        }
+        .font(.caption)
+    }
+
+    private var actions: some View {
         HStack {
             Button(intent: MarkWidgetEpisodeWatched(showID: showID, episodeKey: episodeKey, accountScope: accountScope)) {
                 if compact {

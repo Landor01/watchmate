@@ -10,6 +10,18 @@
 		162F4FF742B833CF527DFE05 /* EpisodeRulesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84FB02352EF4F8E2D71114EF /* EpisodeRulesTests.swift */; };
 		64D6E73FCD49866D06D2482D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 0EE1E90C5C4AEA2FF8D2A125 /* PrivacyInfo.xcprivacy */; };
 		67860262FAAC8F40D30B9064 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A7AE616FDA1B489B228DC162 /* Assets.xcassets */; };
+		C32493083086024D00C1848C /* ProviderNamesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32493073086024D00C1848C /* ProviderNamesView.swift */; };
+		C324930A3086049B00C1848C /* SharedShows.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32493093086049B00C1848C /* SharedShows.swift */; };
+		C324930C308604C400C1848C /* SharedHistoryImport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C324930B308604C400C1848C /* SharedHistoryImport.swift */; };
+		C324930E308604C400C1848C /* SharedInvitations.swift in Sources */ = {isa = PBXBuildFile; fileRef = C324930D308604C400C1848C /* SharedInvitations.swift */; };
+		C32493103086054800C1848C /* SharedShowsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C324930F3086054800C1848C /* SharedShowsView.swift */; };
+		C3249312308605EF00C1848C /* SharedHistoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3249311308605EF00C1848C /* SharedHistoryTests.swift */; };
+		C32493143086094300C1848C /* SharedListPhotoSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32493133086094300C1848C /* SharedListPhotoSection.swift */; };
+		C324931630860BA700C1848C /* SharedProgrammeProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = C324931530860BA700C1848C /* SharedProgrammeProgress.swift */; };
+		C324931830860C2600C1848C /* SharedProgrammeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C324931730860C2600C1848C /* SharedProgrammeView.swift */; };
+		C324931A30860C6600C1848C /* SharedProgrammeProgressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C324931930860C6600C1848C /* SharedProgrammeProgressTests.swift */; };
+		C324931C3086516D00C1848C /* SharedShowsCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = C324931B3086516D00C1848C /* SharedShowsCache.swift */; };
+		C324931E308651F000C1848C /* SharedShowsCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C324931D308651F000C1848C /* SharedShowsCacheTests.swift */; };
 		C34073EB307A217200957700 /* HTTP.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34073DC307A217200957700 /* HTTP.swift */; };
 		C34073EC307A217200957700 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34073E2307A217200957700 /* Keychain.swift */; };
 		C34073ED307A217200957700 /* TraktService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34073E0307A217200957700 /* TraktService.swift */; };
@@ -88,6 +100,18 @@
 		84FB02352EF4F8E2D71114EF /* EpisodeRulesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EpisodeRulesTests.swift; sourceTree = "<group>"; };
 		87B8B7D2C35ADA798366B316 /* WatchMateApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchMateApp.swift; sourceTree = "<group>"; };
 		A7AE616FDA1B489B228DC162 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C32493073086024D00C1848C /* ProviderNamesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderNamesView.swift; sourceTree = "<group>"; };
+		C32493093086049B00C1848C /* SharedShows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedShows.swift; sourceTree = "<group>"; };
+		C324930B308604C400C1848C /* SharedHistoryImport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedHistoryImport.swift; sourceTree = "<group>"; };
+		C324930D308604C400C1848C /* SharedInvitations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedInvitations.swift; sourceTree = "<group>"; };
+		C324930F3086054800C1848C /* SharedShowsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedShowsView.swift; sourceTree = "<group>"; };
+		C3249311308605EF00C1848C /* SharedHistoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedHistoryTests.swift; sourceTree = "<group>"; };
+		C32493133086094300C1848C /* SharedListPhotoSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedListPhotoSection.swift; sourceTree = "<group>"; };
+		C324931530860BA700C1848C /* SharedProgrammeProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedProgrammeProgress.swift; sourceTree = "<group>"; };
+		C324931730860C2600C1848C /* SharedProgrammeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedProgrammeView.swift; sourceTree = "<group>"; };
+		C324931930860C6600C1848C /* SharedProgrammeProgressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedProgrammeProgressTests.swift; sourceTree = "<group>"; };
+		C324931B3086516D00C1848C /* SharedShowsCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedShowsCache.swift; sourceTree = "<group>"; };
+		C324931D308651F000C1848C /* SharedShowsCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedShowsCacheTests.swift; sourceTree = "<group>"; };
 		C34073D9307A217200957700 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		C34073DB307A217200957700 /* AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStore.swift; sourceTree = "<group>"; };
 		C34073DC307A217200957700 /* HTTP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTP.swift; sourceTree = "<group>"; };
@@ -201,6 +225,9 @@
 				84FB02352EF4F8E2D71114EF /* EpisodeRulesTests.swift */,
 				C3407489307E46DB00957700 /* CloudSyncTests.swift */,
 				C39EB3C03081F329005923E9 /* WidgetTests.swift */,
+				C3249311308605EF00C1848C /* SharedHistoryTests.swift */,
+				C324931930860C6600C1848C /* SharedProgrammeProgressTests.swift */,
+				C324931D308651F000C1848C /* SharedShowsCacheTests.swift */,
 			);
 			path = WatchMateTests;
 			sourceTree = "<group>";
@@ -209,6 +236,7 @@
 			isa = PBXGroup;
 			children = (
 				C34073D9307A217200957700 /* Models.swift */,
+				C324931530860BA700C1848C /* SharedProgrammeProgress.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -225,6 +253,10 @@
 				C3407487307E461D00957700 /* CloudSync.swift */,
 				C340748B307E6FBC00957700 /* TipStore.swift */,
 				C39EB3BA3081F185005923E9 /* AppServices.swift */,
+				C32493093086049B00C1848C /* SharedShows.swift */,
+				C324930B308604C400C1848C /* SharedHistoryImport.swift */,
+				C324930D308604C400C1848C /* SharedInvitations.swift */,
+				C324931B3086516D00C1848C /* SharedShowsCache.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -258,6 +290,10 @@
 				C39EB39530810CD4005923E9 /* StreamingRegionPicker.swift */,
 				C39EB39730810E86005923E9 /* StreamingServicesView.swift */,
 				C39EB3BC3081F26D005923E9 /* HelpView.swift */,
+				C32493073086024D00C1848C /* ProviderNamesView.swift */,
+				C324930F3086054800C1848C /* SharedShowsView.swift */,
+				C32493133086094300C1848C /* SharedListPhotoSection.swift */,
+				C324931730860C2600C1848C /* SharedProgrammeView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -452,10 +488,12 @@
 			files = (
 				D0E9BA09D5C348F7E4D7B604 /* WatchMateApp.swift in Sources */,
 				C34073EB307A217200957700 /* HTTP.swift in Sources */,
+				C32493083086024D00C1848C /* ProviderNamesView.swift in Sources */,
 				C34073EC307A217200957700 /* Keychain.swift in Sources */,
 				C34073ED307A217200957700 /* TraktService.swift in Sources */,
 				C39EB3B73081F185005923E9 /* WidgetShared.swift in Sources */,
 				C39EB388307FB83C005923E9 /* ProfilePhotoSection.swift in Sources */,
+				C324930E308604C400C1848C /* SharedInvitations.swift in Sources */,
 				C34073EE307A217200957700 /* SearchView.swift in Sources */,
 				C34073EF307A217200957700 /* RootView.swift in Sources */,
 				C39EB38C307FBFAD005923E9 /* EpisodeArtworkView.swift in Sources */,
@@ -464,20 +502,27 @@
 				C34073F1307A217200957700 /* UpNextView.swift in Sources */,
 				C34073F2307A217200957700 /* ShowDetailView.swift in Sources */,
 				C39EB3BD3081F26D005923E9 /* HelpView.swift in Sources */,
+				C324930C308604C400C1848C /* SharedHistoryImport.swift in Sources */,
 				C39EB3943080FBF8005923E9 /* WhatsNewView.swift in Sources */,
 				C39EB39830810E86005923E9 /* StreamingServicesView.swift in Sources */,
 				C39EB38A307FBD15005923E9 /* ComingSoonView.swift in Sources */,
 				C3407486307E450600957700 /* EpisodeDetailView.swift in Sources */,
+				C324931630860BA700C1848C /* SharedProgrammeProgress.swift in Sources */,
 				C34073F3307A217200957700 /* SettingsView.swift in Sources */,
 				C340748C307E6FBC00957700 /* TipStore.swift in Sources */,
 				C39EB38E307FC30A005923E9 /* AppTheme.swift in Sources */,
 				C34073F4307A217200957700 /* Models.swift in Sources */,
+				C324930A3086049B00C1848C /* SharedShows.swift in Sources */,
 				C34073F5307A217200957700 /* Settings.swift in Sources */,
 				C34073F6307A217200957700 /* TraktAuth.swift in Sources */,
+				C324931C3086516D00C1848C /* SharedShowsCache.swift in Sources */,
 				C34073F7307A217200957700 /* Notifications.swift in Sources */,
 				C340748E307E6FBC00957700 /* CoffeeTipSection.swift in Sources */,
 				C39EB39630810CD4005923E9 /* StreamingRegionPicker.swift in Sources */,
+				C32493103086054800C1848C /* SharedShowsView.swift in Sources */,
 				C39EB3923080FB51005923E9 /* OnboardingView.swift in Sources */,
+				C324931830860C2600C1848C /* SharedProgrammeView.swift in Sources */,
+				C32493143086094300C1848C /* SharedListPhotoSection.swift in Sources */,
 				C34073F8307A217200957700 /* AppStore.swift in Sources */,
 				C3407488307E461D00957700 /* CloudSync.swift in Sources */,
 			);
@@ -487,9 +532,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C324931E308651F000C1848C /* SharedShowsCacheTests.swift in Sources */,
 				C340748A307E46DB00957700 /* CloudSyncTests.swift in Sources */,
 				C39EB3C13081F329005923E9 /* WidgetTests.swift in Sources */,
 				162F4FF742B833CF527DFE05 /* EpisodeRulesTests.swift in Sources */,
+				C3249312308605EF00C1848C /* SharedHistoryTests.swift in Sources */,
+				C324931A30860C6600C1848C /* SharedProgrammeProgressTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -524,12 +572,15 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = WatchMate/WatchMate.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 3;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 76XP2MF734;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = WatchMate/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = WatchMate;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -602,6 +653,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 76XP2MF734;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -792,6 +844,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = WatchMate/WatchMate.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 3;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 76XP2MF734;
@@ -799,6 +852,8 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = WatchMate/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = WatchMate;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -822,6 +877,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 76XP2MF734;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (

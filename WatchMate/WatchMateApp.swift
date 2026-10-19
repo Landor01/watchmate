@@ -3,6 +3,7 @@ import SwiftData
 
 @main
 struct WatchMateApp: App {
+    @UIApplicationDelegateAdaptor(SharingAppDelegate.self) private var sharingDelegate
     private let container: ModelContainer
     @State private var store: AppStore
     @State private var tips = TipStore()

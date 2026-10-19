@@ -44,7 +44,7 @@ struct ShowDetailView: View {
                             .lineLimit(nil)
                             .fixedSize(horizontal: false, vertical: true)
                         if show.providerRegion == store.settings.region {
-                            Text(show.providers.map(\.name).joined(separator: " · ")).font(.caption)
+                            ProviderNamesView(providers: show.providers).font(.caption)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -269,7 +269,15 @@ private struct SeasonEpisodeRow: View {
                 .buttonStyle(.plain)
                 .accessibilityHint("Show episode details")
                 if let date = episode.firstAired {
-                    Text("Aired: \(Text(date, style: .date))").font(.caption).foregroundStyle(.secondary)
+                    Group {
+                        if date >= Calendar.current.startOfDay(for: Date()) {
+                            Text("Airs: \(Text(date, style: .date))")
+                        } else {
+                            Text("Aired: \(Text(date, style: .date))")
+                        }
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                     if date > Date() { Text("Scheduled").font(.caption).foregroundStyle(.orange) }
                 } else { Text("Air date unknown").font(.caption).foregroundStyle(.secondary) }
                 if let watchedAt = episode.watchedAt {

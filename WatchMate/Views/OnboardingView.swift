@@ -175,7 +175,7 @@ private struct OnboardingPreferencesView: View {
         .task(id: finishing) {
             guard finishing else { return }
             if settings.selectedProviders.isEmpty {
-                settings.onlyMyServices = false
+                settings.highlightAvailableServices = false
             }
             // Refresh regional availability even if sign-in just imported the library.
             if store.connected && !settings.demoMode {
@@ -223,14 +223,14 @@ private struct OnboardingServicesSection: View {
                             } else {
                                 settings.selectedProviders.remove(provider.id)
                                 if settings.selectedProviders.isEmpty {
-                                    settings.onlyMyServices = false
+                                    settings.highlightAvailableServices = false
                                 }
                             }
                         }
                     ))
                 }
             }
-            Toggle("Filter to my services", isOn: $settings.onlyMyServices)
+            Toggle("Highlight available services", isOn: $settings.highlightAvailableServices)
                 .disabled(settings.selectedProviders.isEmpty)
         } header: {
             Text("My streaming services")

@@ -67,9 +67,9 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                Toggle("Filter to my services", isOn: $settings.onlyMyServices)
-                    .disabled(settings.selectedProviders.isEmpty && !settings.onlyMyServices)
-                Text("Applies to Up Next, Coming Soon, My Shows and Search. Choose services to filter programmes by availability in your region.")
+                Toggle("Highlight available services", isOn: $settings.highlightAvailableServices)
+                    .disabled(settings.selectedProviders.isEmpty && !settings.highlightAvailableServices)
+                Text("Shows all streaming services in your region, with your selected services in the highlight colour. Applies to programme lists, Search and detail views.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             if TipStore.isEnabled {

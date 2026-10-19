@@ -94,6 +94,11 @@ final class TraktService: ViewingService {
     func follow(_ show: RemoteShow) async throws {
         try await write("sync/watchlist", object: ["shows": [["ids": ["trakt": show.ids.trakt]]]])
     }
+    func recordSharedWatch(_ episode: SharedEpisode) async throws {
+        let date = episode.watchedAt == .distantPast ? "unknown" : Dates.string(episode.watchedAt)
+        try await write("sync/history", object: ["episodes": [["ids": ["trakt": episode.id], "watched_at": date]]])
+    }
+
     func setWatched(episodeID: Int, watched: Bool) async throws {
         var episode: [String: Any] = ["ids": ["trakt": episodeID]]
         if watched { episode["watched_at"] = Dates.string(Date()) }

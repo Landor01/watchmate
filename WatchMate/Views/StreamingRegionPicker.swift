@@ -16,7 +16,7 @@ struct StreamingRegionPicker: View {
                 set: { region in
                     guard region != store.settings.region else { return }
                     store.settings.selectedProviders = []
-                    store.settings.onlyMyServices = false
+                    store.settings.highlightAvailableServices = false
                     store.providerOptions = []
                     store.settings.region = region
                 }

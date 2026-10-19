@@ -31,7 +31,7 @@ struct StreamingServicesView: View {
                                 } else {
                                     store.settings.selectedProviders.remove(provider.id)
                                     if store.settings.selectedProviders.isEmpty {
-                                        store.settings.onlyMyServices = false
+                                        store.settings.highlightAvailableServices = false
                                     }
                                 }
                             }
@@ -46,7 +46,7 @@ struct StreamingServicesView: View {
             Section {
                 Button("Clear selections") {
                     store.settings.selectedProviders = []
-                    store.settings.onlyMyServices = false
+                    store.settings.highlightAvailableServices = false
                 }
                 .disabled(store.settings.selectedProviders.isEmpty)
             } footer: {

@@ -14,6 +14,7 @@ struct EpisodeDetailView: View {
                     Text(episode.overview)
                 }
             }
+            EpisodeStreamingSection(show: episode.show)
             EpisodeViewingSection(episode: episode)
         }
         .navigationTitle(episode.label)
@@ -54,6 +55,34 @@ private struct EpisodeSummarySection: View {
                     Text("\(runtime) minutes")
                 }
             }
+        }
+    }
+}
+
+private struct EpisodeStreamingSection: View {
+    @Environment(AppStore.self) private var store
+    let show: Show?
+
+    var body: some View {
+        Section {
+            if let show, show.providerRegion == store.settings.region {
+                if show.providers.isEmpty {
+                    Text("Streaming availability unknown")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ProviderNamesView(providers: show.providers)
+                }
+                if let link = show.watchURL, let url = URL(string: link), url.scheme == "https" {
+                    Link("Check where to watch", destination: url)
+                }
+            } else {
+                Text("Streaming availability unknown")
+                    .foregroundStyle(.secondary)
+            }
+        } header: {
+            Text("Where to watch")
+        } footer: {
+            Text("Streaming availability powered by JustWatch. Listings are for the series, not individual episodes.")
         }
     }
 }

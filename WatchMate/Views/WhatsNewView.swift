@@ -11,6 +11,18 @@ struct WhatsNewView: View {
     // Launch highlights. Give each feature a unique, stable ID when updating future releases.
     static let defaultItems: [Item] = [
         Item(
+            id: "shared-shows",
+            systemImage: "person.2",
+            title: "Watch together with Shared Shows",
+            detail: "Create separate lists for different people, invite them through iCloud, and add programmes by searching or moving them from My Shows. Everyone can keep their own Trakt account while tracking episodes and seasons together."
+        ),
+        Item(
+            id: "shared-progress",
+            systemImage: "person.2.badge.gearshape",
+            title: "Shared progress, your choice",
+            detail: "See episodes watched together, time watched and time left. Mark or skip episodes and whole seasons together. Your personal Trakt history changes only when you choose to sync it, with a preview and confirmation before existing progress is overwritten."
+        ),
+        Item(
             id: "next-episode-widget",
             systemImage: "rectangle.and.hand.point.up.left",
             title: "Your next episode, on your Home Screen",
@@ -61,8 +73,8 @@ struct WhatsNewView: View {
         Item(
             id: "service-filters",
             systemImage: "line.3.horizontal.decrease.circle",
-            title: "Focus on your services",
-            detail: "Choose your streaming services in Settings to filter Up Next, Coming Soon, My Shows and Search to programmes with confirmed availability on those services."
+            title: "Highlight your services",
+            detail: "Choose your streaming services in Settings and enable Highlight available services to see them in the highlight colour. All other services remain visible so you can discover more places to watch."
         ),
         Item(
             id: "reminders",

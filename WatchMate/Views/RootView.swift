@@ -7,6 +7,7 @@ struct RootView: View {
     @State private var settingsOpen = false
     @State private var searchOpen = false
     @State private var selectedTab = 0
+    @State private var historyOffersOpen = false
     @State private var widgetEpisodePath: [WidgetEpisodeLink] = []
     var body: some View {
         @Bindable var store = store
@@ -42,7 +43,30 @@ struct RootView: View {
             }
             .tabItem { Label("My Shows", systemImage: "tv") }
             .tag(2)
+            NavigationStack { SharedShowsView().toolbar { settingsButton } }
+                .tabItem { Label("Shared Shows", systemImage: "person.2") }
+                .tag(3)
         }
+        .onChange(of: store.sharedShows.historyOffers.map(\.id)) { _, offers in
+            if !offers.isEmpty && !settingsOpen && !searchOpen && !store.sharedHistoryImport.running {
+                historyOffersOpen = true
+            }
+        }
+        .sheet(isPresented: $historyOffersOpen) {
+            NavigationStack { SharedHistoryInboxView() }
+        }
+        .onChange(of: store.sharedShows.invitationReceived) { _, received in
+            if received {
+                selectedTab = 3
+                store.sharedShows.invitationReceived = false
+            }
+        }
+        .alert("Shared Shows", isPresented: Binding(
+            get: { store.sharedShows.errorMessage != nil },
+            set: { if !$0 { store.sharedShows.errorMessage = nil } }
+        )) {
+            Button("OK") { store.sharedShows.errorMessage = nil }
+        } message: { Text(store.sharedShows.errorMessage ?? "") }
         .safeAreaInset(edge: .top, spacing: 0) {
             if store.settings.demoMode {
                 HStack(spacing: 8) {
@@ -100,6 +124,10 @@ struct RootView: View {
         }
         .task(id: scenePhase) {
             guard scenePhase == .active else { return }
+            if store.sharedShows.invitationReceived {
+                selectedTab = 3
+                store.sharedShows.invitationReceived = false
+            }
             await store.start()
             while !Task.isCancelled {
                 do { try await Task.sleep(for: .seconds(60)) } catch { return }
@@ -215,7 +243,6 @@ struct ShowRow: View {
     @Environment(AppStore.self) private var store
     let show: Show
     var episode: Episode?
-    var onlyMyServices = false
     var squareArtwork = false
     var showsAirDate = true
     var showsAiredPrefix = false
@@ -223,7 +250,7 @@ struct ShowRow: View {
 
     private var displayedProviders: [Provider] {
         guard show.providerRegion == store.settings.region else { return [] }
-        return show.providers.filter { !onlyMyServices || store.settings.selectedProviders.contains($0.id) }
+        return show.providers
     }
 
     var body: some View {
@@ -240,7 +267,11 @@ struct ShowRow: View {
                     if showsAirDate, let date = episode.firstAired {
                         Group {
                             if showsAiredPrefix {
-                                Text("Aired: \(Text(date, style: .date))")
+                                if date >= Calendar.current.startOfDay(for: Date()) {
+                                    Text("Airs: \(Text(date, style: .date))")
+                                } else {
+                                    Text("Aired: \(Text(date, style: .date))")
+                                }
                             } else {
                                 Text(date, style: .date)
                             }
@@ -255,7 +286,7 @@ struct ShowRow: View {
                     if total > 0 { ProgressView(value: Double(seen), total: Double(total)).frame(maxWidth: 150) }
                 }
                 if !displayedProviders.isEmpty {
-                    Text(displayedProviders.map(\.name).joined(separator: " · ")).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                    ProviderNamesView(providers: displayedProviders).font(.caption).foregroundStyle(.secondary)
                 } else { Text("Streaming availability unknown").font(.caption).foregroundStyle(.secondary) }
             }
             Spacer(minLength: 0)
