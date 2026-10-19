@@ -5,6 +5,8 @@ struct RootView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.scenePhase) private var scenePhase
     @State private var settingsOpen = false
+    @State private var showingAirDateInfo = false
+    @State private var showingSharingInfo = false
     @State private var searchOpen = false
     @State private var selectedTab = 0
     @State private var historyOffersOpen = false
@@ -27,7 +29,23 @@ struct RootView: View {
             }
                 .tabItem { Label("Up Next", systemImage: "play.circle.fill") }
                 .tag(0)
-            NavigationStack { ComingSoonView().modifier(ActivityToastModifier()).toolbar { settingsButton } }
+            NavigationStack {
+                ComingSoonView().modifier(ActivityToastModifier())
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button("About air dates and streaming availability", systemImage: "info.circle") {
+                                showingAirDateInfo = true
+                            }
+                            .labelStyle(.iconOnly)
+                        }
+                        settingsButton
+                    }
+                    .alert("Air dates and streaming", isPresented: $showingAirDateInfo) {
+                        Button("OK", role: .cancel) {}
+                    } message: {
+                        Text("Air dates can change and may differ from local streaming release dates.")
+                    }
+            }
                 .tabItem { Label("Coming Soon", systemImage: "calendar") }
                 .tag(1)
             NavigationStack {
@@ -43,7 +61,23 @@ struct RootView: View {
             }
             .tabItem { Label("My Shows", systemImage: "tv") }
             .tag(2)
-            NavigationStack { SharedShowsView().toolbar { settingsButton } }
+            NavigationStack {
+                SharedShowsView()
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button("About shared shows and viewing history", systemImage: "info.circle") {
+                                showingSharingInfo = true
+                            }
+                            .labelStyle(.iconOnly)
+                        }
+                        settingsButton
+                    }
+                    .alert("Shared Shows and viewing history", isPresented: $showingSharingInfo) {
+                        Button("OK", role: .cancel) {}
+                    } message: {
+                        Text("Share programmes and group progress while keeping separate Trakt accounts. Personal history changes only when you choose to sync it.")
+                    }
+            }
                 .tabItem { Label("Shared Shows", systemImage: "person.2") }
                 .tag(3)
         }

@@ -14,10 +14,6 @@ struct SharedShowsView: View {
                 ContentUnavailableView("Connect Trakt first", systemImage: "person.crop.circle",
                                        description: Text("Connect your own Trakt account in Settings. Shared Shows also requires iCloud."))
             } else {
-                Section {
-                    Text("Share programmes and group progress while keeping separate Trakt accounts. Personal history changes only when you choose to sync it.")
-                        .font(.subheadline).foregroundStyle(.secondary)
-                }
                 if store.sharedShows.loading && store.sharedShows.lists.isEmpty { ProgressView("Loading shared lists…") }
                 if let message = store.sharedShows.refreshMessage {
                     Text(message).font(.caption).foregroundStyle(.secondary)
@@ -48,6 +44,7 @@ struct SharedShowsView: View {
             }
         }
         .navigationTitle("Shared Shows")
+        .navigationBarTitleDisplayMode(.inline)
         .task { if store.connected && !store.settings.demoMode { await store.sharedShows.refresh(automatic: true) } }
         .refreshable { await store.sharedShows.refresh() }
         .alert("New shared list", isPresented: $creating) {

@@ -17,13 +17,23 @@ struct UpNextView: View {
 
     var body: some View {
         let entries = waitingEntries
+        let followedShows = shows.filter { $0.isFollowing }
+        let watchedEpisodes = followedShows.flatMap(\.episodes).filter {
+            $0.watchedAt != nil && (store.settings.includeSpecials || $0.season > 0)
+        }
+        let remainingEpisodes = followedShows.flatMap { store.waiting($0) }
         ThemedList {
             Section {
                 HStack(spacing: 12) {
                     let count = entries.reduce(0) { $0 + $1.waitingCount }
-                    Text("^[\(count) episode](inflect: true) left to watch")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("^[\(count) episode](inflect: true) left to watch")
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+                        Label("Watched: \(duration(of: watchedEpisodes))", systemImage: "clock")
+                        Label("Left to watch: \(duration(of: remainingEpisodes))", systemImage: "hourglass")
+                    }
+                    .font(.subheadline)
                     Spacer(minLength: 0)
                     Button {
                         showingAirDateInfo = true
@@ -77,6 +87,18 @@ struct UpNextView: View {
         }
         .refreshable { await store.refresh() }
     }
+
+    private func duration(of episodes: [Episode]) -> String {
+        let minutes = episodes.reduce(0) { $0 + max(0, $1.runtime ?? 0) }
+        let hasUnknownRuntime = episodes.contains { ($0.runtime ?? 0) <= 0 }
+        guard minutes > 0 else {
+            return hasUnknownRuntime ? String(localized: "Unknown") : String(localized: "0 min")
+        }
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.hour, .minute]
+        formatter.unitsStyle = .abbreviated
+        return formatter.string(from: TimeInterval(minutes * 60)) ?? "\(minutes) min"
+    }
 }
 
 private struct UpNextEntry: Identifiable {
@@ -115,7 +137,7 @@ struct MyShowsView: View {
                         .disabled(store.busy)
                     }
             }
-        }.navigationTitle("My Shows").refreshable { await store.refresh() }
+        }.navigationTitle("My Shows").navigationBarTitleDisplayMode(.inline).refreshable { await store.refresh() }
             .sheet(item: $showToShare) { show in
                 NavigationStack { MoveToSharedListView(show: show) }
             }

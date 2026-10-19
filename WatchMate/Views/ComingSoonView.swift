@@ -43,18 +43,12 @@ struct ComingSoonView: View {
 
                     ThemedList {
                         ScheduledDateSection(entries: visibleEntries, selectedDate: selectedDate)
-                        Section {
-                            Text("Air dates can change and may differ from local streaming release dates.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
                     }
                     .refreshable { await store.refresh() }
                     .frame(maxWidth: .infinity)
                 }
             } else {
                 ThemedList {
-                    ComingSoonAirDateSection()
                     if calendarMode {
                         Section {
                             ProgrammeCalendar(selectedDate: $selectedDate, scheduledDates: dates)
@@ -70,6 +64,7 @@ struct ComingSoonView: View {
             }
         }
         .navigationTitle("Coming Soon")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItemGroup(placement: .topBarLeading) {
                 Button("Calendar", systemImage: "calendar") { calendarMode = true }
@@ -113,17 +108,6 @@ private struct LandscapeCalendarPanel: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 4)
         .background(theme.backgroundColor(for: colorScheme))
-    }
-}
-
-private struct ComingSoonAirDateSection: View {
-
-    var body: some View {
-        Section {
-            Text("Air dates can change and may differ from local streaming release dates.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
     }
 }
 
