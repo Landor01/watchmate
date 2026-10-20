@@ -4,7 +4,7 @@ import SwiftData
 struct ComingSoonView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.calendar) private var calendar
-    @Query(sort: \Show.title) private var shows: [Show]
+    @Query(Show.withEpisodes) private var shows: [Show]
     @AppStorage("comingSoonCalendar") private var calendarMode = true
     @State private var selectedDate = Date()
 

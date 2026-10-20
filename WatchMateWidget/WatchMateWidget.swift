@@ -100,7 +100,6 @@ struct WatchMateWidgetEntryView: View {
                         Text(message).font(.caption2).foregroundStyle(.secondary).lineLimit(2)
                     }
                     WidgetEpisodeActions(showID: show.id, episodeKey: episode.id, accountScope: entry.accountScope, compact: family == .systemSmall)
-                        .invalidatableContent()
                 } else {
                     Spacer(minLength: 0)
                     Label("You’re all caught up", systemImage: "checkmark.circle")
@@ -187,30 +186,14 @@ private struct WidgetEpisodeDetails: View {
 }
 
 private struct WidgetEpisodeActions: View {
-    @Environment(\.redactionReasons) private var redactionReasons
     let showID: Int
     let episodeKey: String
     let accountScope: String
     var compact = false
 
     var body: some View {
-        Group {
-            if redactionReasons.contains(.invalidated) {
-                Label("Updating…", systemImage: "arrow.triangle.2.circlepath")
-                    .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
-                    .accessibilityLabel("Updating episode. Please wait.")
-                    // Keep the explanation readable instead of applying the default pulsing effect.
-                    .unredacted()
-            } else {
-                actions
-            }
-        }
-        .font(.caption)
-    }
-
-    private var actions: some View {
         HStack {
-            Button(intent: MarkWidgetEpisodeWatched(showID: showID, episodeKey: episodeKey, accountScope: accountScope)) {
+            Toggle(isOn: false, intent: MarkWidgetEpisodeWatched(showID: showID, episodeKey: episodeKey, accountScope: accountScope)) {
                 if compact {
                     Image(systemName: "checkmark")
                         .frame(minWidth: 28, minHeight: 28)
@@ -219,8 +202,10 @@ private struct WidgetEpisodeActions: View {
                     Label("Mark watched", systemImage: "checkmark")
                 }
             }
+            .toggleStyle(WidgetPendingActionStyle(message: compact ? "Saving…" : "Marking watched…"))
             .buttonStyle(.borderedProminent)
-            Button(intent: SkipWidgetEpisode(showID: showID, episodeKey: episodeKey, accountScope: accountScope)) {
+
+            Toggle(isOn: false, intent: SkipWidgetEpisode(showID: showID, episodeKey: episodeKey, accountScope: accountScope)) {
                 if compact {
                     Image(systemName: "forward.end")
                         .frame(minWidth: 28, minHeight: 28)
@@ -229,10 +214,31 @@ private struct WidgetEpisodeActions: View {
                     Label("Skip", systemImage: "forward.end")
                 }
             }
+            .toggleStyle(WidgetPendingActionStyle(message: "Skipping…"))
             .buttonStyle(.bordered)
         }
         .font(.caption)
         .disabled(accountScope.isEmpty)
+    }
+}
+
+private struct WidgetPendingActionStyle: ToggleStyle {
+    let message: LocalizedStringKey
+
+    func makeBody(configuration: Configuration) -> some View {
+        // WidgetKit archives both toggle appearances and switches immediately on tap.
+        // The next timeline resets the control after the intent succeeds or fails.
+        Button {
+            configuration.isOn = true
+        } label: {
+            if configuration.isOn {
+                Text(message)
+                    .frame(minHeight: 28)
+            } else {
+                configuration.label
+            }
+        }
+        .disabled(configuration.isOn)
     }
 }
 

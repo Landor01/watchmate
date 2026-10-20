@@ -12,11 +12,11 @@ struct WatchMateApp: App {
             let services = try AppServices.shared()
             self.container = services.container
             let store = services.store
-            store.publishWidgetSnapshot()
+            store.publishStartupWidgetSnapshot()
             // Preserve the startup experience for people already using the app.
             if !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding"),
                !UserDefaults.standard.bool(forKey: "onboardingStarted"),
-               (store.connected && !store.settings.demoMode) || ((try? store.allShows().isEmpty) == false) {
+               (store.connected && !store.settings.demoMode) || ((try? store.hasShows()) == true) {
                 UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
             }
             _store = State(initialValue: store)

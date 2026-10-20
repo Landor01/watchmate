@@ -9,6 +9,7 @@ struct ProfilePhotoSection: View {
     @State private var imageToCrop: ProfilePhotoSelection?
     @State private var capturedImage: UIImage?
     @State private var showCamera = false
+    @State private var confirmingPhotoRemoval = false
     @State private var cameraDenied = false
     @Environment(\.scenePhase) private var scenePhase
     @State private var requestingCamera = false
@@ -18,8 +19,44 @@ struct ProfilePhotoSection: View {
         Section {
             VStack(spacing: 12) {
                 ProfilePhotoView(image: store.settings.profileImage, size: 96)
-                    .frame(maxWidth: .infinity)
                     .accessibilityLabel("Profile photo")
+                    .overlay(alignment: .topTrailing) {
+                        if store.settings.profileImage != nil {
+                            Button { confirmingPhotoRemoval = true } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.title2)
+                                    .symbolRenderingMode(.palette)
+                                    .foregroundStyle(.white, .black.opacity(0.75))
+                                    .frame(width: 44, height: 44)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.borderless)
+                            .accessibilityLabel("Remove profile photo")
+                            .accessibilityHint("Asks for confirmation before restoring the generic person icon.")
+                            .offset(x: 12, y: -12)
+                            .popover(isPresented: $confirmingPhotoRemoval, attachmentAnchor: .rect(.bounds), arrowEdge: .top) {
+                                VStack(alignment: .leading, spacing: 16) {
+                                    Text("Remove profile photo?").font(.headline)
+                                    Text("Your photo will be replaced with the generic person icon.")
+                                        .font(.subheadline)
+                                    HStack {
+                                        Button("Cancel", role: .cancel) { confirmingPhotoRemoval = false }
+                                        Spacer()
+                                        Button("Remove photo", role: .destructive) {
+                                            confirmingPhotoRemoval = false
+                                            do { try store.settings.removeProfileImage() }
+                                            catch { store.errorMessage = error.localizedDescription }
+                                        }
+                                    }
+                                    .buttonStyle(.bordered)
+                                }
+                                .padding()
+                                .frame(idealWidth: 300, maxWidth: 340)
+                                .presentationCompactAdaptation(.popover)
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
                 HStack {
                     photoControls
                 }

@@ -72,6 +72,7 @@ private struct HouseholdListView: View {
     @State private var sharing = false
     @State private var working = false
     @State private var removing: SharedProgramme?
+    @State private var moving: SharedProgramme?
 
     private var list: HouseholdList? { store.sharedShows.lists.first { $0.id == listID } }
 
@@ -90,13 +91,19 @@ private struct HouseholdListView: View {
                             Text(programme.show.title).font(.headline)
                             Text("\(programme.episodes.count) episodes watched together")
                                 .font(.caption).foregroundStyle(.secondary)
+                            SharedListSummaryView(list: list, programme: programme)
                             if programme.addedBy != store.settings.traktAccountID {
                                 Text("Review or sync viewing history").font(.caption).foregroundStyle(.tint)
                             }
                         }
                     }
-                    .swipeActions {
+                    .swipeActions(allowsFullSwipe: false) {
+                        Button("Move", systemImage: "folder") { moving = programme }.tint(.blue)
                         Button("Remove", role: .destructive) { removing = programme }
+                    }
+                    .contextMenu {
+                        Button("Move to My Shows or another list", systemImage: "folder") { moving = programme }
+                        Button("Remove from shared list", role: .destructive) { removing = programme }
                     }
                 }
             } else {
@@ -104,7 +111,7 @@ private struct HouseholdListView: View {
                                        description: Text("Pull to refresh. The owner may have stopped sharing this list."))
             }
         }
-        .navigationTitle("")
+        .navigationTitle(list?.name ?? "Shared Shows")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -131,6 +138,11 @@ private struct HouseholdListView: View {
         .sheet(isPresented: $sharing, onDismiss: { Task { await store.sharedShows.refresh() } }) {
             if let share, let list { HouseholdSharingSheet(share: share, service: store.sharedShows, list: list) }
         }
+        .sheet(item: $moving) { programme in
+            if let list {
+                NavigationStack { MoveSharedProgrammeView(programme: programme, source: list) }
+            }
+        }
         .confirmationDialog("Remove programme for everyone?", isPresented: Binding(
             get: { removing != nil }, set: { if !$0 { removing = nil } }
         ), titleVisibility: .visible) {
@@ -145,6 +157,93 @@ private struct HouseholdListView: View {
         } message: {
             Text("This removes the programme and its shared progress from this list. Everyone’s personal Trakt history is kept.")
         }
+    }
+}
+
+private struct MoveSharedProgrammeView: View {
+    @Environment(AppStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    let programme: SharedProgramme
+    let source: HouseholdList
+    @State private var destination: HouseholdList?
+    @State private var confirming = false
+    @State private var working = false
+    @State private var errorMessage: String?
+
+    private var destinations: [HouseholdList] {
+        store.sharedShows.lists.filter { $0.id != source.id }
+    }
+
+    var body: some View {
+        List {
+            Section(programme.show.title) {
+                Button("Return to My Shows", systemImage: "tv") {
+                    destination = nil
+                    confirming = true
+                }
+                Text("Keep your personal Trakt history. To use the shared progress instead, sync viewing history from the programme’s menu before moving it.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
+            Section("Move to another shared list") {
+                ForEach(destinations) { list in
+                    let alreadyAdded = list.programmes.contains { $0.id == programme.id }
+                    Button {
+                        destination = list
+                        confirming = true
+                    } label: {
+                        VStack(alignment: .leading) {
+                            Text(list.name)
+                            if alreadyAdded {
+                                Text("Already contains this programme").font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    .disabled(alreadyAdded)
+                }
+                if destinations.isEmpty {
+                    Text("Create another list in Shared Shows first.")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            if working { ProgressView("Moving programme…") }
+            if let errorMessage { Text(errorMessage).foregroundStyle(.secondary) }
+        }
+        .disabled(working || store.busy)
+        .navigationTitle("Move programme")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Done") { dismiss() }.disabled(working)
+            }
+        }
+        .interactiveDismissDisabled(working)
+        .confirmationDialog("Remove from this list for everyone?", isPresented: $confirming, titleVisibility: .visible) {
+            Button(destination == nil ? "Return to My Shows" : "Move to selected list", role: .destructive) {
+                Task { await move() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            if let destination {
+                Text("This removes the programme from \(source.name) for everyone and shares its watched and skipped progress with everyone in \(destination.name). Personal Trakt histories are kept.")
+            } else {
+                Text("This removes the programme and its shared progress from \(source.name) for everyone and adds it to your My Shows. Your personal Trakt history is kept. Copies in other shared lists are unchanged.")
+            }
+        }
+    }
+
+    private func move() async {
+        working = true
+        errorMessage = nil
+        defer { working = false }
+        do {
+            if let destination {
+                try await store.sharedShows.move(programme, from: source, to: destination)
+            } else {
+                try await store.returnToMyShows(programme, from: source)
+                await store.refresh()
+            }
+            dismiss()
+        } catch { errorMessage = error.localizedDescription }
     }
 }
 
@@ -251,6 +350,8 @@ struct SharedProgrammePicker: View {
                 }
             }
             try await store.sharedShows.add(SharedProgramme(show: show, addedBy: account, episodes: episodes), to: list)
+            guard store.settings.traktAccountID == account else { throw CancellationError() }
+            store.sharedShows.showInMyShows(show.id, visible: false)
             message = "\(show.title) added."
         } catch { message = error.localizedDescription }
     }

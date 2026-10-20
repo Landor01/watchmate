@@ -20,6 +20,13 @@ final class Show {
     init(traktID: Int, tmdbID: Int?, title: String) {
         self.traktID = traktID; self.tmdbID = tmdbID; self.title = title
     }
+    // Load episodes with their shows so UI access does not fault the relationship per row.
+    static var withEpisodes: FetchDescriptor<Show> {
+        var descriptor = FetchDescriptor<Show>(sortBy: [SortDescriptor(\Show.title)])
+        descriptor.relationshipKeyPathsForPrefetching = [\Show.episodes]
+        return descriptor
+    }
+
     var providers: [Provider] {
         get { (try? JSONDecoder().decode([Provider].self, from: providerData)) ?? [] }
         set { providerData = (try? JSONEncoder().encode(newValue)) ?? Data() }

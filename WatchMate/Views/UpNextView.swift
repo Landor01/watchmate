@@ -4,7 +4,7 @@ import SwiftData
 struct UpNextView: View {
     @State private var showingAirDateInfo = false
     @Environment(AppStore.self) private var store
-    @Query(sort: \Show.title) private var shows: [Show]
+    @Query(Show.withEpisodes) private var shows: [Show]
 
     private var waitingEntries: [UpNextEntry] {
         shows.compactMap { show in
@@ -112,10 +112,10 @@ struct MyShowsView: View {
     @State private var showToRemove: Show?
     @State private var confirmRemoval = false
     @State private var showToShare: Show?
-    @Query(sort: \Show.title) private var shows: [Show]
+    @Query(Show.withEpisodes) private var shows: [Show]
     @Environment(AppStore.self) private var store
     var body: some View {
-        let personalShows = shows.filter { $0.isFollowing && !store.sharedShows.showIDs.contains($0.traktID) }
+        let personalShows = shows.filter { $0.isFollowing && (!store.sharedShows.showIDs.contains($0.traktID) || store.sharedShows.personalShowIDs.contains($0.traktID)) }
         ThemedList {
             if personalShows.isEmpty {
                 ContentUnavailableView("Your shows live here", systemImage: "tv", description: Text("Tap + to find and add programmes, or connect Trakt in Settings to import your history and watchlist."))

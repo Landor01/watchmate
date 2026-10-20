@@ -25,6 +25,7 @@ struct SharedProgrammeProgress {
     let upcoming: [SharedSeasonProgress]
     let completed: [SharedSeasonProgress]
     let watchedCount: Int
+    let remainingCount: Int
     let watchedMinutes: Int
     let remainingMinutes: Int
     let unknownWatchedRuntimes: Int
@@ -58,6 +59,7 @@ struct SharedProgrammeProgress {
             $0.watchedAt == nil && !$0.skipped && Dates.parse($0.episode.firstAired).map { $0 <= now } == true
         }
         watchedCount = watched.count
+        remainingCount = remaining.count
         watchedMinutes = watched.reduce(0) { $0 + max(0, $1.episode.runtime ?? 0) }
         remainingMinutes = remaining.reduce(0) { $0 + max(0, $1.episode.runtime ?? 0) }
         unknownWatchedRuntimes = watched.filter { ($0.episode.runtime ?? 0) <= 0 }.count

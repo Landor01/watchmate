@@ -25,6 +25,12 @@ final class Settings {
         onPreferencesChanged?()
     }
 
+    func removeProfileImage() throws {
+        // Persist an explicit empty value so iCloud propagates removal instead of restoring the old photo.
+        try applyProfilePhotoData(Data())
+        onPreferencesChanged?()
+    }
+
     static func profilePhotoData(for image: UIImage) throws -> Data {
         guard image.size.width > 0, image.size.height > 0 else {
             throw APIError.message("This profile photo could not be opened.")
@@ -45,7 +51,16 @@ final class Settings {
 
     func applyProfilePhotoData(_ data: Data) throws {
         guard data != profilePhotoData else { return }
-        guard let url = Self.profileImageURL, let image = UIImage(data: data) else {
+        guard let url = Self.profileImageURL else {
+            throw APIError.message("Your profile photo could not be saved.")
+        }
+        if data.isEmpty {
+            try data.write(to: url, options: .atomic)
+            profilePhotoData = data
+            profileImage = nil
+            return
+        }
+        guard let image = UIImage(data: data) else {
             throw APIError.message("Your profile photo could not be opened.")
         }
         try data.write(to: url, options: .atomic)

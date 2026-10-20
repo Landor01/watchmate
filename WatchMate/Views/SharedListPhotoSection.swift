@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import PhotosUI
 import UIKit
 import AVFoundation
@@ -66,25 +67,56 @@ struct SharedListPhotoSection: View {
     @State private var requestingCamera = false
     @State private var cameraPresentationPending = false
     @State private var saving = false
+    @State private var confirmingPhotoRemoval = false
     @State private var errorMessage: String?
 
     var body: some View {
         Section {
             VStack(spacing: 12) {
                 SharedListAvatarView(name: list.name, photoData: list.photoData, size: 96)
-                Text(list.name).font(.headline)
+                    .overlay(alignment: .topTrailing) {
+                        if list.photoData != nil {
+                            Button { confirmingPhotoRemoval = true } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.title2)
+                                    .symbolRenderingMode(.palette)
+                                    .foregroundStyle(.white, .black.opacity(0.75))
+                                    .frame(width: 44, height: 44)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.borderless)
+                            .accessibilityLabel("Remove list photo")
+                            .accessibilityHint("Asks for confirmation before replacing the photo with initials.")
+                            .offset(x: 12, y: -12)
+                            .popover(isPresented: $confirmingPhotoRemoval, attachmentAnchor: .rect(.bounds), arrowEdge: .top) {
+                                VStack(alignment: .leading, spacing: 16) {
+                                    Text("Remove list photo?").font(.headline)
+                                    Text("The photo will be replaced with the list’s initials for everyone on this list.")
+                                        .font(.subheadline)
+                                    HStack {
+                                        Button("Cancel", role: .cancel) { confirmingPhotoRemoval = false }
+                                        Spacer()
+                                        Button("Remove photo", role: .destructive) {
+                                            confirmingPhotoRemoval = false
+                                            save(nil)
+                                        }
+                                    }
+                                    .buttonStyle(.bordered)
+                                }
+                                .padding()
+                                .frame(idealWidth: 300, maxWidth: 340)
+                                .presentationCompactAdaptation(.popover)
+                            }
+                        }
+                    }
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: 24) { photoControls }
                     VStack(spacing: 12) { photoControls }
                 }
                 .buttonStyle(.borderless)
-                if list.photoData != nil {
-                    Button("Use initials", role: .destructive) { save(nil) }
-                        .buttonStyle(.borderless)
-                }
                 if saving { ProgressView("Saving list photo…") }
-                Text("This image is shared with everyone on this list.")
-                    .font(.caption).foregroundStyle(.secondary)
+                Divider()
+                SharedListSummaryView(list: list)
             }
             .frame(maxWidth: .infinity)
             .disabled(saving)
@@ -167,6 +199,103 @@ struct SharedListPhotoSection: View {
             defer { saving = false }
             do { try await store.sharedShows.setPhoto(image, for: list) }
             catch { errorMessage = error.localizedDescription }
+        }
+    }
+}
+
+struct SharedListSummaryView: View {
+    @Environment(AppStore.self) private var store
+    @Query(Show.withEpisodes) private var shows: [Show]
+    let list: HouseholdList
+    var programme: SharedProgramme? = nil
+    private var programmes: [SharedProgramme] { programme.map { [$0] } ?? list.programmes }
+    @State private var catalogues: [Int: [RemoteEpisode]] = [:]
+    @State private var loading = false
+    @State private var failed = false
+
+    private func episodes(for programme: SharedProgramme) -> [RemoteEpisode]? {
+        if let show = shows.first(where: { $0.traktID == programme.id }), show.catalogueUpdatedAt != nil {
+            return show.episodes.map {
+                RemoteEpisode(season: $0.season, number: $0.number, title: $0.title,
+                              ids: IDs(trakt: $0.traktID, tmdb: nil), overview: $0.overview,
+                              firstAired: $0.firstAired.map { $0.ISO8601Format() }, runtime: $0.runtime)
+            }
+        }
+        return catalogues[programme.id]
+    }
+
+    var body: some View {
+        let progress = programmes.compactMap { programme in
+            episodes(for: programme).map {
+                SharedProgrammeProgress(episodes: $0, programme: programme,
+                                        includeSpecials: store.settings.includeSpecials)
+            }
+        }
+        let complete = progress.count == programmes.count
+        let remaining = progress.reduce(0) { $0 + $1.remainingCount }
+        let watchedMinutes = progress.reduce(0) { $0 + $1.watchedMinutes }
+        let remainingMinutes = progress.reduce(0) { $0 + $1.remainingMinutes }
+        let unknownWatched = progress.reduce(0) { $0 + $1.unknownWatchedRuntimes }
+        let unknownRemaining = progress.reduce(0) { $0 + $1.unknownRemainingRuntimes }
+        VStack(alignment: .leading, spacing: 8) {
+            if programme != nil {
+                if complete {
+                    Group {
+                        if remaining == 0 {
+                            Text("Up to date")
+                        } else {
+                            Text("^[\(remaining) episode](inflect: true) left to watch")
+                        }
+                    }
+                    .font(.caption).foregroundStyle(.secondary)
+                } else {
+                    Text(loading ? "Loading remaining episodes…" : "Remaining episodes unavailable")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            } else if complete {
+                Text("^[\(remaining) episode](inflect: true) left to watch")
+                    .font(.headline).foregroundStyle(.secondary)
+                Label("Watched: \(duration(watchedMinutes, unknown: unknownWatched))", systemImage: "clock")
+                Label("Left to watch: \(duration(remainingMinutes, unknown: unknownRemaining))", systemImage: "hourglass")
+                if unknownWatched + unknownRemaining > 0 {
+                    Text("Some runtimes are unavailable; times include known runtimes only.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            } else if loading {
+                ProgressView("Loading summary…")
+            } else {
+                Text("Summary unavailable until episode details load.")
+                    .foregroundStyle(.secondary)
+                if failed {
+                    Button("Retry summary") { Task { await loadMissingEpisodes() } }
+                        .buttonStyle(.borderless)
+                }
+            }
+        }
+        .font(.subheadline)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .task(id: programmes.map(\.id)) { await loadMissingEpisodes() }
+    }
+
+    private func duration(_ minutes: Int, unknown: Int) -> String {
+        guard minutes > 0 else { return unknown > 0 ? String(localized: "Unknown") : String(localized: "0 min") }
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.hour, .minute]
+        formatter.unitsStyle = .abbreviated
+        return formatter.string(from: TimeInterval(minutes * 60)) ?? "\(minutes) min"
+    }
+
+    private func loadMissingEpisodes() async {
+        loading = true
+        failed = false
+        defer { loading = false }
+        for programme in programmes where episodes(for: programme) == nil {
+            do {
+                let episodes = try await TraktService(auth: store.auth).episodes(showID: programme.id)
+                try Task.checkCancellation()
+                catalogues[programme.id] = episodes
+            } catch is CancellationError { return }
+            catch { failed = true }
         }
     }
 }

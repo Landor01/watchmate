@@ -46,6 +46,7 @@ final class SharedShows {
     private var generation = UUID()
     private var accountID: String?
     private var reviewedOffers: Set<String> = []
+    private(set) var personalShowIDs: Set<Int> = []
     private var cache: SharedShowsCache?
     private var lastSuccessfulRefresh: Date?
     private var refreshRequested = false
@@ -95,6 +96,7 @@ final class SharedShows {
     func activate(accountID: String?) {
         guard self.accountID != accountID else { return }
         self.accountID = accountID
+        personalShowIDs = Set(UserDefaults.standard.array(forKey: "sharedPersonalShows:" + (accountID ?? "")) as? [Int] ?? [])
         reviewedOffers = Set(UserDefaults.standard.stringArray(forKey: "sharedHistoryReviewed:" + (accountID ?? "")) ?? [])
         generation = UUID()
         lists = []
@@ -329,16 +331,49 @@ final class SharedShows {
         } catch { errorMessage = error.localizedDescription }
     }
 
-    func add(_ programme: SharedProgramme, to list: HouseholdList) async throws {
+    func showInMyShows(_ showID: Int, visible: Bool = true) {
+        guard let accountID else { return }
+        if visible { personalShowIDs.insert(showID) }
+        else { personalShowIDs.remove(showID) }
+        UserDefaults.standard.set(Array(personalShowIDs), forKey: "sharedPersonalShows:" + accountID)
+    }
+
+    /// Save the destination first: a failed copy must never remove the source.
+    func move(_ programme: SharedProgramme, from source: HouseholdList, to destination: HouseholdList) async throws {
+        guard source.id != destination.id else { return }
+        let session = generation
+        let zone = try await fetchZone(SharedZoneCache(zoneID: source.zoneID, shared: source.shared),
+                                       database: database(for: source))
+        guard session == generation else { throw CancellationError() }
+        guard let current = try zone.list()?.programmes.first(where: { $0.id == programme.id }),
+              current.revision == programme.revision else {
+            throw APIError.message("This programme has changed or been removed. Refresh the list and try again.")
+        }
+        var copy = current
+        copy.revision = UUID().uuidString
+        try await add(copy, to: destination, failIfExists: true)
+        guard session == generation else { throw CancellationError() }
+        do { try await remove(current, from: source) }
+        catch {
+            throw APIError.message("The programme was added to the destination, but could not be removed from the original list. It is in both lists. Remove it from the original list when ready. " + error.localizedDescription)
+        }
+    }
+
+    func add(_ programme: SharedProgramme, to list: HouseholdList, failIfExists: Bool = false) async throws {
         let session = generation
         let id = CKRecord.ID(recordName: "show-\(programme.id)", zoneID: list.zoneID)
         let database = database(for: list)
         let record: CKRecord
         do {
             record = try await database.record(for: id)
-            if (record["removed"] as? Int ?? 0) == 0 { return }
         } catch let error as CKError where error.code == .unknownItem {
             record = CKRecord(recordType: "HouseholdShow", recordID: id)
+        }
+        if record["payload"] != nil && (record["removed"] as? Int ?? 0) == 0 {
+            if failIfExists {
+                throw APIError.message("This programme is already in the destination list. Its progress has not been overwritten.")
+            }
+            return
         }
         record["payload"] = try JSONEncoder().encode(programme) as CKRecordValue
         record["removed"] = 0 as CKRecordValue
@@ -352,6 +387,13 @@ final class SharedShows {
         let database = database(for: list)
         let id = CKRecord.ID(recordName: "show-\(programme.id)", zoneID: list.zoneID)
         let record = try await database.record(for: id)
+        guard session == generation else { throw CancellationError() }
+        if let payload = record["payload"] as? Data {
+            let current = try JSONDecoder().decode(SharedProgramme.self, from: payload)
+            guard current.revision == programme.revision else {
+                throw APIError.message("This programme has been replaced. Refresh the list before removing it.")
+            }
+        }
         // A tombstone makes removal atomic. Re-adding uses a new revision so old episode events cannot reappear.
         record["removed"] = 1 as CKRecordValue
         let saved = try await database.save(record)

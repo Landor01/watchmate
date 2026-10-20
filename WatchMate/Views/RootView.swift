@@ -37,6 +37,10 @@ struct RootView: View {
                                 showingAirDateInfo = true
                             }
                             .labelStyle(.iconOnly)
+                            .imageScale(.large)
+                        }
+                        if #available(iOS 26.0, *) {
+                            ToolbarSpacer(.fixed, placement: .topBarTrailing)
                         }
                         settingsButton
                     }
@@ -69,6 +73,10 @@ struct RootView: View {
                                 showingSharingInfo = true
                             }
                             .labelStyle(.iconOnly)
+                            .imageScale(.large)
+                        }
+                        if #available(iOS 26.0, *) {
+                            ToolbarSpacer(.fixed, placement: .topBarTrailing)
                         }
                         settingsButton
                     }

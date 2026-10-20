@@ -14,6 +14,7 @@ final class AppStore {
     let sharedHistoryImport = SharedHistoryImport()
     private var applyingCloudChanges = false
     private var widgetArtworkTask: Task<Void, Never>?
+    @ObservationIgnored private var widgetPublicationRevision = 0
     private var cloudTask: Task<Void, Never>?
     private var cloudSyncInProgress = false
     private var lastCloudAttempt: Date?
@@ -39,7 +40,12 @@ final class AppStore {
             self?.publishWidgetSnapshot()
         }
     }
-    func allShows() throws -> [Show] { try context.fetch(FetchDescriptor<Show>()) }
+    func allShows() throws -> [Show] { try context.fetch(Show.withEpisodes) }
+    func hasShows() throws -> Bool {
+        var descriptor = FetchDescriptor<Show>()
+        descriptor.fetchLimit = 1
+        return try context.fetchCount(descriptor) > 0
+    }
     func waiting(_ show: Show) -> [Episode] {
         let states = EpisodeRules.waiting(show.episodes.map(\.state), now: Date(), includeSpecials: settings.includeSpecials)
         return states.compactMap { state in show.episodes.first { $0.season == state.season && $0.number == state.number } }
@@ -292,6 +298,27 @@ final class AppStore {
         } catch { errorMessage = error.localizedDescription }
         busy = false; await refresh()
     }
+    func returnToMyShows(_ programme: SharedProgramme, from list: HouseholdList) async throws {
+        guard !busy else { throw APIError.message("Please wait for the current update to finish.") }
+        busy = true
+        defer { busy = false }
+        let account = settings.traktAccountID
+        // Establish the personal entry before removing the shared copy.
+        try await viewing.follow(programme.show)
+        guard settings.traktAccountID == account else { throw CancellationError() }
+        if let show = try allShows().first(where: { $0.traktID == programme.id }) {
+            show.isFollowing = true
+        } else {
+            context.insert(Show(traktID: programme.id, tmdbID: programme.show.ids.tmdb, title: programme.show.title))
+        }
+        settings.hiddenShowIDs.remove(programme.id)
+        try context.save()
+        try await sharedShows.remove(programme, from: list)
+        guard settings.traktAccountID == account else { throw CancellationError() }
+        sharedShows.showInMyShows(programme.id)
+        await reschedule()
+    }
+
     func hide(_ show: Show) async {
         guard !busy else { return }
         show.isFollowing = false; settings.hiddenShowIDs.insert(show.traktID)
@@ -460,13 +487,19 @@ final class AppStore {
 
     func widgetLibrary() throws -> WidgetLibrary {
         guard settings.demoMode || connected else { return .empty }
-        let shows = try allShows()
-            .filter { $0.isFollowing && !settings.hiddenShowIDs.contains($0.traktID) }
+        return try Self.widgetLibrary(context: context, accountScope: widgetAccountScope,
+                                      hiddenShowIDs: settings.hiddenShowIDs, includeSpecials: settings.includeSpecials)
+    }
+
+    nonisolated private static func widgetLibrary(context: ModelContext, accountScope: String,
+                                                 hiddenShowIDs: Set<Int>, includeSpecials: Bool) throws -> WidgetLibrary {
+        let shows = try context.fetch(Show.withEpisodes)
+            .filter { $0.isFollowing && !hiddenShowIDs.contains($0.traktID) }
             .sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
             .map { show in
                 let episodes = show.episodes.compactMap { episode -> WidgetEpisode? in
                     guard episode.watchedAt == nil, !episode.isSkipped,
-                          settings.includeSpecials || episode.season > 0,
+                          includeSpecials || episode.season > 0,
                           let firstAired = episode.firstAired else { return nil }
                     return WidgetEpisode(
                         id: episode.key, season: episode.season, number: episode.number,
@@ -476,12 +509,43 @@ final class AppStore {
                 }.sorted { ($0.season, $0.number) < ($1.season, $1.number) }
                 return WidgetShow(id: show.traktID, title: show.title, episodes: episodes, posterPath: show.posterPath)
             }
-        return WidgetLibrary(accountScope: widgetAccountScope, shows: shows)
+        return WidgetLibrary(accountScope: accountScope, shows: shows)
+    }
+
+    /// Resolve persisted relationships in a context created off the main actor.
+    func publishStartupWidgetSnapshot() {
+        let container = context.container
+        let accountScope = widgetAccountScope
+        let hiddenShowIDs = settings.hiddenShowIDs
+        let includeSpecials = settings.includeSpecials
+        let enabled = settings.demoMode || connected
+        let revision = widgetPublicationRevision
+        Task { [weak self] in
+            do {
+                let library = try await Task.detached(priority: .utility) {
+                    guard enabled else { return WidgetLibrary.empty }
+                    let context = ModelContext(container)
+                    return try Self.widgetLibrary(context: context, accountScope: accountScope,
+                                                  hiddenShowIDs: hiddenShowIDs, includeSpecials: includeSpecials)
+                }.value
+                // A refresh, account change, or preference edit may have published newer data.
+                guard let self, self.widgetPublicationRevision == revision else { return }
+                self.publishWidgetSnapshot(library: library)
+            } catch {
+                Logger(subsystem: "net.andrewroland.WatchMate", category: "Widget")
+                    .error("Could not load startup widget data: \(error.localizedDescription, privacy: .public)")
+            }
+        }
     }
 
     func publishWidgetSnapshot(errorShowID: Int? = nil, message: String? = nil) {
+        publishWidgetSnapshot(library: nil, errorShowID: errorShowID, message: message)
+    }
+
+    private func publishWidgetSnapshot(library: WidgetLibrary?, errorShowID: Int? = nil, message: String? = nil) {
+        widgetPublicationRevision += 1
         do {
-            var library = try widgetLibrary()
+            var library = try library ?? widgetLibrary()
             library.errorShowID = errorShowID
             library.errorMessage = message
             if try WidgetSnapshotStore.write(library) {
