@@ -9,3 +9,4 @@ Configuration/Local.xcconfig
 *.mobileprovision
 *.p12
 .env
+/ScreenshotFixtures/

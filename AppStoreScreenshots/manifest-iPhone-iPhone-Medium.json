@@ -1,0 +1,86 @@
+{
+  "generatedAt": "2026-10-21T11:20:40.148135+00:00",
+  "sampleData": "Real TMDB programmes, artwork and air dates; sample viewing progress; no account required.",
+  "captures": [
+    {
+      "file": "iPhone/01-Up-Next.png",
+      "screen": "up-next",
+      "device": "iPhone 18 Pro Max",
+      "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
+      "width": 1320,
+      "height": 2868
+    },
+    {
+      "file": "iPhone/02-Coming-Soon.png",
+      "screen": "coming-soon",
+      "device": "iPhone 18 Pro Max",
+      "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
+      "width": 1320,
+      "height": 2868
+    },
+    {
+      "file": "iPhone/03-My-Shows.png",
+      "screen": "my-shows",
+      "device": "iPhone 18 Pro Max",
+      "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
+      "width": 1320,
+      "height": 2868
+    },
+    {
+      "file": "iPhone/04-Programme-Details.png",
+      "screen": "show",
+      "device": "iPhone 18 Pro Max",
+      "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
+      "width": 1320,
+      "height": 2868
+    },
+    {
+      "file": "iPhone/05-Episode-Details.png",
+      "screen": "episode",
+      "device": "iPhone 18 Pro Max",
+      "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
+      "width": 1320,
+      "height": 2868
+    },
+    {
+      "file": "iPhone-Medium/01-Up-Next.png",
+      "screen": "up-next",
+      "device": "iPhone 18 Pro",
+      "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "file": "iPhone-Medium/02-Coming-Soon.png",
+      "screen": "coming-soon",
+      "device": "iPhone 18 Pro",
+      "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "file": "iPhone-Medium/03-My-Shows.png",
+      "screen": "my-shows",
+      "device": "iPhone 18 Pro",
+      "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "file": "iPhone-Medium/04-Programme-Details.png",
+      "screen": "show",
+      "device": "iPhone 18 Pro",
+      "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
+      "width": 1206,
+      "height": 2622
+    },
+    {
+      "file": "iPhone-Medium/05-Episode-Details.png",
+      "screen": "episode",
+      "device": "iPhone 18 Pro",
+      "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
+      "width": 1206,
+      "height": 2622
+    }
+  ]
+}

@@ -8,7 +8,8 @@ struct RootView: View {
     @State private var showingAirDateInfo = false
     @State private var showingSharingInfo = false
     @State private var searchOpen = false
-    @State private var selectedTab = 0
+    @State private var selectedTab = AppStoreScreenshotMode.selectedTab
+    @State private var screenshotShow: Show?
     @State private var historyOffersOpen = false
     @State private var widgetEpisodePath: [WidgetEpisodeLink] = []
     var body: some View {
@@ -54,6 +55,9 @@ struct RootView: View {
                 .tag(1)
             NavigationStack {
                 MyShowsView()
+                    .navigationDestination(item: $screenshotShow) { show in
+                        ShowDetailView(show: show)
+                    }
                     .modifier(ActivityToastModifier())
                     .toolbar {
                         ToolbarItem(placement: .topBarLeading) {
@@ -110,10 +114,10 @@ struct RootView: View {
             Button("OK") { store.sharedShows.errorMessage = nil }
         } message: { Text(store.sharedShows.errorMessage ?? "") }
         .safeAreaInset(edge: .top, spacing: 0) {
-            if store.settings.demoMode {
+            if store.settings.demoMode && !AppStoreScreenshotMode.isEnabled {
                 HStack(spacing: 8) {
                     Image(systemName: "sparkles")
-                    Text("Demo mode · sample shows").font(.caption)
+                    Text("Demo mode · sample progress").font(.caption)
                     Spacer()
                     Button("Connect") { settingsOpen = true }.font(.caption.bold())
                 }.padding(.horizontal).padding(.vertical, 8).background(.thinMaterial)
@@ -163,6 +167,16 @@ struct RootView: View {
             selectedTab = 0
             widgetEpisodePath = [link]
             store.widgetEpisodeLink = nil
+        }
+        .task {
+            guard AppStoreScreenshotMode.isEnabled,
+                  let show = try? store.allShows().first(where: { $0.traktID == -1 }) else { return }
+            if AppStoreScreenshotMode.screen == "show" {
+                screenshotShow = show
+            } else if AppStoreScreenshotMode.screen == "episode",
+                      let episode = show.episodes.first(where: { $0.number == 4 }) {
+                widgetEpisodePath = [WidgetEpisodeLink(episodeKey: episode.key, accountScope: store.widgetAccountScope)]
+            }
         }
         .task(id: scenePhase) {
             guard scenePhase == .active else { return }
@@ -265,7 +279,9 @@ struct PosterImageView: View {
 
     var body: some View {
         Group {
-            if let path = posterPath, let url = URL(string: "https://image.tmdb.org/t/p/w342\(path)") {
+            if let image = DemoLibrary.image(for: posterPath) {
+                Image(uiImage: image).resizable().scaledToFill()
+            } else if let path = posterPath, let url = URL(string: "https://image.tmdb.org/t/p/w342\(path)") {
                 AsyncImage(url: url) { phase in
                     if let image = phase.image { image.resizable().scaledToFill() } else { placeholder }
                 }
@@ -335,3 +351,36 @@ struct ShowRow: View {
         }.padding(.vertical, 6)
     }
 }
+
+#if DEBUG
+
+#Preview("App tabs") {
+    PreviewHost { data in
+        RootView()
+    }
+}
+
+#Preview("Programme poster") {
+    PreviewHost { data in
+        PosterView(show: data.show, width: 160)
+    }
+}
+
+#Preview("Poster image") {
+    PreviewHost { data in
+        PosterImageView(posterPath: data.show.posterPath, width: 160)
+    }
+}
+
+#Preview("Programme row") {
+    PreviewHost { data in
+        List { ShowRow(show: data.show, episode: data.episode) }
+    }
+}
+
+#Preview("Season update") {
+    PreviewHost { data in
+        SeasonUpdateOverlay(completed: 3, total: 9)
+    }
+}
+#endif

@@ -38,7 +38,7 @@ struct ShowDetailView: View {
                 HStack(alignment: .top, spacing: 16) {
                     PosterView(show: show, width: 96)
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(show.title).font(.title2.bold())
+                        Text(show.title).font(.title2.bold()).accessibilityAddTraits(.isHeader)
                         Text("\(store.waiting(show).count) aired episodes to watch")
                             .foregroundStyle(.tint)
                             .lineLimit(nil)
@@ -217,7 +217,7 @@ private struct SeasonSection: View {
                     Image(systemName: expanded ? "chevron.down" : "chevron.right")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .frame(minWidth: 24, minHeight: 44)
+                        .frame(minWidth: 44, minHeight: 44)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -306,3 +306,24 @@ private struct SeasonEpisodeRow: View {
         }.padding(.vertical, 4)
     }
 }
+
+#if DEBUG
+
+#Preview("Programme details") {
+    PreviewHost { data in
+        NavigationStack { ShowDetailView(show: data.show) }
+    }
+}
+
+#Preview("Season") {
+    PreviewHost { data in
+        List { SeasonSection(show: data.show, season: 1, posterPath: data.show.posterPath, selectedEpisode: .constant(nil)) }
+    }
+}
+
+#Preview("Season episode") {
+    PreviewHost { data in
+        List { SeasonEpisodeRow(episode: data.episode, selectedEpisode: .constant(nil)) }
+    }
+}
+#endif

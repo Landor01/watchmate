@@ -130,6 +130,7 @@ struct WatchMateWidgetEntryView: View {
                 Spacer(minLength: 0)
             }
         }
+        .dynamicTypeSize(.large)
         .containerBackground(.fill.tertiary, for: .widget)
         .widgetURL(entry.show?.nextEpisode(at: entry.date).flatMap {
             WidgetEpisodeLink(episodeKey: $0.id, accountScope: entry.accountScope).url
@@ -271,4 +272,20 @@ struct WatchMateWidget: Widget {
     WatchMateWidget()
 } timeline: {
     NextEpisodeEntry.preview
+}
+
+#Preview("Compact episode details") {
+    if let episode = NextEpisodeEntry.preview.show?.episodes.first {
+        SmallWidgetEpisodeDetails(episode: episode).padding()
+    }
+}
+
+#Preview("Expanded episode details") {
+    if let episode = NextEpisodeEntry.preview.show?.episodes.first {
+        WidgetEpisodeDetails(episode: episode, expanded: true).padding()
+    }
+}
+
+#Preview("Episode actions") {
+    WidgetEpisodeActions(showID: -1, episodeKey: "-1:1:4", accountScope: "preview").padding()
 }

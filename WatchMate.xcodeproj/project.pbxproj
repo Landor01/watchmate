@@ -22,6 +22,11 @@
 		C324931A30860C6600C1848C /* SharedProgrammeProgressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C324931930860C6600C1848C /* SharedProgrammeProgressTests.swift */; };
 		C324931C3086516D00C1848C /* SharedShowsCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = C324931B3086516D00C1848C /* SharedShowsCache.swift */; };
 		C324931E308651F000C1848C /* SharedShowsCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C324931D308651F000C1848C /* SharedShowsCacheTests.swift */; };
+		C32493203087B9D200C1848C /* AppStoreScreenshotSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C324931F3087B9D200C1848C /* AppStoreScreenshotSupport.swift */; };
+		C32493223088D82700C1848C /* DemoLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32493213088D82700C1848C /* DemoLibrary.swift */; };
+		C32493243088D82800C1848C /* DemoLibrary.json in Resources */ = {isa = PBXBuildFile; fileRef = C32493233088D82800C1848C /* DemoLibrary.json */; };
+		C32493263088D87000C1848C /* DemoLibraryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32493253088D87000C1848C /* DemoLibraryTests.swift */; };
+		C32493283089218100C1848C /* PreviewSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32493273089218100C1848C /* PreviewSupport.swift */; };
 		C34073EB307A217200957700 /* HTTP.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34073DC307A217200957700 /* HTTP.swift */; };
 		C34073EC307A217200957700 /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34073E2307A217200957700 /* Keychain.swift */; };
 		C34073ED307A217200957700 /* TraktService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34073E0307A217200957700 /* TraktService.swift */; };
@@ -112,6 +117,11 @@
 		C324931930860C6600C1848C /* SharedProgrammeProgressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedProgrammeProgressTests.swift; sourceTree = "<group>"; };
 		C324931B3086516D00C1848C /* SharedShowsCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedShowsCache.swift; sourceTree = "<group>"; };
 		C324931D308651F000C1848C /* SharedShowsCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedShowsCacheTests.swift; sourceTree = "<group>"; };
+		C324931F3087B9D200C1848C /* AppStoreScreenshotSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreScreenshotSupport.swift; sourceTree = "<group>"; };
+		C32493213088D82700C1848C /* DemoLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoLibrary.swift; sourceTree = "<group>"; };
+		C32493233088D82800C1848C /* DemoLibrary.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = DemoLibrary.json; sourceTree = "<group>"; };
+		C32493253088D87000C1848C /* DemoLibraryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoLibraryTests.swift; sourceTree = "<group>"; };
+		C32493273089218100C1848C /* PreviewSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewSupport.swift; sourceTree = "<group>"; };
 		C34073D9307A217200957700 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		C34073DB307A217200957700 /* AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStore.swift; sourceTree = "<group>"; };
 		C34073DC307A217200957700 /* HTTP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTP.swift; sourceTree = "<group>"; };
@@ -228,6 +238,7 @@
 				C3249311308605EF00C1848C /* SharedHistoryTests.swift */,
 				C324931930860C6600C1848C /* SharedProgrammeProgressTests.swift */,
 				C324931D308651F000C1848C /* SharedShowsCacheTests.swift */,
+				C32493253088D87000C1848C /* DemoLibraryTests.swift */,
 			);
 			path = WatchMateTests;
 			sourceTree = "<group>";
@@ -268,6 +279,10 @@
 				C34073E3307A217200957700 /* Settings.swift */,
 				C39EB38D307FC30A005923E9 /* AppTheme.swift */,
 				C39EB3B63081F185005923E9 /* WidgetShared.swift */,
+				C324931F3087B9D200C1848C /* AppStoreScreenshotSupport.swift */,
+				C32493213088D82700C1848C /* DemoLibrary.swift */,
+				C32493233088D82800C1848C /* DemoLibrary.json */,
+				C32493273089218100C1848C /* PreviewSupport.swift */,
 			);
 			path = Support;
 			sourceTree = "<group>";
@@ -442,6 +457,7 @@
 			files = (
 				C39EB3903080F3EF005923E9 /* WatchMate.icon in Resources */,
 				67860262FAAC8F40D30B9064 /* Assets.xcassets in Resources */,
+				C32493243088D82800C1848C /* DemoLibrary.json in Resources */,
 				64D6E73FCD49866D06D2482D /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -489,12 +505,14 @@
 				D0E9BA09D5C348F7E4D7B604 /* WatchMateApp.swift in Sources */,
 				C34073EB307A217200957700 /* HTTP.swift in Sources */,
 				C32493083086024D00C1848C /* ProviderNamesView.swift in Sources */,
+				C32493223088D82700C1848C /* DemoLibrary.swift in Sources */,
 				C34073EC307A217200957700 /* Keychain.swift in Sources */,
 				C34073ED307A217200957700 /* TraktService.swift in Sources */,
 				C39EB3B73081F185005923E9 /* WidgetShared.swift in Sources */,
 				C39EB388307FB83C005923E9 /* ProfilePhotoSection.swift in Sources */,
 				C324930E308604C400C1848C /* SharedInvitations.swift in Sources */,
 				C34073EE307A217200957700 /* SearchView.swift in Sources */,
+				C32493283089218100C1848C /* PreviewSupport.swift in Sources */,
 				C34073EF307A217200957700 /* RootView.swift in Sources */,
 				C39EB38C307FBFAD005923E9 /* EpisodeArtworkView.swift in Sources */,
 				C34073F0307A217200957700 /* TMDBService.swift in Sources */,
@@ -505,6 +523,7 @@
 				C324930C308604C400C1848C /* SharedHistoryImport.swift in Sources */,
 				C39EB3943080FBF8005923E9 /* WhatsNewView.swift in Sources */,
 				C39EB39830810E86005923E9 /* StreamingServicesView.swift in Sources */,
+				C32493203087B9D200C1848C /* AppStoreScreenshotSupport.swift in Sources */,
 				C39EB38A307FBD15005923E9 /* ComingSoonView.swift in Sources */,
 				C3407486307E450600957700 /* EpisodeDetailView.swift in Sources */,
 				C324931630860BA700C1848C /* SharedProgrammeProgress.swift in Sources */,
@@ -537,6 +556,7 @@
 				C39EB3C13081F329005923E9 /* WidgetTests.swift in Sources */,
 				162F4FF742B833CF527DFE05 /* EpisodeRulesTests.swift in Sources */,
 				C3249312308605EF00C1848C /* SharedHistoryTests.swift in Sources */,
+				C32493263088D87000C1848C /* DemoLibraryTests.swift in Sources */,
 				C324931A30860C6600C1848C /* SharedProgrammeProgressTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -573,7 +593,7 @@
 				CODE_SIGN_ENTITLEMENTS = WatchMate/WatchMate.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 76XP2MF734;
 				ENABLE_PREVIEWS = YES;
@@ -685,7 +705,7 @@
 				CODE_SIGN_ENTITLEMENTS = WatchMateWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = 76XP2MF734;
 				ENABLE_APP_SANDBOX = YES;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -747,7 +767,7 @@
 				CODE_SIGN_ENTITLEMENTS = WatchMateWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = 76XP2MF734;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -845,7 +865,7 @@
 				CODE_SIGN_ENTITLEMENTS = WatchMate/WatchMate.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 76XP2MF734;
 				ENABLE_PREVIEWS = YES;

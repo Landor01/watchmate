@@ -104,7 +104,7 @@ struct WhatsNewView: View {
             id: "demo-guidance",
             systemImage: "sparkles",
             title: "Explore before signing in",
-            detail: "Try WatchMate with fictional sample shows in demo mode, then connect Trakt in Settings when you’re ready to bring in your own shows and viewing history."
+            detail: "Try WatchMate with real programme artwork and sample viewing progress in demo mode, then connect Trakt in Settings when you’re ready to bring in your own shows and viewing history."
         ),
         Item(
             id: "privacy",
@@ -230,3 +230,18 @@ private struct WhatsNewFeatureRow: View {
     WhatsNewView(version: "1.1", onDismiss: {})
         .environment(\.dynamicTypeSize, .accessibility3)
 }
+
+#if DEBUG
+
+#Preview("Release header") {
+    PreviewHost { data in
+        WhatsNewHeader(version: "1.0", introduction: "Welcome to WatchMate").padding()
+    }
+}
+
+#Preview("Feature row") {
+    PreviewHost { data in
+        if let item = WhatsNewView.defaultItems.first { WhatsNewFeatureRow(item: item).padding() }
+    }
+}
+#endif

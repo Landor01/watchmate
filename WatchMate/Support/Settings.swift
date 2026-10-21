@@ -86,6 +86,9 @@ final class Settings {
     var highlightAvailableServices = UserDefaults.standard.bool(forKey: "onlyMyServices") {
         didSet { UserDefaults.standard.set(highlightAvailableServices, forKey: "onlyMyServices"); onPreferencesChanged?() }
     }
+    var sharedShowsUpdateTraktHistory = UserDefaults.standard.object(forKey: "sharedShowsUpdateTraktHistory") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(sharedShowsUpdateTraktHistory, forKey: "sharedShowsUpdateTraktHistory"); onPreferencesChanged?() }
+    }
     var region: String { didSet { UserDefaults.standard.set(region, forKey: "region"); onPreferencesChanged?() } }
     var includeSpecials: Bool { didSet { UserDefaults.standard.set(includeSpecials, forKey: "specials"); onPreferencesChanged?() } }
     var selectedProviders: Set<Int> { didSet { UserDefaults.standard.set(Array(selectedProviders), forKey: "providers"); onPreferencesChanged?() } }

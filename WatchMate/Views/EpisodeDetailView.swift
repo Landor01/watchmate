@@ -32,7 +32,7 @@ private struct EpisodeSummarySection: View {
                     EpisodeArtworkView(show: show, episode: episode, width: 120, adaptsToImage: true)
                     VStack(alignment: .leading, spacing: 8) {
                         Text(show.title).font(.subheadline).foregroundStyle(.secondary)
-                        Text(episode.title).font(.title2.bold())
+                        Text(episode.title).font(.title2.bold()).accessibilityAddTraits(.isHeader)
                         Text("Season \(episode.season) · Episode \(episode.number)")
                             .font(.subheadline)
                     }
@@ -41,7 +41,7 @@ private struct EpisodeSummarySection: View {
                     dimensions[.leading]
                 }
             } else {
-                Text(episode.title).font(.title2.bold())
+                Text(episode.title).font(.title2.bold()).accessibilityAddTraits(.isHeader)
             }
             if let date = episode.firstAired {
                 LabeledContent(date > Date() ? "Scheduled air date" : "First aired") {
@@ -129,3 +129,30 @@ private struct EpisodeViewingSection: View {
         }
     }
 }
+
+#if DEBUG
+
+#Preview("Episode details") {
+    PreviewHost { data in
+        NavigationStack { EpisodeDetailView(episode: data.episode) }
+    }
+}
+
+#Preview("Episode summary") {
+    PreviewHost { data in
+        List { EpisodeSummarySection(episode: data.episode) }
+    }
+}
+
+#Preview("Streaming") {
+    PreviewHost { data in
+        List { EpisodeStreamingSection(show: data.show) }
+    }
+}
+
+#Preview("Viewing progress") {
+    PreviewHost { data in
+        List { EpisodeViewingSection(episode: data.episode) }
+    }
+}
+#endif

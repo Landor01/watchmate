@@ -80,7 +80,7 @@ struct SharedProgrammeView: View {
         .alert("Shared viewing history", isPresented: $showingHistoryInfo) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Shared progress and skips belong to this list. They do not change your personal Trakt history. Syncing replaces your progress for this programme, including marking episodes unwatched if you are ahead. You will review the changes before confirming.")
+            Text("When Shared shows update Trakt history is on in Settings, marking episodes watched or unwatched also updates your Trakt account and matching shared lists. When off, shared progress stays separate. Skips belong to this list. Sync my Trakt history replaces your personal progress with this list’s progress after you review and confirm the changes.")
         }
         .safeAreaInset(edge: .bottom) {
             if working {
@@ -104,7 +104,7 @@ struct SharedProgrammeView: View {
         }
         .refreshable {
             guard !working else { return }
-            await store.sharedShows.refresh()
+            await store.refreshSharedShows()
             await loadEpisodes()
         }
         .sheet(isPresented: $importing) {
@@ -120,6 +120,17 @@ struct SharedProgrammeView: View {
 
     private func loadEpisodes() async {
         guard let programme else { return }
+        if PreviewEnvironment.isRunning {
+            if let show = try? store.allShows().first(where: { $0.traktID == showID }) {
+                posterPath = show.posterPath
+                episodes = show.episodes.map {
+                    RemoteEpisode(season: $0.season, number: $0.number, title: $0.title,
+                                  ids: IDs(trakt: $0.traktID, tmdb: nil), overview: $0.overview,
+                                  firstAired: $0.firstAired?.ISO8601Format(), runtime: $0.runtime)
+                }
+            }
+            return
+        }
         loading = true
         message = nil
         defer { loading = false }
@@ -144,7 +155,7 @@ struct SharedProgrammeView: View {
         Task {
             defer { working = false; store.busy = false }
             do {
-                try await store.sharedShows.updateEpisodes(episodes, showID: showID, in: list, action: action) {
+                try await store.updateSharedEpisodes(episodes, showID: showID, in: list, action: action) {
                     completed = $0
                 }
             } catch {
@@ -164,7 +175,7 @@ private struct SharedProgrammeSummary: View {
             HStack(alignment: .top, spacing: 16) {
                 PosterImageView(posterPath: posterPath, width: 96)
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(title).font(.title2.bold())
+                    Text(title).font(.title2.bold()).accessibilityAddTraits(.isHeader)
                     Text("\(progress.watchedCount) episodes watched together").foregroundStyle(.tint)
                     Label("Watched: \(duration(progress.watchedMinutes, unknown: progress.unknownWatchedRuntimes))",
                           systemImage: "clock")
@@ -237,7 +248,7 @@ private struct SharedSeasonSection: View {
                 Button { toggle() } label: {
                     Image(systemName: expanded ? "chevron.down" : "chevron.right")
                         .font(.caption).foregroundStyle(.secondary)
-                        .frame(minWidth: 24, minHeight: 44).contentShape(Rectangle())
+                        .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(expanded ? "Collapse season" : "Expand season")
@@ -364,7 +375,7 @@ private struct SharedEpisodeDetails: View {
             Section {
                 SharedEpisodeArtwork(tmdbID: tmdbID, episode: episode, posterPath: posterPath, width: 240)
                     .frame(maxWidth: .infinity)
-                Text(episode.title ?? "Episode").font(.title2.bold())
+                Text(episode.title ?? "Episode").font(.title2.bold()).accessibilityAddTraits(.isHeader)
                 SharedEpisodeStatus(row: row)
                 if let overview = episode.overview, !overview.isEmpty { Text(overview).font(.subheadline) }
                 SharedEpisodeButtons(row: row, update: update).disabled(store.busy || programme == nil)
@@ -375,3 +386,54 @@ private struct SharedEpisodeDetails: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 }
+
+#if DEBUG
+
+#Preview("Shared programme") {
+    PreviewHost { data in
+        NavigationStack { SharedProgrammeView(listID: data.list.id, showID: data.show.traktID) }
+    }
+}
+
+#Preview("Shared summary") {
+    PreviewHost { data in
+        List { SharedProgrammeSummary(title: data.show.title, posterPath: data.show.posterPath, progress: data.sharedProgress) }
+    }
+}
+
+#Preview("Shared season") {
+    PreviewHost { data in
+        List { SharedSeasonSection(season: data.sharedSeason, listID: data.list.id, showID: data.show.traktID, tmdbID: nil, posterPath: data.show.posterPath, update: { _, _ in }) }
+    }
+}
+
+#Preview("Shared episode row") {
+    PreviewHost { data in
+        List { SharedSeasonEpisodeRow(row: data.sharedRow, listID: data.list.id, showID: data.show.traktID, tmdbID: nil, posterPath: data.show.posterPath, update: { _, _ in }) }
+    }
+}
+
+#Preview("Shared episode buttons") {
+    PreviewHost { data in
+        SharedEpisodeButtons(row: data.sharedRow, update: { _, _ in }).padding()
+    }
+}
+
+#Preview("Shared episode status") {
+    PreviewHost { data in
+        SharedEpisodeStatus(row: data.sharedRow).padding()
+    }
+}
+
+#Preview("Shared artwork") {
+    PreviewHost { data in
+        SharedEpisodeArtwork(tmdbID: nil, episode: data.remoteEpisode, posterPath: data.show.posterPath, width: 160)
+    }
+}
+
+#Preview("Shared episode details") {
+    PreviewHost { data in
+        NavigationStack { SharedEpisodeDetails(listID: data.list.id, showID: data.show.traktID, episode: data.remoteEpisode, tmdbID: nil, posterPath: data.show.posterPath, update: { _, _ in }) }
+    }
+}
+#endif

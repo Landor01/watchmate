@@ -50,6 +50,10 @@ struct SettingsView: View {
                         Text("Trakt sign-in is unavailable in this version of WatchMate. Please contact support.").font(.caption).foregroundStyle(.secondary)
                     }
                 }
+                Toggle("Shared shows update Trakt history", isOn: $settings.sharedShowsUpdateTraktHistory)
+                    .disabled(store.busy)
+                Text("Keep watched progress in sync between your shared lists and your Trakt account when you mark episodes watched or unwatched. Turning this off keeps shared progress separate.")
+                    .font(.caption).foregroundStyle(.secondary)
                 Button("Switch to demo data") { confirmDemo = true }.disabled(store.busy)
             }
             Section("Viewing preferences") {
@@ -175,7 +179,7 @@ struct SettingsView: View {
             .confirmationDialog("Clear viewing data on this device? Your Trakt history and iCloud data are retained.", isPresented: $confirmDisconnect, titleVisibility: .visible) {
                 Button("Disconnect", role: .destructive) { Task { await store.disconnect() } }
             }
-            .confirmationDialog("Replace local data with fictional demo shows? Your Trakt history and iCloud data are retained.", isPresented: $confirmDemo, titleVisibility: .visible) {
+            .confirmationDialog("Replace local data with demo shows and sample viewing progress? Your Trakt history and iCloud data are retained.", isPresented: $confirmDemo, titleVisibility: .visible) {
                 Button("Switch to demo data", role: .destructive) { Task { await store.useDemo() } }
             }
     }
@@ -280,6 +284,27 @@ private struct DebugConnectionTestButton: View {
                 result = "Connection failed: \(error.localizedDescription)"
             }
         }
+    }
+}
+#endif
+
+#if DEBUG
+
+#Preview("Settings") {
+    PreviewHost { data in
+        NavigationStack { SettingsView() }
+    }
+}
+
+#Preview("Device reminders") {
+    PreviewHost { data in
+        Form { DeviceRemindersControl() }
+    }
+}
+
+#Preview("Connection test") {
+    PreviewHost { data in
+        Form { DebugConnectionTestButton(title: "Test connection", test: { "Preview connection successful" }) }
     }
 }
 #endif

@@ -74,3 +74,12 @@ struct StreamingServicesView: View {
         }
     }
 }
+
+#if DEBUG
+
+#Preview("Streaming services") {
+    PreviewHost { data in
+        NavigationStack { StreamingServicesView() }
+    }
+}
+#endif

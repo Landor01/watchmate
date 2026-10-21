@@ -54,7 +54,14 @@ final class SharedShows {
     private(set) var refreshMessage: String?
     @ObservationIgnored private var accountTask: Task<Void, Never>?
 
+    #if DEBUG
+    func preparePreview(lists: [HouseholdList]) {
+        self.lists = lists
+    }
+    #endif
+
     init() {
+        guard !PreviewEnvironment.isRunning else { return }
         accountTask = Task { [weak self] in
             for await _ in NotificationCenter.default.notifications(named: .CKAccountChanged) {
                 guard !Task.isCancelled else { return }
@@ -111,6 +118,7 @@ final class SharedShows {
     }
 
     func refresh(reportErrors: Bool = true, automatic: Bool = false) async {
+        guard !PreviewEnvironment.isRunning else { return }
         guard let accountID else { return }
         if loading {
             // A write or pull-to-refresh during a fetch needs a follow-up, not a dropped refresh.

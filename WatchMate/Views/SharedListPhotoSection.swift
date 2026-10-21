@@ -109,9 +109,8 @@ struct SharedListPhotoSection: View {
                             }
                         }
                     }
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 24) { photoControls }
-                    VStack(spacing: 12) { photoControls }
+                HStack {
+                    photoControls
                 }
                 .buttonStyle(.borderless)
                 if saving { ProgressView("Saving list photo…") }
@@ -187,6 +186,7 @@ struct SharedListPhotoSection: View {
         PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
             Label("Choose Photo", systemImage: "photo")
         }
+        Spacer(minLength: 16)
         Button { requestingCamera = true } label: {
             Label("Take Photo", systemImage: "camera")
         }
@@ -304,3 +304,24 @@ private struct ListPhotoSelection: Identifiable {
     let id = UUID()
     let image: UIImage
 }
+
+#if DEBUG
+
+#Preview("Shared list photo") {
+    PreviewHost { data in
+        Form { SharedListPhotoSection(list: data.list) }
+    }
+}
+
+#Preview("Shared list avatar") {
+    PreviewHost { data in
+        SharedListAvatarView(name: data.list.name, photoData: nil, size: 96)
+    }
+}
+
+#Preview("Shared list summary") {
+    PreviewHost { data in
+        List { SharedListSummaryView(list: data.list) }
+    }
+}
+#endif

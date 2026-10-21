@@ -1,0 +1,86 @@
+{
+  "generatedAt": "2026-10-21T11:20:41.130487+00:00",
+  "sampleData": "Real TMDB programmes, artwork and air dates; sample viewing progress; no account required.",
+  "captures": [
+    {
+      "file": "iPad-13-inch/01-Up-Next.png",
+      "screen": "up-next",
+      "device": "iPad Pro 13-inch (M5)",
+      "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
+      "width": 2064,
+      "height": 2752
+    },
+    {
+      "file": "iPad-13-inch/02-Coming-Soon.png",
+      "screen": "coming-soon",
+      "device": "iPad Pro 13-inch (M5)",
+      "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
+      "width": 2064,
+      "height": 2752
+    },
+    {
+      "file": "iPad-13-inch/03-My-Shows.png",
+      "screen": "my-shows",
+      "device": "iPad Pro 13-inch (M5)",
+      "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
+      "width": 2064,
+      "height": 2752
+    },
+    {
+      "file": "iPad-13-inch/04-Programme-Details.png",
+      "screen": "show",
+      "device": "iPad Pro 13-inch (M5)",
+      "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
+      "width": 2064,
+      "height": 2752
+    },
+    {
+      "file": "iPad-13-inch/05-Episode-Details.png",
+      "screen": "episode",
+      "device": "iPad Pro 13-inch (M5)",
+      "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
+      "width": 2064,
+      "height": 2752
+    },
+    {
+      "file": "iPhone-Duo/01-Up-Next.png",
+      "screen": "up-next",
+      "device": "iPhone Duo",
+      "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-1",
+      "width": 1398,
+      "height": 2034
+    },
+    {
+      "file": "iPhone-Duo/02-Coming-Soon.png",
+      "screen": "coming-soon",
+      "device": "iPhone Duo",
+      "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-1",
+      "width": 1398,
+      "height": 2034
+    },
+    {
+      "file": "iPhone-Duo/03-My-Shows.png",
+      "screen": "my-shows",
+      "device": "iPhone Duo",
+      "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-1",
+      "width": 1398,
+      "height": 2034
+    },
+    {
+      "file": "iPhone-Duo/04-Programme-Details.png",
+      "screen": "show",
+      "device": "iPhone Duo",
+      "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-1",
+      "width": 1398,
+      "height": 2034
+    },
+    {
+      "file": "iPhone-Duo/05-Episode-Details.png",
+      "screen": "episode",
+      "device": "iPhone Duo",
+      "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-1",
+      "width": 1398,
+      "height": 2034
+    }
+  ]
+}

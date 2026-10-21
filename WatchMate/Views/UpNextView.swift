@@ -150,3 +150,18 @@ struct MyShowsView: View {
             }
     }
 }
+
+#if DEBUG
+
+#Preview("Up Next") {
+    PreviewHost { data in
+        NavigationStack { UpNextView() }
+    }
+}
+
+#Preview("My Shows") {
+    PreviewHost { data in
+        NavigationStack { MyShowsView() }
+    }
+}
+#endif

@@ -93,6 +93,7 @@ final class TMDBService: CatalogueService {
     }
 
     func availableRegions() async throws -> [String] {
+        if PreviewEnvironment.isRunning { return ["AU", "CA", "GB", "US"] }
         let response = try await get("watch/providers/regions", type: WatchRegionResults.self)
         return Array(Set(response.results.map(\.iso31661))).sorted()
     }
@@ -119,6 +120,7 @@ final class TMDBService: CatalogueService {
                                 providers: mapped, watchURL: country?.link)
     }
     func providers(region: String) async throws -> [Provider] {
+        if PreviewEnvironment.isRunning { return PreviewEnvironment.providers }
         let result = try await get("watch/providers/tv", query: [URLQueryItem(name: "watch_region", value: region)], type: ProviderResults.self)
         return result.results.map { Provider(id: $0.providerId, name: $0.providerName) }.sorted { $0.name < $1.name }
     }

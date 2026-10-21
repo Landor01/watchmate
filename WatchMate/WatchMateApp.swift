@@ -14,7 +14,8 @@ struct WatchMateApp: App {
             let store = services.store
             store.publishStartupWidgetSnapshot()
             // Preserve the startup experience for people already using the app.
-            if !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding"),
+            if !AppStoreScreenshotMode.isEnabled, !PreviewEnvironment.isRunning,
+               !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding"),
                !UserDefaults.standard.bool(forKey: "onboardingStarted"),
                (store.connected && !store.settings.demoMode) || ((try? store.hasShows()) == true) {
                 UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
@@ -27,7 +28,11 @@ struct WatchMateApp: App {
             AppEntryView().environment(store).modelContainer(container)
                 .modifier(AppAppearanceModifier())
                 .environment(tips)
-                .task { await tips.finishUnfinishedTransactions() }
+                .dynamicTypeSize(.large)
+                .task {
+                    guard !AppStoreScreenshotMode.isEnabled else { return }
+                    await tips.finishUnfinishedTransactions()
+                }
                 .onOpenURL { url in
                     if let link = WidgetEpisodeLink(url: url) {
                         store.widgetEpisodeLink = link

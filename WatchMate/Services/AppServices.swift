@@ -16,6 +16,15 @@ final class AppServices {
     }
 
     private init() throws {
+        if AppStoreScreenshotMode.isEnabled || PreviewEnvironment.isRunning {
+            PreviewEnvironment.prepareDefaults()
+            AppStoreScreenshotMode.prepareDefaults()
+            let configuration = ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none)
+            container = try ModelContainer(for: Show.self, Episode.self, configurations: configuration)
+            try AppStoreScreenshotMode.seed(in: container.mainContext)
+            store = AppStore(context: container.mainContext, settings: Settings())
+            return
+        }
         // Keep the existing database location when adding the widget's App Group.
         let directory = URL.applicationSupportDirectory
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

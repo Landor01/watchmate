@@ -6,7 +6,7 @@ struct ComingSoonView: View {
     @Environment(\.calendar) private var calendar
     @Query(Show.withEpisodes) private var shows: [Show]
     @AppStorage("comingSoonCalendar") private var calendarMode = true
-    @State private var selectedDate = Date()
+    @State private var selectedDate = AppStoreScreenshotMode.calendarDate
 
     private var scheduledEntries: [ScheduledProgramme] {
         shows.filter { $0.isFollowing }.flatMap { show in
@@ -29,8 +29,8 @@ struct ComingSoonView: View {
             calendarMode ? calendar.isDate($0.date, inSameDayAs: selectedDate) : ($0.date > now && $0.date <= end)
         }
         GeometryReader { geometry in
-            // Use the current window's space so rotation and resizing update the layout.
-            let usesColumns = geometry.size.width > geometry.size.height && geometry.size.width >= 600
+            // Each calendar column needs room for seven 44-point targets plus padding.
+            let usesColumns = geometry.size.width > geometry.size.height && geometry.size.width >= 760
             if calendarMode && usesColumns {
                 HStack(spacing: 0) {
                     LandscapeCalendarPanel(
@@ -88,22 +88,19 @@ private struct LandscapeCalendarPanel: View {
 
     var body: some View {
         let theme = AppTheme(rawValue: themeValue) ?? .system
-        VStack(spacing: 4) {
-            GeometryReader { geometry in
-                ProgrammeCalendar(
-                    selectedDate: $selectedDate,
-                    scheduledDates: scheduledDates,
-                    availableHeight: max(0, geometry.size.height - 8)
-                )
-                .padding(.horizontal, 12)
-                .padding(.vertical, 4)
-                .background(
-                    theme == .system
-                        ? Color(uiColor: .secondarySystemGroupedBackground)
-                        : theme.tileColor(for: colorScheme),
-                    in: RoundedRectangle(cornerRadius: 12)
-                )
-            }
+        ScrollView {
+            ProgrammeCalendar(
+                selectedDate: $selectedDate,
+                scheduledDates: scheduledDates
+            )
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
+            .background(
+                theme == .system
+                    ? Color(uiColor: .secondarySystemGroupedBackground)
+                    : theme.tileColor(for: colorScheme),
+                in: RoundedRectangle(cornerRadius: 12)
+            )
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 4)
@@ -162,8 +159,6 @@ private struct ProgrammeCalendar: View {
     @Binding var selectedDate: Date
     let scheduledDates: Set<Date>
 
-    var availableHeight: CGFloat? = nil
-
     // Calendar arithmetic preserves local day boundaries across daylight-saving changes.
     private var days: [Date] {
         guard let month = calendar.dateInterval(of: .month, for: selectedDate),
@@ -175,19 +170,11 @@ private struct ProgrammeCalendar: View {
 
     var body: some View {
         let dates = days
-        let compact = availableHeight != nil
-        let headerHeight: CGFloat = compact ? 32 : 44
-        // Reserve space for month controls, weekday labels, and Today, then fit every week.
-        let reservedHeight: CGFloat = headerHeight + 28 + 44 + 4
-        let weekCount = CGFloat(max(1, dates.count / 7))
-        let rowHeight = availableHeight.map { height in
-            min(44, max(1, (height - reservedHeight) / weekCount))
-        } ?? 44
-        VStack(spacing: compact ? 4 : 12) {
+        VStack(spacing: 12) {
             HStack {
                 Button { moveMonth(-1) } label: {
                     Image(systemName: "chevron.backward")
-                        .frame(minWidth: 44, minHeight: headerHeight)
+                        .frame(minWidth: 44, minHeight: 44)
                 }
                 .accessibilityLabel("Previous month")
                 Spacer(minLength: 0)
@@ -198,11 +185,11 @@ private struct ProgrammeCalendar: View {
                 Spacer(minLength: 0)
                 Button { moveMonth(1) } label: {
                     Image(systemName: "chevron.forward")
-                        .frame(minWidth: 44, minHeight: headerHeight)
+                        .frame(minWidth: 44, minHeight: 44)
                 }
                 .accessibilityLabel("Next month")
             }
-            Grid(horizontalSpacing: 0, verticalSpacing: compact ? 0 : 4) {
+            Grid(horizontalSpacing: 0, verticalSpacing: 4) {
                 GridRow {
                     ForEach(Array(dates.prefix(7)), id: \.self) { date in
                         Text(date, format: .dateTime.weekday(.narrow))
@@ -219,8 +206,7 @@ private struct ProgrammeCalendar: View {
                                 date: date,
                                 selected: calendar.isDate(date, inSameDayAs: selectedDate),
                                 inMonth: calendar.isDate(date, equalTo: selectedDate, toGranularity: .month),
-                                scheduled: scheduledDates.contains(calendar.startOfDay(for: date)),
-                                rowHeight: rowHeight
+                                scheduled: scheduledDates.contains(calendar.startOfDay(for: date))
                             ) {
                                 selectedDate = date
                             }
@@ -244,27 +230,28 @@ private struct ProgrammeCalendar: View {
 private struct CalendarDateButton: View {
     @Environment(\.themeAccent) private var themeAccent
     @Environment(\.calendar) private var calendar
+    @Environment(\.colorScheme) private var colorScheme
     let date: Date
     let selected: Bool
     let inMonth: Bool
     let scheduled: Bool
-    var rowHeight: CGFloat = 44
     let select: () -> Void
 
     var body: some View {
+        let selectedForeground: Color = colorScheme == .dark ? .black : .white
         Button(action: select) {
-            VStack(spacing: rowHeight < 44 ? 0 : 4) {
+            VStack(spacing: 4) {
                 Text(date, format: .dateTime.day())
-                    .font(rowHeight < 44 ? .caption : .body)
+                    .font(.body)
                     .fontWeight(calendar.isDateInToday(date) ? .bold : .regular)
                 Circle()
-                    .fill(selected ? Color.white : themeAccent)
+                    .fill(selected ? selectedForeground : themeAccent)
                     .frame(width: 5, height: 5)
                     .opacity(scheduled ? 1 : 0)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: rowHeight)
-            .foregroundStyle(selected ? Color.white : (inMonth ? Color.primary : Color.secondary))
+            .frame(minWidth: 44, minHeight: 44)
+            .foregroundStyle(selected ? selectedForeground : (inMonth ? Color.primary : Color.secondary))
             .background(selected ? themeAccent : Color.clear, in: RoundedRectangle(cornerRadius: 10))
             .contentShape(Rectangle())
         }
@@ -273,3 +260,42 @@ private struct CalendarDateButton: View {
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
+
+#if DEBUG
+
+#Preview("Coming Soon") {
+    PreviewHost { data in
+        NavigationStack { ComingSoonView() }
+    }
+}
+
+#Preview("Calendar") {
+    PreviewHost { data in
+        ProgrammeCalendar(selectedDate: .constant(DemoLibrary.calendarDate), scheduledDates: [DemoLibrary.calendarDate]).padding()
+    }
+}
+
+#Preview("Landscape calendar") {
+    PreviewHost { data in
+        LandscapeCalendarPanel(selectedDate: .constant(DemoLibrary.calendarDate), scheduledDates: [DemoLibrary.calendarDate])
+    }
+}
+
+#Preview("Calendar date") {
+    PreviewHost { data in
+        CalendarDateButton(date: DemoLibrary.calendarDate, selected: true, inMonth: true, scheduled: true, select: {})
+    }
+}
+
+#Preview("Scheduled date") {
+    PreviewHost { data in
+        List { ScheduledDateSection(entries: [ScheduledProgramme(show: data.show, episode: data.episode, date: DemoLibrary.calendarDate)], selectedDate: DemoLibrary.calendarDate) }
+    }
+}
+
+#Preview("Scheduled rows") {
+    PreviewHost { data in
+        List { ScheduledProgrammeRows(entries: [ScheduledProgramme(show: data.show, episode: data.episode, date: DemoLibrary.calendarDate)], calendarMode: true) }
+    }
+}
+#endif

@@ -93,18 +93,20 @@ enum AppTheme: String, CaseIterable, Identifiable {
 
     func progressColor(for colorScheme: ColorScheme) -> Color {
         switch (self, colorScheme) {
-        case (.system, _), (.ocean, _):
-            .blue
+        case (.system, .light), (.ocean, .light):
+            Color(red: 0.00, green: 0.32, blue: 0.70)
+        case (.system, .dark), (.ocean, .dark):
+            Color(red: 0.45, green: 0.70, blue: 1.00)
         case (.forest, .light):
-            Color(red: 0.16, green: 0.52, blue: 0.25)
+            Color(red: 0.12, green: 0.42, blue: 0.20)
         case (.forest, .dark):
             Color(red: 0.38, green: 0.78, blue: 0.43)
         case (.sunset, .light):
-            Color(red: 0.10, green: 0.52, blue: 0.42)
+            Color(red: 0.08, green: 0.42, blue: 0.33)
         case (.sunset, .dark):
             Color(red: 0.34, green: 0.78, blue: 0.65)
         case (.lavender, .light):
-            Color(red: 0.53, green: 0.32, blue: 0.70)
+            Color(red: 0.46, green: 0.26, blue: 0.63)
         case (.lavender, .dark):
             Color(red: 0.72, green: 0.55, blue: 0.88)
         @unknown default:
@@ -258,3 +260,17 @@ struct AppearanceSettingsSection: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Themed list") {
+    PreviewHost { data in
+        ThemedList { ShowRow(show: data.show, episode: data.episode) }
+    }
+}
+
+#Preview("Appearance settings and themed form") {
+    PreviewHost { _ in
+        ThemedForm { AppearanceSettingsSection() }
+    }
+}
+#endif

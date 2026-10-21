@@ -30,6 +30,7 @@ final class TipStore {
     @ObservationIgnored private var updatesTask: Task<Void, Never>?
 
     init() {
+        guard !AppStoreScreenshotMode.isEnabled, !PreviewEnvironment.isRunning else { return }
         // Listen at app launch, including for purchases approved after Settings closes.
         updatesTask = Task { [weak self] in
             for await result in Transaction.updates {
@@ -44,12 +45,14 @@ final class TipStore {
     }
 
     func finishUnfinishedTransactions() async {
+        guard !PreviewEnvironment.isRunning else { return }
         for await result in Transaction.unfinished {
             await complete(result)
         }
     }
 
     func loadProduct() async {
+        guard !PreviewEnvironment.isRunning else { return }
         guard Self.isEnabled, !loading, !purchasing, hasMissingProducts else { return }
         loading = true
         message = nil

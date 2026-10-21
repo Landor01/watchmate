@@ -31,9 +31,9 @@ final class AppStore {
     var connected: Bool
     var providerOptions: [Provider] = []
 
-    init(context: ModelContext, settings: Settings) {
+    init(context: ModelContext, settings: Settings, viewing: (any ViewingService)? = nil) {
         let auth = TraktAuth()
-        self.auth = auth; viewing = TraktService(auth: auth)
+        self.auth = auth; self.viewing = viewing ?? TraktService(auth: auth)
         self.context = context; self.settings = settings; connected = auth.connected
         settings.onPreferencesChanged = { [weak self] in
             self?.queueCloudChanges()
@@ -55,14 +55,31 @@ final class AppStore {
         return states.compactMap { state in show.episodes.first { $0.season == state.season && $0.number == state.number } }
     }
     func start() async {
+        guard !AppStoreScreenshotMode.isEnabled, !PreviewEnvironment.isRunning else { return }
         defer { publishWidgetSnapshot() }
         guard !busy else { return }
         if settings.demoMode {
-            do { if try allShows().isEmpty { try seedDemo() } } catch { errorMessage = error.localizedDescription }
+            do {
+                let shows = try allShows()
+                let legacyTitles: Set<String> = ["Harbour Lights", "The Last Signal", "Northbound"]
+                let isLegacyDemo = !shows.isEmpty && shows.allSatisfy {
+                    $0.traktID < 0 && $0.posterPath == nil && legacyTitles.contains($0.title)
+                }
+                if isLegacyDemo {
+                    // Only replace the old fictional demo library, never a connected account.
+                    for show in shows { context.delete(show) }
+                    try context.save()
+                    settings.hiddenShowIDs = []
+                }
+                if shows.isEmpty || isLegacyDemo { try seedDemo() }
+            } catch { errorMessage = error.localizedDescription }
         } else if connected {
             sharedShows.activate(accountID: settings.traktAccountID)
             await sharedShows.refresh(reportErrors: false, automatic: true)
             await syncCloud(automatic: true)
+            busy = true
+            await retryPendingSharedProgress()
+            busy = false
             let needsCatalogue = (try? allShows().contains { $0.isFollowing && $0.catalogueUpdatedAt == nil }) ?? false
             if needsCatalogue || settings.lastSync == nil || settings.lastSync.map({ Date().timeIntervalSince($0) > 900 }) == true {
                 await refresh(syncCloudFirst: false)
@@ -140,6 +157,7 @@ final class AppStore {
         guard !busy else { return }
         busy = true; status = "Importing your shows…"
         defer { busy = false }
+        await retryPendingSharedProgress()
         do {
             let service = viewing
             let watched = try await service.watchedShows()
@@ -215,16 +233,164 @@ final class AppStore {
         let keys = Set(sources.map { "\(show.traktID):\($0.season):\($0.number)" })
         for episode in show.episodes where !keys.contains(episode.key) { context.delete(episode) }
     }
+    /// Called with the store's mutation lock held by the screen or widget.
+    func updateSharedEpisodes(_ episodes: [RemoteEpisode], showID: Int, in list: HouseholdList,
+                              action: SharedEpisodeAction, progress: (Int) -> Void = { _ in }) async throws {
+        guard settings.sharedShowsUpdateTraktHistory, !settings.demoMode,
+              case .watched(let watched) = action else {
+            try await sharedShows.updateEpisodes(episodes, showID: showID, in: list, action: action, progress: progress)
+            return
+        }
+        defer {
+            publishWidgetSnapshot()
+            queueCloudChanges()
+        }
+        for (index, episode) in episodes.enumerated() {
+            try Task.checkCancellation()
+            guard !watched || Dates.parse(episode.firstAired).map({ $0 <= Date() }) != false else { continue }
+            try await updateTraktProgress(episode, showID: showID, watched: watched)
+            do {
+                try await syncAndRetainSharedProgress(episode, showID: showID, watched: watched, source: list)
+            } catch {
+                throw APIError.message("Your Trakt history was updated, but shared progress could not finish syncing. \(error.localizedDescription) Refresh to retry the shared update.")
+            }
+            progress(index + 1)
+        }
+        await reschedule()
+    }
+
+    private func remoteEpisode(_ episode: Episode) -> RemoteEpisode {
+        RemoteEpisode(season: episode.season, number: episode.number, title: episode.title,
+                      ids: IDs(trakt: episode.traktID, tmdb: nil), overview: episode.overview,
+                      firstAired: episode.firstAired.map { Dates.string($0) }, runtime: episode.runtime)
+    }
+
+    func updateTraktProgress(_ episode: RemoteEpisode, showID: Int, watched: Bool) async throws {
+        // Check the server, including for shared-only shows, so retries do not add another play.
+        let history = try await viewing.watchedShows()
+        let existing = history.first { $0.show.id == showID }?.seasons
+            .first { $0.number == episode.season }?.episodes.first { $0.number == episode.number }
+        if (existing != nil) != watched {
+            try await viewing.setWatched(episodeID: episode.ids.trakt, watched: watched)
+        }
+        if let local = try allShows().first(where: { $0.traktID == showID })?.episodes
+            .first(where: { $0.season == episode.season && $0.number == episode.number }) {
+            local.watchedAt = watched ? (Dates.parse(existing?.lastWatchedAt) ?? Date()) : nil
+            if watched { local.isSkipped = false }
+            try context.save()
+        }
+        settings.historyRevision = UUID().uuidString
+        publishWidgetSnapshot()
+    }
+
+    func refreshSharedShows() async {
+        guard !busy else { return }
+        busy = true
+        defer { busy = false }
+        await sharedShows.refresh()
+        await retryPendingSharedProgress()
+    }
+
+    private struct PendingSharedProgress: Codable {
+        let episode: RemoteEpisode
+        let showID: Int
+        let watched: Bool
+        var key: String { "\(showID):\(episode.season):\(episode.number)" }
+    }
+
+    private func pendingSharedProgress(accountID: String) throws -> [String: PendingSharedProgress] {
+        guard let data = UserDefaults.standard.data(forKey: "pendingSharedProgress:" + accountID) else { return [:] }
+        return try JSONDecoder().decode([String: PendingSharedProgress].self, from: data)
+    }
+
+    private func savePendingSharedProgress(_ pending: [String: PendingSharedProgress], accountID: String) throws {
+        UserDefaults.standard.set(try JSONEncoder().encode(pending), forKey: "pendingSharedProgress:" + accountID)
+    }
+
+    private func syncAndRetainSharedProgress(_ episode: RemoteEpisode, showID: Int, watched: Bool,
+                                            source: HouseholdList? = nil) async throws {
+        guard settings.sharedShowsUpdateTraktHistory, !settings.demoMode,
+              let accountID = settings.traktAccountID else { return }
+        let change = PendingSharedProgress(episode: episode, showID: showID, watched: watched)
+        var pending = try pendingSharedProgress(accountID: accountID)
+        pending[change.key] = change
+        try savePendingSharedProgress(pending, accountID: accountID)
+        try await syncSharedProgress(episode, showID: showID, watched: watched, source: source)
+        pending = try pendingSharedProgress(accountID: accountID)
+        pending.removeValue(forKey: change.key)
+        try savePendingSharedProgress(pending, accountID: accountID)
+    }
+
+    /// Retry only the iCloud side of acknowledged Trakt writes, including after a relaunch.
+    private func retryPendingSharedProgress() async {
+        guard settings.sharedShowsUpdateTraktHistory, !settings.demoMode, connected,
+              let accountID = settings.traktAccountID else { return }
+        do {
+            let pending = try pendingSharedProgress(accountID: accountID)
+            guard !pending.isEmpty else { return }
+            let history = try await viewing.watchedShows()
+            for change in pending.values {
+                try Task.checkCancellation()
+                guard settings.traktAccountID == accountID else { return }
+                // A later action on another device (or while the toggle was off) wins over this retry.
+                let watched = history.first { $0.show.id == change.showID }?.seasons
+                    .first { $0.number == change.episode.season }?.episodes
+                    .contains { $0.number == change.episode.number } == true
+                try await syncAndRetainSharedProgress(change.episode, showID: change.showID, watched: watched)
+            }
+        } catch {
+            errorMessage = "Your Trakt history is saved. Shared progress is waiting to sync; refresh to retry. \(error.localizedDescription)"
+        }
+    }
+
+    private func syncSharedProgress(_ episode: RemoteEpisode, showID: Int, watched: Bool,
+                                    source: HouseholdList? = nil) async throws {
+        guard settings.sharedShowsUpdateTraktHistory, !settings.demoMode else { return }
+        sharedShows.activate(accountID: settings.traktAccountID)
+        while sharedShows.loading {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        await sharedShows.refresh(reportErrors: false, automatic: true)
+        if let message = sharedShows.refreshMessage {
+            throw APIError.message(message)
+        }
+        var lists = sharedShows.lists.filter { $0.programmes.contains { $0.id == showID } }
+        if let source, !lists.contains(where: { $0.id == source.id }) { lists.append(source) }
+        for list in lists {
+            guard let programme = list.programmes.first(where: { $0.id == showID }) else { continue }
+            let alreadyWatched = programme.episodes.contains { $0.id == episode.ids.trakt }
+            if alreadyWatched == watched && (!watched || programme.skippedEpisodeIDs?.contains(episode.ids.trakt) != true) { continue }
+            try await sharedShows.setWatched(episode, showID: showID, in: list, watched: watched)
+        }
+    }
+
+    private func updatePersonalProgress(_ episode: Episode, watched: Bool) async throws {
+        if !settings.demoMode {
+            if settings.sharedShowsUpdateTraktHistory, let showID = episode.show?.traktID {
+                try await updateTraktProgress(remoteEpisode(episode), showID: showID, watched: watched)
+            } else {
+                try await viewing.setWatched(episodeID: episode.traktID, watched: watched)
+            }
+        }
+        episode.watchedAt = watched ? (episode.watchedAt ?? Date()) : nil
+        try context.save()
+        if !settings.demoMode { settings.historyRevision = UUID().uuidString }
+        if let showID = episode.show?.traktID {
+            do {
+                try await syncAndRetainSharedProgress(remoteEpisode(episode), showID: showID, watched: watched)
+            } catch {
+                throw APIError.message("Your Trakt history was updated, but shared progress could not finish syncing. \(error.localizedDescription) Refresh to retry the shared update.")
+            }
+        }
+    }
+
     func setWatched(_ episode: Episode, watched: Bool) async {
         guard !busy, !watched || !episode.isScheduledInFuture else { return }
         busy = true; defer { busy = false }
         do {
-            if !settings.demoMode { try await viewing.setWatched(episodeID: episode.traktID, watched: watched) }
-            episode.watchedAt = watched ? Date() : nil
-            try context.save()
-            if !settings.demoMode { settings.historyRevision = UUID().uuidString }
-            await reschedule()
+            try await updatePersonalProgress(episode, watched: watched)
         } catch { errorMessage = error.localizedDescription }
+        await reschedule()
     }
     func markSeasonWatched(_ show: Show, season: Int) async {
         guard !busy else { return }
@@ -247,7 +413,9 @@ final class AppStore {
         do {
             for episode in episodes {
                 try Task.checkCancellation()
-                if episode.watchedAt == nil && !settings.demoMode {
+                if settings.sharedShowsUpdateTraktHistory {
+                    try await updatePersonalProgress(episode, watched: true)
+                } else if episode.watchedAt == nil && !settings.demoMode {
                     try await viewing.setWatched(episodeID: episode.traktID, watched: true)
                 }
                 confirmed.append((episode, episode.watchedAt ?? Date()))
@@ -329,6 +497,7 @@ final class AppStore {
         catch { errorMessage = error.localizedDescription }
     }
     func reschedule() async {
+        guard !AppStoreScreenshotMode.isEnabled, !PreviewEnvironment.isRunning else { return }
         publishWidgetSnapshot()
         queueCloudChanges()
         if let shows = try? allShows() { await Notifications.rebuild(shows: shows, includeSpecials: settings.includeSpecials, demo: settings.demoMode) }
@@ -351,6 +520,7 @@ final class AppStore {
             "onlyMyServices": try encoder.encode(settings.highlightAvailableServices),
             "region": try encoder.encode(settings.region),
             "specials": try encoder.encode(settings.includeSpecials),
+            "sharedShowsUpdateTraktHistory": try encoder.encode(settings.sharedShowsUpdateTraktHistory),
             "providers": try encoder.encode(settings.selectedProviders.sorted())
         ]
         try settings.prepareProfilePhotoForSync()
@@ -390,6 +560,7 @@ final class AppStore {
         if let filter = cloudDecode(Bool.self, key: "onlyMyServices") { settings.highlightAvailableServices = filter }
         if let region = cloudDecode(String.self, key: "region") { settings.region = region }
         if let specials = cloudDecode(Bool.self, key: "specials") { settings.includeSpecials = specials }
+        if let sharedHistory = cloudDecode(Bool.self, key: "sharedShowsUpdateTraktHistory") { settings.sharedShowsUpdateTraktHistory = sharedHistory }
         if let providers = cloudDecode([Int].self, key: "providers") { settings.selectedProviders = Set(providers) }
         var shows = Dictionary(uniqueKeysWithValues: try allShows().map { ($0.traktID, $0) })
         for (key, data) in cloud.values where key.hasPrefix("show:") {
@@ -514,6 +685,7 @@ final class AppStore {
 
     /// Resolve persisted relationships in a context created off the main actor.
     func publishStartupWidgetSnapshot() {
+        guard !AppStoreScreenshotMode.isEnabled, !PreviewEnvironment.isRunning else { return }
         let container = context.container
         let accountScope = widgetAccountScope
         let hiddenShowIDs = settings.hiddenShowIDs
@@ -543,6 +715,7 @@ final class AppStore {
     }
 
     private func publishWidgetSnapshot(library: WidgetLibrary?, errorShowID: Int? = nil, message: String? = nil) {
+        guard !AppStoreScreenshotMode.isEnabled, !PreviewEnvironment.isRunning else { return }
         widgetPublicationRevision += 1
         do {
             var library = try library ?? widgetLibrary()
@@ -604,6 +777,17 @@ final class AppStore {
         }
         // Replayed taps must not add another Trakt play or toggle a skip back off.
         guard episode.watchedAt == nil, !episode.isSkipped else {
+            // A previous attempt may have saved Trakt before a shared-list write failed.
+            if markWatched && episode.watchedAt != nil {
+                busy = true
+                defer { busy = false }
+                do {
+                    try await syncAndRetainSharedProgress(remoteEpisode(episode), showID: showID, watched: true)
+                } catch {
+                    publishWidgetSnapshot(errorShowID: showID, message: error.localizedDescription)
+                    throw WidgetActionError.updateFailed
+                }
+            }
             publishWidgetSnapshot()
             return
         }
@@ -614,8 +798,7 @@ final class AppStore {
         busy = true
         do {
             if markWatched {
-                if !settings.demoMode { try await viewing.setWatched(episodeID: episode.traktID, watched: true) }
-                episode.watchedAt = Date()
+                try await updatePersonalProgress(episode, watched: true)
             } else {
                 episode.isSkipped = true
             }
@@ -636,23 +819,8 @@ final class AppStore {
     }
 
     private func seedDemo() throws {
-        let titles = ["Harbour Lights", "The Last Signal", "Northbound"]
-        let providers = [Provider(id: 8, name: "Netflix"), Provider(id: 337, name: "Disney+"), Provider(id: 350, name: "Apple TV+")]
-        for index in titles.indices {
-            let show = Show(traktID: -(index + 1), tmdbID: nil, title: titles[index])
-            show.overview = "A fictional programme for exploring WatchMate. Demo viewing history and dates are sample data."
-            show.providers = [providers[index]]; show.providerRegion = settings.region
-            context.insert(show)
-            for number in 1...8 {
-                let remote = RemoteEpisode(season: 1, number: number, title: "Chapter \(number)",
-                    ids: IDs(trakt: -(100 * (index + 1) + number), tmdb: nil), overview: "Sample episode for demo mode.",
-                    firstAired: Dates.string(Date().addingTimeInterval(Double(number - 6) * 86_400)), runtime: 45 + index * 5)
-                let episode = Episode(showID: show.traktID, remote: remote)
-                if number <= 3 + index { episode.watchedAt = Date().addingTimeInterval(-86_400) }
-                context.insert(episode); show.episodes.append(episode)
-            }
-        }
-        providerOptions = providers
-        try context.save(); status = "Demo data · fictional programmes"
+        try DemoLibrary.seed(in: context)
+        providerOptions = Array(Set(try allShows().flatMap(\.providers))).sorted { $0.name < $1.name }
+        status = "Demo data · sample viewing progress"
     }
 }

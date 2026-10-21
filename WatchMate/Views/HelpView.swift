@@ -22,7 +22,7 @@ private struct HelpGettingStartedSection: View {
             HelpRow(icon: "person.crop.circle", title: "Connect Trakt",
                     description: "Open Settings and connect your Trakt account to import your viewing history and watchlist. Watched episodes sync back to Trakt.")
             HelpRow(icon: "sparkles", title: "Try Demo Mode",
-                    description: "Explore WatchMate with fictional sample programmes before connecting an account. Demo actions do not change your Trakt history.")
+                    description: "Explore WatchMate with real programme artwork and sample viewing progress before connecting an account. Demo actions do not change your Trakt history.")
             HelpRow(icon: "arrow.clockwise", title: "Refresh Your Shows",
                     description: "Pull down in Up Next, Coming Soon or My Shows to refresh episode information and viewing progress. Cached information remains available between refreshes.")
         }
@@ -163,3 +163,54 @@ private struct HelpRow: View {
         HelpView()
     }
 }
+
+#if DEBUG
+
+#Preview("HelpGettingStartedSection") {
+    PreviewHost { data in
+        List { HelpGettingStartedSection() }
+    }
+}
+
+#Preview("HelpShowsSection") {
+    PreviewHost { data in
+        List { HelpShowsSection() }
+    }
+}
+
+#Preview("HelpProgressSection") {
+    PreviewHost { data in
+        List { HelpProgressSection() }
+    }
+}
+
+#Preview("HelpSharedShowsSection") {
+    PreviewHost { data in
+        List { HelpSharedShowsSection() }
+    }
+}
+
+#Preview("HelpWidgetsSection") {
+    PreviewHost { data in
+        List { HelpWidgetsSection() }
+    }
+}
+
+#Preview("HelpSettingsSection") {
+    PreviewHost { data in
+        List { HelpSettingsSection() }
+    }
+}
+
+#Preview("HelpTroubleshootingSection") {
+    PreviewHost { data in
+        List { HelpTroubleshootingSection() }
+    }
+}
+
+#Preview("Help row") {
+    PreviewHost { data in
+        HelpRow(icon: "tv", title: "My Shows", description: "Keep your favourite programmes together.").padding()
+    }
+}
+#endif

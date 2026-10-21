@@ -75,3 +75,12 @@ struct StreamingRegionPicker: View {
         }
     }
 }
+
+#if DEBUG
+
+#Preview("Streaming region") {
+    PreviewHost { data in
+        Form { StreamingRegionPicker() }
+    }
+}
+#endif

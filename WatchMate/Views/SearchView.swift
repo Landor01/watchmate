@@ -174,7 +174,7 @@ private struct SearchProgrammeDetailView: View {
                 HStack(alignment: .top, spacing: 16) {
                     PosterImageView(posterPath: details?.posterPath, width: 96)
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(show.title).font(.title2.bold())
+                        Text(show.title).font(.title2.bold()).accessibilityAddTraits(.isHeader)
                         if let year = show.year { Text(String(year)).foregroundStyle(.secondary) }
                         ProgrammeAvailabilityView(details: details)
                     }
@@ -214,3 +214,30 @@ private struct SearchProgrammeDetailView: View {
         }
     }
 }
+
+#if DEBUG
+
+#Preview("Search") {
+    PreviewHost { data in
+        NavigationStack { SearchView() }
+    }
+}
+
+#Preview("Search welcome") {
+    PreviewHost { data in
+        SearchWelcomeView()
+    }
+}
+
+#Preview("Programme availability") {
+    PreviewHost { data in
+        ProgrammeAvailabilityView(details: data.details).padding()
+    }
+}
+
+#Preview("Search programme") {
+    PreviewHost { data in
+        NavigationStack { SearchProgrammeDetailView(show: data.remoteShow, details: data.details) }
+    }
+}
+#endif

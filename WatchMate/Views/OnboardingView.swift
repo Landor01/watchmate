@@ -5,7 +5,9 @@ struct AppEntryView: View {
     @AppStorage("lastSeenAppVersion") private var lastSeenAppVersion = ""
 
     var body: some View {
-        if !hasCompletedOnboarding {
+        if AppStoreScreenshotMode.isEnabled {
+            RootView()
+        } else if !hasCompletedOnboarding {
             OnboardingView {
                 // New installs get onboarding instead of a second welcome screen.
                 lastSeenAppVersion = WhatsNewView.currentVersion
@@ -86,7 +88,7 @@ struct OnboardingView: View {
                     }
                     Button("Cancel", role: .cancel) { }
                 } message: {
-                    Text("Demo mode shows fictional sample data. To see your own shows and viewing history, sign in to Trakt in Settings.")
+                    Text("Demo mode uses real programme information with sample viewing progress. To see your own shows and viewing history, sign in to Trakt in Settings.")
                 }
                 .alert("Trakt sign-in", isPresented: Binding(
                     get: { !signingIn && store.errorMessage != nil },
@@ -256,3 +258,36 @@ private struct OnboardingServicesSection: View {
         }
     }
 }
+
+#if DEBUG
+
+#Preview("App entry") {
+    PreviewHost { data in
+        AppEntryView()
+    }
+}
+
+#Preview("Onboarding") {
+    PreviewHost { data in
+        OnboardingView(onComplete: {})
+    }
+}
+
+#Preview("Introduction") {
+    PreviewHost { data in
+        OnboardingIntroduction().padding()
+    }
+}
+
+#Preview("Preferences") {
+    PreviewHost { data in
+        NavigationStack { OnboardingPreferencesView(onComplete: {}) }
+    }
+}
+
+#Preview("Onboarding services") {
+    PreviewHost { data in
+        Form { OnboardingServicesSection() }
+    }
+}
+#endif

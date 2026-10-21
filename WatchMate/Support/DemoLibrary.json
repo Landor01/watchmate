@@ -1,0 +1,621 @@
+{
+  "fetchedAt": "2026-10-21T11:19:16.387057+00:00",
+  "source": "https://www.themoviedb.org",
+  "shows": [
+    {
+      "id": -1,
+      "tmdbID": 95396,
+      "title": "Severance",
+      "overview": "Mark leads a team of office workers whose memories have been surgically divided between their work and personal lives. When a mysterious colleague appears outside of work, it begins a journey to discover the truth about their jobs.",
+      "posterPath": "fixture:pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg",
+      "providers": [
+        {
+          "id": 350,
+          "name": "Apple TV"
+        },
+        {
+          "id": 2243,
+          "name": "Apple TV Amazon Channel"
+        }
+      ],
+      "watchURL": "https://www.themoviedb.org/tv/95396-severance/watch?locale=GB",
+      "episodes": [
+        {
+          "number": 1,
+          "season": 1,
+          "title": "Good News About Hell",
+          "overview": "Mark is promoted to lead a team who've had their memories surgically divided between their work and personal lives.",
+          "airDate": "2022-02-17",
+          "runtime": 59,
+          "artwork": "fixture:sP3GZe9j7BY3CAyZGFuZxxnGpN1.jpg",
+          "watched": true
+        },
+        {
+          "number": 2,
+          "season": 1,
+          "title": "Half Loop",
+          "overview": "The team train new hire Helly on macrodata refinement. Mark takes a day off to meet with a mysterious former colleague.",
+          "airDate": "2022-02-17",
+          "runtime": 57,
+          "artwork": "fixture:wIQP0P2tyE7VRIN3xR8Efq7UgKt.jpg",
+          "watched": true
+        },
+        {
+          "number": 3,
+          "season": 1,
+          "title": "In Perpetuity",
+          "overview": "Mark takes the team on a field trip, but Helly continues to rebel. A deteriorating Petey struggles to tell Mark about Lumon\u2019s misdeeds.",
+          "airDate": "2022-02-24",
+          "runtime": 60,
+          "artwork": "fixture:yezUFOqLt0U3haSYc5gIBzfsPvo.jpg",
+          "watched": true
+        },
+        {
+          "number": 4,
+          "season": 1,
+          "title": "The You You Are",
+          "overview": "Irving finds an intriguing book at work. Helly aggressively pursues a meeting with her Outie. Mark attends a funeral with Ms. Selvig.",
+          "airDate": "2022-03-03",
+          "runtime": 50,
+          "artwork": "fixture:dzQJeDznS0I4spAqTImiLH9p252.jpg",
+          "watched": false
+        },
+        {
+          "number": 5,
+          "season": 1,
+          "title": "The Grim Barbarity of Optics and Design",
+          "overview": "Irving and Dylan confront Burt about his lies. Mark and Helly discover a strange new department.",
+          "airDate": "2022-03-10",
+          "runtime": 47,
+          "artwork": "fixture:oy4BZotFbNX5YoPkWuWF3kcdMVw.jpg",
+          "watched": false
+        },
+        {
+          "number": 6,
+          "season": 1,
+          "title": "Hide and Seek",
+          "overview": "The team angers Cobel by forming an alliance.",
+          "airDate": "2022-03-17",
+          "runtime": 44,
+          "artwork": "fixture:3fQp0pUtgDkqqyEbXY8KKCZPMU7.jpg",
+          "watched": false
+        },
+        {
+          "number": 7,
+          "season": 1,
+          "title": "Defiant Jazz",
+          "overview": "Mark and the team encounter new security measures from Cobel.",
+          "airDate": "2022-03-24",
+          "runtime": 53,
+          "artwork": "fixture:gHoKlbC2esqq3SXm0ZCcl3bzpFZ.jpg",
+          "watched": false
+        },
+        {
+          "number": 8,
+          "season": 1,
+          "title": "What's for Dinner?",
+          "overview": "The team prepares a plan. Mark attends Devon and Ricken\u2019s party.",
+          "airDate": "2022-03-31",
+          "runtime": 50,
+          "artwork": "fixture:8Gv9ELume0jo7gz7R2h4tPmVLsD.jpg",
+          "watched": false
+        },
+        {
+          "number": 9,
+          "season": 1,
+          "title": "The We We Are",
+          "overview": "The team discovers troubling revelations.",
+          "airDate": "2022-04-07",
+          "runtime": 44,
+          "artwork": "fixture:dzx8D2B0ELncXuCNwtPCags43Q.jpg",
+          "watched": false
+        }
+      ]
+    },
+    {
+      "id": -2,
+      "tmdbID": 125988,
+      "title": "Silo",
+      "overview": "In a ruined and toxic future, thousands live in a giant silo deep underground. After its sheriff breaks a cardinal rule and residents die mysteriously, engineer Juliette starts to uncover shocking secrets and the truth about the silo.",
+      "posterPath": "fixture:r2QXomqKjkKHVtYGGtkf2l2Y7go.jpg",
+      "providers": [
+        {
+          "id": 350,
+          "name": "Apple TV"
+        },
+        {
+          "id": 2243,
+          "name": "Apple TV Amazon Channel"
+        }
+      ],
+      "watchURL": "https://www.themoviedb.org/tv/125988-silo/watch?locale=GB",
+      "episodes": [
+        {
+          "number": 1,
+          "season": 1,
+          "title": "Freedom Day",
+          "overview": "Sheriff Becker's plans for the future are thrown off course after his wife meets a hacker with information about the silo.",
+          "airDate": "2023-05-04",
+          "runtime": 62,
+          "artwork": "fixture:rpZhJcWPpyLvPC5Vid61GD6JHVu.jpg",
+          "watched": true
+        },
+        {
+          "number": 2,
+          "season": 1,
+          "title": "Holston's Pick",
+          "overview": "Juliette, an engineer, pieces together what might have led to a co-worker's mysterious death.",
+          "airDate": "2023-05-04",
+          "runtime": 52,
+          "artwork": "fixture:bRYHFClG8YkTJTy8fx73hgCd8Ac.jpg",
+          "watched": true
+        },
+        {
+          "number": 3,
+          "season": 1,
+          "title": "Machines",
+          "overview": "In her hunt for a new sheriff, Mayor Jahns clashes with Bernard. Juliette strikes a deal to keep the generator running.",
+          "airDate": "2023-05-11",
+          "runtime": 66,
+          "artwork": "fixture:8hQB4jxk9ydj55Mrl9sY95smV7.jpg",
+          "watched": true
+        },
+        {
+          "number": 4,
+          "season": 1,
+          "title": "Truth",
+          "overview": "Juliette tries gaining the trust of Deputy Marnes as they work to uncover the truth about recent tragedies.",
+          "airDate": "2023-05-18",
+          "runtime": 49,
+          "artwork": "fixture:x3fMuXhTx5f91tQgjXNzopo5B5g.jpg",
+          "watched": true
+        },
+        {
+          "number": 5,
+          "season": 1,
+          "title": "The Janitor's Boy",
+          "overview": "Sims appoints Billings as chief deputy to keep tabs on Juliette, whose efforts to solve two murders lead to a showdown.",
+          "airDate": "2023-05-25",
+          "runtime": 54,
+          "artwork": "fixture:yzLUNo2jU82N5rdRG0xZ2A2ed79.jpg",
+          "watched": false
+        },
+        {
+          "number": 6,
+          "season": 1,
+          "title": "The Relic",
+          "overview": "During her investigation, Juliette uncovers disturbing secrets about someone she thought she knew.",
+          "airDate": "2023-06-01",
+          "runtime": 55,
+          "artwork": "fixture:k5UxYAS4Xmcsn3GZdCklXGMIBMd.jpg",
+          "watched": false
+        },
+        {
+          "number": 7,
+          "season": 1,
+          "title": "The Flamekeepers",
+          "overview": "Bernard seeks Juliette's cooperation as he grows increasingly concerned about the silo's security. Juliette asks her father for a favor.",
+          "airDate": "2023-06-08",
+          "runtime": 51,
+          "artwork": "fixture:ukzV8BZbjlIU6WOKdoZqhHMg2yi.jpg",
+          "watched": false
+        },
+        {
+          "number": 8,
+          "season": 1,
+          "title": "Hanna",
+          "overview": "New information causes Juliette to see her family's past differently\u2014and she finally gains access to the silo's biggest secrets.",
+          "airDate": "2023-06-15",
+          "runtime": 48,
+          "artwork": "fixture:sZaeOvZYS4evALQtm2wfC3eJxit.jpg",
+          "watched": false
+        },
+        {
+          "number": 9,
+          "season": 1,
+          "title": "The Getaway",
+          "overview": "Racked with guilt, Billings sets off on a personal mission, only to discover a mind-blowing clue from Juliette.",
+          "airDate": "2023-06-22",
+          "runtime": 48,
+          "artwork": "fixture:mogTf95jiLdvSXwnjpQcIs6Wxh2.jpg",
+          "watched": false
+        },
+        {
+          "number": 10,
+          "season": 1,
+          "title": "Outside",
+          "overview": "Juliette's fate seems sealed when certain truths finally come to light.",
+          "airDate": "2023-06-29",
+          "runtime": 49,
+          "artwork": "fixture:qcqkEv0S8Re5V2UV9LFUWzHYyq3.jpg",
+          "watched": false
+        }
+      ]
+    },
+    {
+      "id": -3,
+      "tmdbID": 95480,
+      "title": "Slow Horses",
+      "overview": "Follow a dysfunctional team of MI5 agents\u2014and their obnoxious boss, the notorious Jackson Lamb\u2014as they navigate the espionage world's smoke and mirrors to defend England from sinister forces.",
+      "posterPath": "fixture:AdYr4DjOgXvDUMwu6vEhZy1Rnxk.jpg",
+      "providers": [
+        {
+          "id": 350,
+          "name": "Apple TV"
+        },
+        {
+          "id": 2243,
+          "name": "Apple TV Amazon Channel"
+        },
+        {
+          "id": 9,
+          "name": "Amazon Prime Video"
+        }
+      ],
+      "watchURL": "https://www.themoviedb.org/tv/95480-slow-horses/watch?locale=GB",
+      "episodes": [
+        {
+          "number": 1,
+          "season": 6,
+          "title": "Circle of Life",
+          "overview": "River braces for his grandfather's funeral. Lamb looks into the death of an ex\u2013Slow Horse.",
+          "airDate": "2026-09-16",
+          "runtime": 48,
+          "artwork": "fixture:ujQIxhyPmp2fuBnzcywOSkpzMAp.jpg",
+          "watched": true
+        },
+        {
+          "number": 2,
+          "season": 6,
+          "title": "Daddy Issues",
+          "overview": "The reemergence of Frank Harkness and a suspicious string of murders put Lamb and team on high alert.",
+          "airDate": "2026-09-23",
+          "runtime": 47,
+          "artwork": "fixture:b9ZulKu2EwWLspO8orilLHs11Zv.jpg",
+          "watched": true
+        },
+        {
+          "number": 3,
+          "season": 6,
+          "title": "Resurrection",
+          "overview": "Ex\u2013Slow Horses return to the fold as assassins close in. Taverner faces the fallout of her TV interview.",
+          "airDate": "2026-09-30",
+          "runtime": 49,
+          "artwork": "fixture:ayrXskFX6yyCz0X2ArUqICbGA5L.jpg",
+          "watched": true
+        },
+        {
+          "number": 4,
+          "season": 6,
+          "title": "Lost & Found",
+          "overview": "Lamb tries figuring out who Frank is working for. Sid, River, and Coe do everything to evade the hit squad.",
+          "airDate": "2026-10-07",
+          "runtime": 50,
+          "artwork": "fixture:zn4jklNI2QOzXNrDVSQYyP14OTz.jpg",
+          "watched": true
+        },
+        {
+          "number": 5,
+          "season": 6,
+          "title": "Sayonara",
+          "overview": "River goes after Sid. Lamb sets his sights on Cantor. Taverner carries on with a treacherous deal.",
+          "airDate": "2026-10-14",
+          "runtime": 48,
+          "artwork": "fixture:tClsXI4gZ2QXOiFfonB9tNF2EP4.jpg",
+          "watched": true
+        },
+        {
+          "number": 6,
+          "season": 6,
+          "title": "Judgement Day",
+          "overview": "The safe house becomes unsafe as Lamb and Taverner finally join forces.",
+          "airDate": "2026-10-21",
+          "runtime": 60,
+          "artwork": "fixture:2AyXgnIN8dpjJzIhiIVzUVu8z4Q.jpg",
+          "watched": false
+        }
+      ]
+    },
+    {
+      "id": -4,
+      "tmdbID": 66732,
+      "title": "Stranger Things",
+      "overview": "When a young boy vanishes, a small town uncovers a mystery involving secret experiments, terrifying supernatural forces, and one strange little girl.",
+      "posterPath": "fixture:uOOtwVbSr4QDjAGIifLDwpb2Pdl.jpg",
+      "providers": [
+        {
+          "id": 8,
+          "name": "Netflix"
+        },
+        {
+          "id": 29,
+          "name": "Sky Go"
+        },
+        {
+          "id": 1796,
+          "name": "Netflix Standard with Ads"
+        }
+      ],
+      "watchURL": "https://www.themoviedb.org/tv/66732-stranger-things/watch?locale=GB",
+      "episodes": [
+        {
+          "number": 1,
+          "season": 1,
+          "title": "Chapter One: The Vanishing of Will Byers",
+          "overview": "On his way home from a friend's house, young Will sees something terrifying. Nearby, a sinister secret lurks in the depths of a government lab.",
+          "airDate": "2016-07-15",
+          "runtime": 48,
+          "artwork": "fixture:6jSA6JpxNDV63aDXpmsUFCjCINb.jpg",
+          "watched": true
+        },
+        {
+          "number": 2,
+          "season": 1,
+          "title": "Chapter Two: The Weirdo on Maple Street",
+          "overview": "Lucas, Mike and Dustin try to talk to the girl they found in the woods. Hopper questions an anxious Joyce about an unsettling phone call.",
+          "airDate": "2016-07-15",
+          "runtime": 55,
+          "artwork": "fixture:8iA56ugQyHZmX81wSsNqwXjCE6F.jpg",
+          "watched": true
+        },
+        {
+          "number": 3,
+          "season": 1,
+          "title": "Chapter Three: Holly, Jolly",
+          "overview": "An increasingly concerned Nancy looks for Barb and finds out what Jonathan's been up to. Joyce is convinced Will is trying to talk to her.",
+          "airDate": "2016-07-15",
+          "runtime": 51,
+          "artwork": "fixture:5snULpWQWp7aqFto7UbRcEkEyyS.jpg",
+          "watched": true
+        },
+        {
+          "number": 4,
+          "season": 1,
+          "title": "Chapter Four: The Body",
+          "overview": "Refusing to believe Will is dead, Joyce tries to connect with her son. The boys give Eleven a makeover. Nancy and Jonathan form an unlikely alliance.",
+          "airDate": "2016-07-15",
+          "runtime": 50,
+          "artwork": "fixture:60wmC1e20HV8gu688GAhsWxqxPx.jpg",
+          "watched": false
+        },
+        {
+          "number": 5,
+          "season": 1,
+          "title": "Chapter Five: The Flea and the Acrobat",
+          "overview": "Hopper breaks into the lab while Nancy and Jonathan confront the force that took Will. The boys ask Mr. Clarke how to travel to another dimension.",
+          "airDate": "2016-07-15",
+          "runtime": 52,
+          "artwork": "fixture:exT4NW9EdXG1qLZHKJnRpq3gh1H.jpg",
+          "watched": false
+        },
+        {
+          "number": 6,
+          "season": 1,
+          "title": "Chapter Six: The Monster",
+          "overview": "A frantic Jonathan looks for Nancy in the darkness, but Steve's looking for her, too. Hopper and Joyce uncover the truth about the lab's experiments.",
+          "airDate": "2016-07-15",
+          "runtime": 46,
+          "artwork": "fixture:lNS6qycyucewz3duTr1tf1LU688.jpg",
+          "watched": false
+        },
+        {
+          "number": 7,
+          "season": 1,
+          "title": "Chapter Seven: The Bathtub",
+          "overview": "Eleven struggles to reach Will, while Lucas warns that \"the bad men are coming.\" Nancy and Jonathan show the police what Jonathan caught on camera.",
+          "airDate": "2016-07-15",
+          "runtime": 42,
+          "artwork": "fixture:arjP5c4qHLznbujCrrBVz4Z8Ykl.jpg",
+          "watched": false
+        },
+        {
+          "number": 8,
+          "season": 1,
+          "title": "Chapter Eight: The Upside Down",
+          "overview": "Dr. Brenner holds Hopper and Joyce for questioning while the boys wait with Eleven in the gym. Back at Will's, Nancy and Jonathan prepare for battle.",
+          "airDate": "2016-07-15",
+          "runtime": 54,
+          "artwork": "fixture:1teJ5dbuepfqOOs9uYhYTUjr2qs.jpg",
+          "watched": false
+        }
+      ]
+    },
+    {
+      "id": -5,
+      "tmdbID": 136315,
+      "title": "The Bear",
+      "overview": "Carmy, a young fine-dining chef, comes home to Chicago to run his family sandwich shop. As he fights to transform the shop and himself, he works alongside a rough-around-the-edges crew that ultimately reveal themselves as his chosen family.",
+      "posterPath": "fixture:eKfVzzEazSIjJMrw9ADa2x8ksLz.jpg",
+      "providers": [
+        {
+          "id": 337,
+          "name": "Disney Plus"
+        }
+      ],
+      "watchURL": "https://www.themoviedb.org/tv/136315-the-bear/watch?locale=GB",
+      "episodes": [
+        {
+          "number": 1,
+          "season": 1,
+          "title": "System",
+          "overview": "Carmy attempts to retrain the employees of The Original Beef of Chicagoland, but is faced with resistance; in need of back-up, he brings on a talented young chef to help.",
+          "airDate": "2022-06-23",
+          "runtime": 28,
+          "artwork": "fixture:dLZ1TQH5fQsWZFw1E6ku7C7nyJR.jpg",
+          "watched": true
+        },
+        {
+          "number": 2,
+          "season": 1,
+          "title": "Hands",
+          "overview": "A surprise health inspection reveals the cracks in the restaurant's foundation. Carmy goes head-to-head with Richie.",
+          "airDate": "2022-06-23",
+          "runtime": 32,
+          "artwork": "fixture:3Z0ML8dU4BMuwZIv6aSUsckBGJr.jpg",
+          "watched": true
+        },
+        {
+          "number": 3,
+          "season": 1,
+          "title": "Brigade",
+          "overview": "Carmy attends Al-Anon. Sydney struggles to gain the respect of the staff.",
+          "airDate": "2022-06-23",
+          "runtime": 30,
+          "artwork": "fixture:fSopyZWB9cfVkN5ZElm4HyNboU9.jpg",
+          "watched": true
+        },
+        {
+          "number": 4,
+          "season": 1,
+          "title": "Dogs",
+          "overview": "Carmy and Richie cater a kid's birthday party. Tina and Sydney work together while Marcus makes donuts.",
+          "airDate": "2022-06-23",
+          "runtime": 31,
+          "artwork": "fixture:i9UekfTojvrbEgtfNNRG7I9SJZZ.jpg",
+          "watched": true
+        },
+        {
+          "number": 5,
+          "season": 1,
+          "title": "Sheridan",
+          "overview": "Things go wrong in the kitchen. Sydney finds solutions.",
+          "airDate": "2022-06-23",
+          "runtime": 26,
+          "artwork": "fixture:5WL2XOyj0qApQtKPbMCGJHfk0Xq.jpg",
+          "watched": false
+        },
+        {
+          "number": 6,
+          "season": 1,
+          "title": "Ceres",
+          "overview": "Richie notices the neighborhood is changing. Sugar and Carmy clean up the office.",
+          "airDate": "2022-06-23",
+          "runtime": 31,
+          "artwork": "fixture:zwjxMrViyKE1BztLFwWm5YDgbCK.jpg",
+          "watched": false
+        },
+        {
+          "number": 7,
+          "season": 1,
+          "title": "Review",
+          "overview": "A bad day in the kitchen causes tensions to rise.",
+          "airDate": "2022-06-23",
+          "runtime": 21,
+          "artwork": "fixture:74UV7WHDPoHW20GfF2fgoVZvbJn.jpg",
+          "watched": false
+        },
+        {
+          "number": 8,
+          "season": 1,
+          "title": "Braciole",
+          "overview": "Things get out of control. Carmy is faced with a decision.",
+          "airDate": "2022-06-23",
+          "runtime": 48,
+          "artwork": "fixture:yU4KuhaRqwTRqEl2GrQULGPBJCN.jpg",
+          "watched": false
+        }
+      ]
+    },
+    {
+      "id": -6,
+      "tmdbID": 119051,
+      "title": "Wednesday",
+      "overview": "Smart, sarcastic and a little dead inside, Wednesday Addams investigates twisted mysteries while making new friends \u2014 and foes \u2014 at Nevermore Academy.",
+      "posterPath": "fixture:9PFonBhy4cQy7Jz20NpMygczOkv.jpg",
+      "providers": [
+        {
+          "id": 8,
+          "name": "Netflix"
+        },
+        {
+          "id": 1796,
+          "name": "Netflix Standard with Ads"
+        }
+      ],
+      "watchURL": "https://www.themoviedb.org/tv/119051-wednesday/watch?locale=GB",
+      "episodes": [
+        {
+          "number": 1,
+          "season": 1,
+          "title": "Wednesday's Child Is Full of Woe",
+          "overview": "When a deliciously wicked prank gets Wednesday expelled, her parents ship her off to Nevermore Academy, the boarding school where they fell in love.",
+          "airDate": "2022-11-23",
+          "runtime": 60,
+          "artwork": "fixture:vaoNDFmj7DQH7PpAy9YWgLVylPP.jpg",
+          "watched": true
+        },
+        {
+          "number": 2,
+          "season": 1,
+          "title": "Woe Is the Loneliest Number",
+          "overview": "The sheriff questions Wednesday about the night's strange happenings. Later, Wednesday faces off against a fierce rival in the cutthroat Poe Cup race.",
+          "airDate": "2022-11-23",
+          "runtime": 49,
+          "artwork": "fixture:nSGdaI0sDBqgMMuskIKNNT1KbS8.jpg",
+          "watched": true
+        },
+        {
+          "number": 3,
+          "season": 1,
+          "title": "Friend or Woe",
+          "overview": "Wednesday stumbles on a secret society. During Outreach Day, Nevermore's outcasts mingle with Jericho's normies in Pilgrim World. Fudge, anyone?",
+          "airDate": "2022-11-23",
+          "runtime": 49,
+          "artwork": "fixture:yikI4l7vKK4LkfFEIa5dXaqO97s.jpg",
+          "watched": true
+        },
+        {
+          "number": 4,
+          "season": 1,
+          "title": "Woe What a Night",
+          "overview": "Wednesday asks Xavier to the Rave'N dance, sparking Tyler's jealousy \u2014 but Thing's got something up his sleeve. Meanwhile, Eugene stakes out the cave.",
+          "airDate": "2022-11-23",
+          "runtime": 50,
+          "artwork": "fixture:wV2de1W3td4zxaW97HATfktHjfd.jpg",
+          "watched": true
+        },
+        {
+          "number": 5,
+          "season": 1,
+          "title": "You Reap What You Woe",
+          "overview": "During Parents Weekend, Wednesday digs into her family's past \u2014 and accidentally gets her dad arrested. Enid feels the pressure to \"wolf out.\"",
+          "airDate": "2022-11-23",
+          "runtime": 53,
+          "artwork": "fixture:j3Tx4CXDhzOV103TuTwz461EdjF.jpg",
+          "watched": true
+        },
+        {
+          "number": 6,
+          "season": 1,
+          "title": "Quid Pro Woe",
+          "overview": "Wednesday's friends throw her a surprise birthday party. They mean well... but she'd much rather mark the miserable occasion by solving the murders.",
+          "airDate": "2022-11-23",
+          "runtime": 51,
+          "artwork": "fixture:cPHlYQ00832jS7IDqfHS7RWTz2k.jpg",
+          "watched": false
+        },
+        {
+          "number": 7,
+          "season": 1,
+          "title": "If You Don't Woe Me by Now",
+          "overview": "Kooky Uncle Fester pays a visit and shares his theory about the monster. Wednesday begrudgingly agrees to a date with Tyler at Crackstone's crypt.",
+          "airDate": "2022-11-23",
+          "runtime": 48,
+          "artwork": "fixture:aEmccS7KyFPQMAnuQ2C5sbyn5fc.jpg",
+          "watched": false
+        },
+        {
+          "number": 8,
+          "season": 1,
+          "title": "A Murder of Woes",
+          "overview": "Wednesday lands in trouble with Principal Weems, but that's just the start of her problems. To fight an ancient evil, she'll need all her friends\u2019 help.",
+          "airDate": "2022-11-23",
+          "runtime": 53,
+          "artwork": "fixture:3b42P1FuxWC9JXVIfnKAUUuq0zP.jpg",
+          "watched": false
+        }
+      ]
+    }
+  ],
+  "calendarDate": "2026-10-21"
+}

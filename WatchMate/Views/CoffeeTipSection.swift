@@ -48,3 +48,12 @@ struct CoffeeTipSection: View {
         .task { await tips.loadProduct() }
     }
 }
+
+#if DEBUG
+
+#Preview("Coffee tips") {
+    PreviewHost { data in
+        Form { CoffeeTipSection() }
+    }
+}
+#endif

@@ -324,8 +324,9 @@ struct CropperView: View {
             }
             Spacer()
             Text("Move and Scale")
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
                 .bold()
+                .accessibilityAddTraits(.isHeader)
             Spacer()
             Button("Choose") {
                 if let cropped = cropToSquare(targetPixels: side * displayScale) {
@@ -335,7 +336,7 @@ struct CropperView: View {
             }
         }
         .padding()
-        .background(.ultraThinMaterial)
+        .background(Color(uiColor: .systemBackground))
     }
 
     private func bottomBar(side: CGFloat, in container: CGSize) -> some View {
@@ -400,3 +401,30 @@ struct CropperView: View {
     }
 }
 
+
+#if DEBUG
+
+#Preview("Profile photo settings") {
+    PreviewHost { data in
+        Form { ProfilePhotoSection() }
+    }
+}
+
+#Preview("Profile avatar") {
+    PreviewHost { data in
+        ProfilePhotoView(image: nil, size: 96)
+    }
+}
+
+#Preview("Photo cropper") {
+    PreviewHost { data in
+        if let image = DemoLibrary.image(for: data.show.posterPath) { CropperView(originalImage: image, onSave: { _ in }, onCancel: {}) }
+    }
+}
+
+#Preview("Camera") {
+    PreviewHost { data in
+        if UIImagePickerController.isSourceTypeAvailable(.camera) { CameraCaptureView(onImage: { _ in }, onCancel: {}) } else { ContentUnavailableView("Camera unavailable in previews", systemImage: "camera", description: Text("Use a device to test photo capture.")) }
+    }
+}
+#endif

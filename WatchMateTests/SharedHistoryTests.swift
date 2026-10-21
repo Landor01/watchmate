@@ -1,6 +1,83 @@
 import Foundation
 import Testing
+import SwiftData
 @testable import WatchMate
+
+@Suite(.serialized)
+@MainActor
+struct SharedTraktProgressTests {
+    @Test func settingDefaultsOnAndRetainsExplicitOff() {
+        let defaults = UserDefaults.standard
+        let original = defaults.object(forKey: "sharedShowsUpdateTraktHistory")
+        defer { defaults.set(original, forKey: "sharedShowsUpdateTraktHistory") }
+        defaults.removeObject(forKey: "sharedShowsUpdateTraktHistory")
+        #expect(Settings().sharedShowsUpdateTraktHistory)
+        let settings = Settings()
+        settings.sharedShowsUpdateTraktHistory = false
+        #expect(!Settings().sharedShowsUpdateTraktHistory)
+    }
+
+    @Test(arguments: [true, false])
+    func sharedHistoryWritesOnlyWhenStateChanges(watched: Bool) async throws {
+        let defaults = UserDefaults.standard
+        let revision = defaults.object(forKey: "historyRevision")
+        defer { defaults.set(revision, forKey: "historyRevision") }
+        let container = try ModelContainer(for: Show.self, Episode.self,
+                                           configurations: ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none))
+        let service = ProgressViewingService()
+        service.watched = !watched
+        let store = AppStore(context: container.mainContext, settings: Settings(), viewing: service)
+        let remote = RemoteEpisode(season: 1, number: 2, title: nil, ids: IDs(trakt: 42, tmdb: nil),
+                                   overview: nil, firstAired: nil, runtime: nil)
+        let show = Show(traktID: 7, tmdbID: nil, title: "Test")
+        let episode = Episode(showID: 7, remote: remote)
+        container.mainContext.insert(show)
+        show.episodes.append(episode)
+        try container.mainContext.save()
+
+        try await store.updateTraktProgress(remote, showID: 7, watched: watched)
+        try await store.updateTraktProgress(remote, showID: 7, watched: watched)
+        #expect(service.writes == [watched])
+        #expect((episode.watchedAt != nil) == watched)
+    }
+
+    @Test func sharedOnlyShowUpdatesTraktWithoutLocalCatalogue() async throws {
+        let defaults = UserDefaults.standard
+        let revision = defaults.object(forKey: "historyRevision")
+        defer { defaults.set(revision, forKey: "historyRevision") }
+        let container = try ModelContainer(for: Show.self, Episode.self,
+                                           configurations: ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none))
+        let service = ProgressViewingService()
+        let store = AppStore(context: container.mainContext, settings: Settings(), viewing: service)
+        let remote = RemoteEpisode(season: 1, number: 2, title: nil, ids: IDs(trakt: 42, tmdb: nil),
+                                   overview: nil, firstAired: nil, runtime: nil)
+        try await store.updateTraktProgress(remote, showID: 7, watched: true)
+        #expect(service.writes == [true])
+    }
+}
+
+@MainActor
+private final class ProgressViewingService: ViewingService {
+    var watched = false
+    var writes: [Bool] = []
+    func accountID() async throws -> String { "test" }
+    func watchedShows() async throws -> [WatchedShow] {
+        guard watched else { return [] }
+        return [WatchedShow(show: RemoteShow(title: "Test", year: nil, ids: IDs(trakt: 7, tmdb: nil)),
+                            seasons: [WatchedSeason(number: 1, episodes: [
+                                WatchedEpisode(number: 2, lastWatchedAt: Dates.string(Date()))
+                            ])])]
+    }
+    func watchlist() async throws -> [RemoteShow] { [] }
+    func episodes(showID: Int) async throws -> [RemoteEpisode] { [] }
+    func search(_ query: String) async throws -> [RemoteShow] { [] }
+    func follow(_ show: RemoteShow) async throws {}
+    func setWatched(episodeID: Int, watched: Bool) async throws {
+        #expect(episodeID == 42)
+        writes.append(watched)
+        self.watched = watched
+    }
+}
 
 struct SharedHistoryTests {
     private func remote(_ id: Int, season: Int = 1, number: Int) -> RemoteEpisode {

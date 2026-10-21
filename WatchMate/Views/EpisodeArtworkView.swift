@@ -16,7 +16,8 @@ struct EpisodeArtworkView: View {
 
     var body: some View {
         FallbackArtworkView(
-            paths: paths + [show.posterPath].compactMap { $0 },
+            paths: [DemoLibrary.artwork(for: episode.key)].compactMap { $0 }
+                + paths + [show.posterPath].compactMap { $0 },
             width: width,
             height: squareCrop ? width : width * 9 / 16,
             contentMode: squareCrop ? .fill : .fit,
@@ -58,7 +59,11 @@ struct FallbackArtworkView: View {
             if !adaptsToImage {
                 LinearGradient(colors: [.teal.opacity(0.75), .indigo], startPoint: .topLeading, endPoint: .bottomTrailing)
             }
-            if let path, let url = URL(string: "https://image.tmdb.org/t/p/w342\(path)") {
+            if let image = DemoLibrary.image(for: path) {
+                Image(uiImage: image).resizable()
+                    .aspectRatio(contentMode: contentMode)
+                    .frame(width: width, height: adaptsToImage ? nil : height)
+            } else if let path, let url = URL(string: "https://image.tmdb.org/t/p/w342\(path)") {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
@@ -92,3 +97,24 @@ struct FallbackArtworkView: View {
             }
     }
 }
+
+#if DEBUG
+
+#Preview("Episode artwork") {
+    PreviewHost { data in
+        EpisodeArtworkView(show: data.show, episode: data.episode, width: 320)
+    }
+}
+
+#Preview("Fallback artwork") {
+    PreviewHost { data in
+        FallbackArtworkView(paths: [data.show.posterPath].compactMap { $0 }, width: 160, height: 240)
+    }
+}
+
+#Preview("Missing artwork") {
+    PreviewHost { data in
+        FallbackArtworkView(paths: [], width: 160, height: 160)
+    }
+}
+#endif

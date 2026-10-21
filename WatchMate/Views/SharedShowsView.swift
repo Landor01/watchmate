@@ -9,8 +9,8 @@ struct SharedShowsView: View {
     @State private var working = false
 
     var body: some View {
-        List {
-            if !store.connected || store.settings.demoMode {
+        ThemedList {
+            if (!store.connected || store.settings.demoMode) && !PreviewEnvironment.isRunning {
                 ContentUnavailableView("Connect Trakt first", systemImage: "person.crop.circle",
                                        description: Text("Connect your own Trakt account in Settings. Shared Shows also requires iCloud."))
             } else {
@@ -46,7 +46,7 @@ struct SharedShowsView: View {
         .navigationTitle("Shared Shows")
         .navigationBarTitleDisplayMode(.inline)
         .task { if store.connected && !store.settings.demoMode { await store.sharedShows.refresh(automatic: true) } }
-        .refreshable { await store.sharedShows.refresh() }
+        .refreshable { await store.refreshSharedShows() }
         .alert("New shared list", isPresented: $creating) {
             TextField("List name", text: $name)
             Button("Create") {
@@ -66,6 +66,7 @@ struct SharedShowsView: View {
 
 private struct HouseholdListView: View {
     @Environment(AppStore.self) private var store
+    @Environment(\.themeAccent) private var themeAccent
     let listID: String
     @State private var adding = false
     @State private var share: CKShare?
@@ -77,7 +78,7 @@ private struct HouseholdListView: View {
     private var list: HouseholdList? { store.sharedShows.lists.first { $0.id == listID } }
 
     var body: some View {
-        List {
+        ThemedList {
             if let list {
                 SharedListPhotoSection(list: list)
                 if list.programmes.isEmpty {
@@ -87,18 +88,10 @@ private struct HouseholdListView: View {
                     NavigationLink {
                         SharedProgrammeView(listID: listID, showID: programme.id)
                     } label: {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(programme.show.title).font(.headline)
-                            Text("\(programme.episodes.count) episodes watched together")
-                                .font(.caption).foregroundStyle(.secondary)
-                            SharedListSummaryView(list: list, programme: programme)
-                            if programme.addedBy != store.settings.traktAccountID {
-                                Text("Review or sync viewing history").font(.caption).foregroundStyle(.tint)
-                            }
-                        }
+                        SharedProgrammeRow(list: list, programme: programme)
                     }
                     .swipeActions(allowsFullSwipe: false) {
-                        Button("Move", systemImage: "folder") { moving = programme }.tint(.blue)
+                        Button("Move", systemImage: "folder") { moving = programme }.tint(themeAccent)
                         Button("Remove", role: .destructive) { removing = programme }
                     }
                     .contextMenu {
@@ -131,7 +124,7 @@ private struct HouseholdListView: View {
                 .disabled(list == nil || working || store.busy)
             }
         }
-        .refreshable { await store.sharedShows.refresh() }
+        .refreshable { await store.refreshSharedShows() }
         .sheet(isPresented: $adding) {
             if let list { NavigationStack { SharedProgrammePicker(list: list) } }
         }
@@ -160,6 +153,41 @@ private struct HouseholdListView: View {
     }
 }
 
+private struct SharedProgrammeRow: View {
+    @Environment(AppStore.self) private var store
+    let list: HouseholdList
+    let programme: SharedProgramme
+    @State private var posterPath: String?
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 14) {
+            PosterImageView(posterPath: posterPath)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(programme.show.title).font(.headline)
+                Text("\(programme.episodes.count) episodes watched together")
+                    .font(.caption).foregroundStyle(.secondary)
+                SharedListSummaryView(list: list, programme: programme)
+                if programme.addedBy != store.settings.traktAccountID {
+                    Text("Review or sync viewing history").font(.caption).foregroundStyle(.tint)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 6)
+        .task(id: programme.show.ids.tmdb) {
+            if PreviewEnvironment.isRunning {
+                posterPath = try? store.allShows().first(where: { $0.traktID == programme.id })?.posterPath
+                return
+            }
+            posterPath = nil
+            guard let tmdbID = programme.show.ids.tmdb, store.catalogue.configured else { return }
+            if let path = try? await store.catalogue.posterPath(tmdbID: tmdbID), !Task.isCancelled {
+                posterPath = path
+            }
+        }
+    }
+}
+
 private struct MoveSharedProgrammeView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -175,7 +203,7 @@ private struct MoveSharedProgrammeView: View {
     }
 
     var body: some View {
-        List {
+        ThemedList {
             Section(programme.show.title) {
                 Button("Return to My Shows", systemImage: "tv") {
                     destination = nil
@@ -266,7 +294,7 @@ struct SharedProgrammePicker: View {
 
     var body: some View {
         let personal = shows.filter { $0.isFollowing && !existingIDs.contains($0.traktID) }
-        List {
+        ThemedList {
             Section {
                 Text("Moving a programme shares its current watched progress across every season. Your Trakt history stays intact. Other people choose whether to overwrite their own progress.")
                     .font(.subheadline).foregroundStyle(.secondary)
@@ -365,7 +393,7 @@ struct SharedHistoryImportView: View {
 
     var body: some View {
         let importer = store.sharedHistoryImport
-        List {
+        ThemedList {
             Section {
                 Text(programme.show.title).font(.headline)
                 Text("Replace your viewing progress?")
@@ -410,7 +438,7 @@ struct SharedHistoryImportView: View {
             }
         }
         .interactiveDismissDisabled(importer.running || importer.preparing)
-        .task { if !importer.running { await importer.prepare(programme: programme, store: store) } }
+        .task { if !PreviewEnvironment.isRunning, !importer.running { await importer.prepare(programme: programme, store: store) } }
         .alert("Overwrite your existing progress?", isPresented: $confirming) {
             Button("Overwrite and sync", role: .destructive) { importer.start(store: store) }
             Button("Cancel", role: .cancel) {}
@@ -426,7 +454,7 @@ struct MoveToSharedListView: View {
     let show: Show
 
     var body: some View {
-        List {
+        ThemedList {
             Section("Choose a shared list") {
                 ForEach(store.sharedShows.lists) { list in
                     NavigationLink(list.name) {
@@ -451,7 +479,7 @@ struct SharedHistoryInboxView: View {
     @State private var offers: [SharedHistoryOffer] = []
 
     var body: some View {
-        List {
+        ThemedList {
             Section {
                 Text("New programmes have been shared with you. You can keep your own viewing history or replace it with the shared progress, programme by programme.")
             }
@@ -480,3 +508,54 @@ struct SharedHistoryInboxView: View {
         .onAppear { offers = store.sharedShows.historyOffers }
     }
 }
+
+#if DEBUG
+
+#Preview("Shared Shows") {
+    PreviewHost { data in
+        NavigationStack { SharedShowsView() }
+    }
+}
+
+#Preview("Household list") {
+    PreviewHost { data in
+        NavigationStack { HouseholdListView(listID: data.list.id) }
+    }
+}
+
+#Preview("Shared programme row") {
+    PreviewHost { data in
+        List { SharedProgrammeRow(list: data.list, programme: data.programme) }
+    }
+}
+
+#Preview("Move shared programme") {
+    PreviewHost { data in
+        NavigationStack { MoveSharedProgrammeView(programme: data.programme, source: data.list) }
+    }
+}
+
+#Preview("Programme picker") {
+    PreviewHost { data in
+        NavigationStack { SharedProgrammePicker(list: data.list) }
+    }
+}
+
+#Preview("Import history") {
+    PreviewHost { data in
+        NavigationStack { SharedHistoryImportView(programme: data.programme) }
+    }
+}
+
+#Preview("Move to shared list") {
+    PreviewHost { data in
+        NavigationStack { MoveToSharedListView(show: data.show) }
+    }
+}
+
+#Preview("History inbox") {
+    PreviewHost { data in
+        NavigationStack { SharedHistoryInboxView() }
+    }
+}
+#endif
