@@ -166,7 +166,7 @@ final class AppStore {
             for show in watched.map(\.show) + listed { remote[show.id] = show }
             var local = Dictionary(uniqueKeysWithValues: try allShows().map { ($0.traktID, $0) })
             for show in local.values where show.isFollowing && remote[show.traktID] == nil {
-                remote[show.traktID] = RemoteShow(title: show.title, year: nil, ids: IDs(trakt: show.traktID, tmdb: show.tmdbID))
+                remote[show.traktID] = RemoteShow(title: show.title, year: nil, ids: IDs(trakt: show.traktID, tmdb: show.tmdbID, imdb: show.imdbID))
             }
             var failures: [String] = [], metadataFailures = 0
             var metadataError: String?
@@ -174,13 +174,14 @@ final class AppStore {
             for source in remote.values.sorted(by: { $0.title < $1.title }) where !settings.hiddenShowIDs.contains(source.id) {
                 try Task.checkCancellation()
                 status = "Updating \(source.title)…"
-                let show = local[source.id] ?? Show(traktID: source.id, tmdbID: source.ids.tmdb, title: source.title)
+                let show = local[source.id] ?? Show(traktID: source.id, tmdbID: source.ids.tmdb, title: source.title, imdbID: source.ids.imdb)
                 if local[source.id] == nil {
                     context.insert(show); local[source.id] = show
                     show.notificationsEnabled = cloudDecode(Bool.self, key: "reminders:\(source.id)") ?? false
                     show.reminderMinutes = cloudDecode(Int.self, key: "reminderTime:\(source.id)") ?? 540
                 }
                 show.title = source.title; show.tmdbID = source.ids.tmdb; show.isFollowing = true
+                if let imdbID = source.ids.imdb { show.imdbID = imdbID }
                 do {
                     if show.catalogueUpdatedAt == nil || now.timeIntervalSince(show.catalogueUpdatedAt!) > 21_600 {
                         let episodes = try await service.episodes(showID: source.id)
@@ -462,7 +463,7 @@ final class AppStore {
             try await viewing.follow(source)
             settings.hiddenShowIDs.remove(source.id)
             if let show = try allShows().first(where: { $0.traktID == source.id }) { show.isFollowing = true }
-            else { context.insert(Show(traktID: source.id, tmdbID: source.ids.tmdb, title: source.title)) }
+            else { context.insert(Show(traktID: source.id, tmdbID: source.ids.tmdb, title: source.title, imdbID: source.ids.imdb)) }
             try context.save()
         } catch { errorMessage = error.localizedDescription }
         busy = false; await refresh()
@@ -478,7 +479,7 @@ final class AppStore {
         if let show = try allShows().first(where: { $0.traktID == programme.id }) {
             show.isFollowing = true
         } else {
-            context.insert(Show(traktID: programme.id, tmdbID: programme.show.ids.tmdb, title: programme.show.title))
+            context.insert(Show(traktID: programme.id, tmdbID: programme.show.ids.tmdb, title: programme.show.title, imdbID: programme.show.ids.imdb))
         }
         settings.hiddenShowIDs.remove(programme.id)
         try context.save()
@@ -537,7 +538,7 @@ final class AppStore {
         if let photo = settings.profilePhotoData { snapshot["profilePhoto"] = photo }
         if let revision = settings.historyRevision { snapshot["historyRevision"] = try encoder.encode(revision) }
         for show in try allShows() where show.traktID > 0 {
-            let source = RemoteShow(title: show.title, year: nil, ids: IDs(trakt: show.traktID, tmdb: show.tmdbID))
+            let source = RemoteShow(title: show.title, year: nil, ids: IDs(trakt: show.traktID, tmdb: show.tmdbID, imdb: show.imdbID))
             snapshot["show:\(show.traktID)"] = try encoder.encode(source)
             snapshot["following:\(show.traktID)"] = try encoder.encode(show.isFollowing && !settings.hiddenShowIDs.contains(show.traktID))
             snapshot["reminders:\(show.traktID)"] = try encoder.encode(show.notificationsEnabled)
@@ -577,7 +578,7 @@ final class AppStore {
         for (key, data) in cloud.values where key.hasPrefix("show:") {
             let source = try JSONDecoder().decode(RemoteShow.self, from: data)
             if shows[source.id] == nil {
-                let show = Show(traktID: source.id, tmdbID: source.ids.tmdb, title: source.title)
+                let show = Show(traktID: source.id, tmdbID: source.ids.tmdb, title: source.title, imdbID: source.ids.imdb)
                 context.insert(show)
                 shows[source.id] = show
             }

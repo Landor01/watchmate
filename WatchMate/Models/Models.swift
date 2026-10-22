@@ -5,6 +5,7 @@ import SwiftData
 final class Show {
     @Attribute(.unique) var traktID: Int
     var tmdbID: Int?
+    var imdbID: String?
     var title: String
     var overview: String = ""
     var posterPath: String?
@@ -19,8 +20,16 @@ final class Show {
     var reminderMinutes: Int = 540
     @Relationship(deleteRule: .cascade, inverse: \Episode.show) var episodes: [Episode] = []
 
-    init(traktID: Int, tmdbID: Int?, title: String) {
+    init(traktID: Int, tmdbID: Int?, title: String, imdbID: String? = nil) {
         self.traktID = traktID; self.tmdbID = tmdbID; self.title = title
+        self.imdbID = imdbID
+    }
+
+    var imdbURL: URL? {
+        guard let imdbID, imdbID.hasPrefix("tt"),
+              !imdbID.dropFirst(2).isEmpty,
+              imdbID.dropFirst(2).allSatisfy({ $0.isASCII && $0.isNumber }) else { return nil }
+        return URL(string: "https://www.imdb.com/title/\(imdbID)/")
     }
     // Load episodes with their shows so UI access does not fault the relationship per row.
     static var withEpisodes: FetchDescriptor<Show> {
@@ -131,7 +140,11 @@ enum Dates {
     static func string(_ date: Date) -> String { ISO8601DateFormatter().string(from: date) }
 }
 
-struct IDs: Codable { let trakt: Int; let tmdb: Int? }
+struct IDs: Codable {
+    let trakt: Int
+    let tmdb: Int?
+    var imdb: String? = nil
+}
 struct RemoteShow: Codable, Identifiable {
     let title: String
     let year: Int?

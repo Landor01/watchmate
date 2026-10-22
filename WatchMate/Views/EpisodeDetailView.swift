@@ -14,6 +14,13 @@ struct EpisodeDetailView: View {
                     Text(episode.overview)
                 }
             }
+            if let imdbURL = episode.show?.imdbURL {
+                Section("More information") {
+                    Link(destination: imdbURL) {
+                        Label("View show on IMDb", systemImage: "arrow.up.right.square")
+                    }
+                }
+            }
             EpisodeStreamingSection(show: episode.show)
             EpisodeViewingSection(episode: episode)
         }
