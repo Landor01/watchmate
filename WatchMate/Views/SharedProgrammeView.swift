@@ -382,6 +382,13 @@ private struct SharedEpisodeDetails: View {
                 SharedEpisodeButtons(row: row, update: update).disabled(store.busy || programme == nil)
                 if store.busy { ProgressView("Updating shared progress…") }
             }
+            if let imdbURL = programme?.show.ids.imdbURL {
+                Section("More information") {
+                    Link(destination: imdbURL) {
+                        Label("View show on IMDb", systemImage: "arrow.up.right.square")
+                    }
+                }
+            }
         }
         .navigationTitle("S\(episode.season) E\(episode.number)")
         .navigationBarTitleDisplayMode(.inline)

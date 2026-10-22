@@ -26,10 +26,7 @@ final class Show {
     }
 
     var imdbURL: URL? {
-        guard let imdbID, imdbID.hasPrefix("tt"),
-              !imdbID.dropFirst(2).isEmpty,
-              imdbID.dropFirst(2).allSatisfy({ $0.isASCII && $0.isNumber }) else { return nil }
-        return URL(string: "https://www.imdb.com/title/\(imdbID)/")
+        IDs(trakt: traktID, tmdb: tmdbID, imdb: imdbID).imdbURL
     }
     // Load episodes with their shows so UI access does not fault the relationship per row.
     static var withEpisodes: FetchDescriptor<Show> {
@@ -144,6 +141,13 @@ struct IDs: Codable {
     let trakt: Int
     let tmdb: Int?
     var imdb: String? = nil
+
+    var imdbURL: URL? {
+        guard let imdb, imdb.hasPrefix("tt"),
+              !imdb.dropFirst(2).isEmpty,
+              imdb.dropFirst(2).allSatisfy({ $0.isASCII && $0.isNumber }) else { return nil }
+        return URL(string: "https://www.imdb.com/title/\(imdb)/")
+    }
 }
 struct RemoteShow: Codable, Identifiable {
     let title: String
