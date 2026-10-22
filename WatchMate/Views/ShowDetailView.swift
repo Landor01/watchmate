@@ -77,6 +77,13 @@ struct ShowDetailView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
+            if let imdbURL = show.imdbURL {
+                Section("More information") {
+                    Link(destination: imdbURL) {
+                        Label("View show on IMDb", systemImage: "arrow.up.right.square")
+                    }
+                }
+            }
             if groups.ready.isEmpty && groups.upcoming.isEmpty && groups.completed.isEmpty {
                 Text("Episode details haven't loaded. Pull to refresh to try again.").foregroundStyle(.secondary)
             }

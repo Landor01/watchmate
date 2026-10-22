@@ -14,6 +14,7 @@ final class Show {
     var providerRegion: String = ""
     var metadataUpdatedAt: Date?
     var catalogueUpdatedAt: Date?
+    var episodeIMDbIDsLoaded: Bool = false
     var isFollowing: Bool = true
     var notificationsEnabled: Bool = false
     // Minutes after local midnight; independent of the catalogue's broadcast time.
@@ -45,6 +46,7 @@ final class Show {
 final class Episode {
     @Attribute(.unique) var key: String
     var traktID: Int
+    var imdbID: String?
     var season: Int
     var number: Int
     var title: String
@@ -61,7 +63,12 @@ final class Episode {
         title = remote.title ?? "Episode \(remote.number)"
         overview = remote.overview ?? ""; firstAired = Dates.parse(remote.firstAired)
         runtime = remote.runtime
+        imdbID = remote.ids.imdb
     }
+    var imdbURL: URL? {
+        IDs(trakt: traktID, tmdb: nil, imdb: imdbID).imdbURL
+    }
+
     var label: String { "S\(season) E\(number)" }
 }
 

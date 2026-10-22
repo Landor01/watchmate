@@ -183,9 +183,10 @@ final class AppStore {
                 show.title = source.title; show.tmdbID = source.ids.tmdb; show.isFollowing = true
                 if let imdbID = source.ids.imdb { show.imdbID = imdbID }
                 do {
-                    if show.catalogueUpdatedAt == nil || now.timeIntervalSince(show.catalogueUpdatedAt!) > 21_600 {
+                    if !show.episodeIMDbIDsLoaded || show.catalogueUpdatedAt == nil || now.timeIntervalSince(show.catalogueUpdatedAt!) > 21_600 {
                         let episodes = try await service.episodes(showID: source.id)
                         merge(episodes, into: show); show.catalogueUpdatedAt = now
+                        show.episodeIMDbIDsLoaded = true
                     }
                     // Apply a complete watched snapshot, including remote unwatch actions.
                     for episode in show.episodes { episode.watchedAt = nil }
@@ -225,6 +226,7 @@ final class AppStore {
         for source in sources {
             if let episode = show.episodes.first(where: { $0.season == source.season && $0.number == source.number }) {
                 episode.traktID = source.ids.trakt; episode.title = source.title ?? "Episode \(source.number)"
+                episode.imdbID = source.ids.imdb
                 episode.overview = source.overview ?? ""; episode.firstAired = Dates.parse(source.firstAired); episode.runtime = source.runtime
             } else {
                 let episode = Episode(showID: show.traktID, remote: source)

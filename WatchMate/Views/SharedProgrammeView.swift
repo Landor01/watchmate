@@ -28,6 +28,13 @@ struct SharedProgrammeView: View {
         ThemedList {
             if let programme, let progress {
                 SharedProgrammeSummary(title: programme.show.title, posterPath: posterPath, progress: progress)
+                if let imdbURL = programme.show.ids.imdbURL {
+                    Section("More information") {
+                        Link(destination: imdbURL) {
+                            Label("View show on IMDb", systemImage: "arrow.up.right.square")
+                        }
+                    }
+                }
                 if loading { ProgressView("Loading episodes…") }
                 if let message { Text(message).foregroundStyle(.secondary) }
                 if !loading && episodes.isEmpty {
@@ -382,10 +389,10 @@ private struct SharedEpisodeDetails: View {
                 SharedEpisodeButtons(row: row, update: update).disabled(store.busy || programme == nil)
                 if store.busy { ProgressView("Updating shared progress…") }
             }
-            if let imdbURL = programme?.show.ids.imdbURL {
+            if let imdbURL = episode.ids.imdbURL ?? programme?.show.ids.imdbURL {
                 Section("More information") {
                     Link(destination: imdbURL) {
-                        Label("View show on IMDb", systemImage: "arrow.up.right.square")
+                        Label(episode.ids.imdbURL != nil ? "View episode on IMDb" : "View show on IMDb", systemImage: "arrow.up.right.square")
                     }
                 }
             }
