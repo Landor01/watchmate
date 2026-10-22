@@ -13,7 +13,7 @@ struct ComingSoonView: View {
             show.episodes.compactMap { episode -> ScheduledProgramme? in
                 guard let date = episode.firstAired, episode.watchedAt == nil, !episode.isSkipped,
                       store.settings.includeSpecials || episode.season > 0 else { return nil }
-                return ScheduledProgramme(show: show, episode: episode, date: date)
+                return ScheduledProgramme(show: show, episode: episode, date: AirDates.day(date))
             }
         }.sorted {
             $0.date == $1.date ? $0.id < $1.id : $0.date < $1.date
@@ -24,9 +24,9 @@ struct ComingSoonView: View {
         let entries = scheduledEntries
         let dates = Set(entries.map { calendar.startOfDay(for: $0.date) })
         let now = Date()
-        let end = now.addingTimeInterval(30 * 86_400)
+        let end = calendar.date(byAdding: .day, value: 30, to: calendar.startOfDay(for: now)) ?? now
         let visibleEntries = entries.filter {
-            calendarMode ? calendar.isDate($0.date, inSameDayAs: selectedDate) : ($0.date > now && $0.date <= end)
+            calendarMode ? calendar.isDate($0.date, inSameDayAs: selectedDate) : (!AirDates.hasAired($0.date, now: now) && $0.date <= end)
         }
         GeometryReader { geometry in
             // Each calendar column needs room for seven 44-point targets plus padding.

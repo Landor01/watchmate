@@ -185,6 +185,7 @@ private struct SharedProgrammeSummary: View {
                 .font(.subheadline)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
             Text("Time left covers aired episodes, excluding skipped episodes. Totals follow your Specials setting.")
                 .font(.caption).foregroundStyle(.secondary)
             if progress.unknownWatchedRuntimes + progress.unknownRemainingRuntimes > 0 {
@@ -321,7 +322,7 @@ private struct SharedEpisodeStatus: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             if let date = Dates.parse(row.episode.firstAired) {
-                if date >= Calendar.current.startOfDay(for: Date()) { Text("Airs: \(Text(date, style: .date))") }
+                if !AirDates.hasAired(date) { Text("Airs: \(Text(date, style: .date))") }
                 else { Text("Aired: \(Text(date, style: .date))") }
                 if row.isFuture { Text("Scheduled").foregroundStyle(.orange) }
             } else { Text("Air date unknown") }

@@ -23,11 +23,38 @@ struct WidgetTests {
         #expect(show.nextEpisode(at: now)?.number == 2)
     }
 
-    @Test func futureEpisodeBecomesAvailableAtAirTime() {
-        let show = WidgetShow(id: 12, title: "Example", episodes: [episode(1, offset: 60)])
-        #expect(show.nextEpisode(at: now) == nil)
-        #expect(show.nextAirDate(after: now) == now.addingTimeInterval(60))
-        #expect(show.nextEpisode(at: now.addingTimeInterval(60))?.number == 1)
+    @Test func futureEpisodeBecomesAvailableAtStartOfAirDate() throws {
+        let tomorrow = try #require(Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: now)))
+        let airTime = try #require(Calendar.current.date(bySettingHour: 21, minute: 0, second: 0, of: tomorrow))
+        let show = WidgetShow(id: 12, title: "Example", episodes: [episode(1, offset: airTime.timeIntervalSince(now))])
+        #expect(show.nextEpisode(at: tomorrow.addingTimeInterval(-1)) == nil)
+        #expect(show.nextAirDate(after: now) == tomorrow)
+        #expect(show.nextEpisode(at: tomorrow)?.number == 1)
+        #expect(show.nextAirDate(after: tomorrow) == nil)
+    }
+
+    @Test func tonightIsAlreadyAvailableInAppAndWidget() throws {
+        let morning = try #require(Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: now))
+        let tonight = try #require(Calendar.current.date(bySettingHour: 21, minute: 0, second: 0, of: now))
+        let source = episode(1, offset: tonight.timeIntervalSince(now))
+        let show = WidgetShow(id: 12, title: "Example", episodes: [source])
+        let states = [EpisodeState(season: 1, number: 1, firstAired: tonight, watched: false, skipped: false)]
+        #expect(show.nextEpisode(at: morning)?.number == 1)
+        #expect(show.nextAirDate(after: morning) == nil)
+        #expect(EpisodeRules.waiting(states, now: morning, includeSpecials: false).count == 1)
+        #expect(EpisodeRules.upcoming(states, now: morning, includeSpecials: false).isEmpty)
+        #expect(!EpisodeRules.isCaughtUp(states, now: morning, includeSpecials: false))
+    }
+
+    @Test func completedGroupingHandlesWatchedSkippedFutureAndUnknownEpisodes() {
+        func state(_ number: Int, date: Date? = nil, watched: Bool = false, skipped: Bool = false) -> EpisodeState {
+            EpisodeState(season: 1, number: number, firstAired: date, watched: watched, skipped: skipped)
+        }
+        let complete = [state(1, watched: true), state(2, skipped: true), state(3, date: now.addingTimeInterval(86_400))]
+        #expect(EpisodeRules.isCaughtUp(complete, now: now, includeSpecials: false))
+        #expect(!EpisodeRules.isCaughtUp(complete + [state(4)], now: now, includeSpecials: false))
+        #expect(!EpisodeRules.isCaughtUp([], now: now, includeSpecials: false))
+        #expect(!EpisodeRules.isCaughtUp(complete, now: now.addingTimeInterval(2 * 86_400), includeSpecials: false))
     }
 
     @Test func noEpisodesMeansCaughtUp() {
@@ -38,9 +65,9 @@ struct WidgetTests {
 
     @Test func nextAirDateExcludesPastDatesAndUsesEarliestFutureDate() {
         let show = WidgetShow(id: 12, title: "Example", episodes: [
-            episode(1), episode(2, offset: 600), episode(3, offset: 120)
+            episode(1), episode(2, offset: 2 * 86_400), episode(3, offset: 86_400)
         ])
-        #expect(show.nextAirDate(after: now) == now.addingTimeInterval(120))
+        #expect(show.nextAirDate(after: now) == Calendar.current.startOfDay(for: now.addingTimeInterval(86_400)))
     }
 
     @Test func seasonOrderMatchesUpNextRules() {

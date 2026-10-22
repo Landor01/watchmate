@@ -116,26 +116,30 @@ struct MyShowsView: View {
     @Environment(AppStore.self) private var store
     var body: some View {
         let personalShows = shows.filter { $0.isFollowing && (!store.sharedShows.showIDs.contains($0.traktID) || store.sharedShows.personalShowIDs.contains($0.traktID)) }
+        let now = Date()
+        let completedIDs = Set(personalShows.filter {
+            EpisodeRules.isComplete($0.episodes.map(\.state), includeSpecials: store.settings.includeSpecials)
+        }.map(\.traktID))
+        let upToDateIDs = Set(personalShows.filter {
+            EpisodeRules.isUpToDate($0.episodes.map(\.state), now: now, includeSpecials: store.settings.includeSpecials)
+        }.map(\.traktID))
+        let activeShows = personalShows.filter { !completedIDs.contains($0.traktID) && !upToDateIDs.contains($0.traktID) }
+        let upToDateShows = personalShows.filter { upToDateIDs.contains($0.traktID) }
+        let completedShows = personalShows.filter { completedIDs.contains($0.traktID) }
         ThemedList {
             if personalShows.isEmpty {
                 ContentUnavailableView("Your shows live here", systemImage: "tv", description: Text("Tap + to find and add programmes, or connect Trakt in Settings to import your history and watchlist."))
             }
-            ForEach(personalShows) { show in
-                NavigationLink { ShowDetailView(show: show) } label: { ShowRow(show: show) }
-                    .alignmentGuide(.listRowSeparatorLeading) { dimensions in
-                        dimensions[.leading]
-                    }
-                    .contextMenu {
-                        Button("Move to Shared Shows", systemImage: "person.2") { showToShare = show }
-                            .disabled(store.busy || store.settings.demoMode || !store.connected)
-                    }
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button("Remove", systemImage: "trash", role: .destructive) {
-                            showToRemove = show
-                            confirmRemoval = true
-                        }
-                        .disabled(store.busy)
-                    }
+            showRows(activeShows)
+            if !upToDateShows.isEmpty {
+                Section("Up to date") {
+                    showRows(upToDateShows)
+                }
+            }
+            if !completedShows.isEmpty {
+                Section("Completed") {
+                    showRows(completedShows)
+                }
             }
         }.navigationTitle("My Shows").navigationBarTitleDisplayMode(.inline).refreshable { await store.refresh() }
             .sheet(item: $showToShare) { show in
@@ -148,6 +152,26 @@ struct MyShowsView: View {
             } message: { show in
                 Text("Remove \(show.title) from WatchMate? Your Trakt history and watchlist will be kept. You can add it again using +.")
             }
+    }
+
+    private func showRows(_ shows: [Show]) -> some View {
+        ForEach(shows) { show in
+            NavigationLink { ShowDetailView(show: show) } label: { ShowRow(show: show) }
+                .alignmentGuide(.listRowSeparatorLeading) { dimensions in
+                    dimensions[.leading]
+                }
+                .contextMenu {
+                    Button("Move to Shared Shows", systemImage: "person.2") { showToShare = show }
+                        .disabled(store.busy || store.settings.demoMode || !store.connected)
+                }
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button("Remove", systemImage: "trash", role: .destructive) {
+                        showToRemove = show
+                        confirmRemoval = true
+                    }
+                    .disabled(store.busy)
+                }
+        }
     }
 }
 

@@ -325,7 +325,7 @@ struct ShowRow: View {
                     if showsAirDate, let date = episode.firstAired {
                         Group {
                             if showsAiredPrefix {
-                                if date >= Calendar.current.startOfDay(for: Date()) {
+                                if !AirDates.hasAired(date) {
                                     Text("Airs: \(Text(date, style: .date))")
                                 } else {
                                     Text("Aired: \(Text(date, style: .date))")

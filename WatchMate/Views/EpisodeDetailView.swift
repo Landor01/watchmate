@@ -44,7 +44,7 @@ private struct EpisodeSummarySection: View {
                 Text(episode.title).font(.title2.bold()).accessibilityAddTraits(.isHeader)
             }
             if let date = episode.firstAired {
-                LabeledContent(date > Date() ? "Scheduled air date" : "First aired") {
+                LabeledContent(!AirDates.hasAired(date) ? "Scheduled air date" : "First aired") {
                     Text(date, format: .dateTime.day().month(.wide).year())
                 }
             } else {
@@ -71,9 +71,6 @@ private struct EpisodeStreamingSection: View {
                         .foregroundStyle(.secondary)
                 } else {
                     ProviderNamesView(providers: show.providers)
-                }
-                if let link = show.watchURL, let url = URL(string: link), url.scheme == "https" {
-                    Link("Check where to watch", destination: url)
                 }
             } else {
                 Text("Streaming availability unknown")

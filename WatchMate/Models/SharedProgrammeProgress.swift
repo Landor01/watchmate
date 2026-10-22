@@ -10,7 +10,7 @@ struct SharedEpisodeProgress: Identifiable {
     let watchedAt: Date?
     let skipped: Bool
     var id: Int { episode.ids.trakt }
-    var isFuture: Bool { Dates.parse(episode.firstAired).map { $0 > Date() } ?? false }
+    var isFuture: Bool { Dates.parse(episode.firstAired).map { !AirDates.hasAired($0) } ?? false }
 }
 
 struct SharedSeasonProgress: Identifiable {
@@ -47,7 +47,7 @@ struct SharedProgrammeProgress {
             let section = SharedSeasonProgress(id: season, episodes: rows)
             let remaining = rows.filter { $0.watchedAt == nil && !$0.skipped }
             if remaining.isEmpty { completed.append(section) }
-            else if remaining.contains(where: { Dates.parse($0.episode.firstAired).map { $0 <= now } == true }) {
+            else if remaining.contains(where: { Dates.parse($0.episode.firstAired).map { AirDates.hasAired($0, now: now) } == true }) {
                 ready.append(section)
             } else { upcoming.append(section) }
         }
@@ -56,7 +56,7 @@ struct SharedProgrammeProgress {
         self.completed = completed
         let watched = rows.filter { $0.watchedAt != nil }
         let remaining = rows.filter {
-            $0.watchedAt == nil && !$0.skipped && Dates.parse($0.episode.firstAired).map { $0 <= now } == true
+            $0.watchedAt == nil && !$0.skipped && Dates.parse($0.episode.firstAired).map { AirDates.hasAired($0, now: now) } == true
         }
         watchedCount = watched.count
         remainingCount = remaining.count

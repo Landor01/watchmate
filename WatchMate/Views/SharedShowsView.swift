@@ -74,6 +74,8 @@ private struct HouseholdListView: View {
     @State private var working = false
     @State private var removing: SharedProgramme?
     @State private var moving: SharedProgramme?
+    @Query(Show.withEpisodes) private var shows: [Show]
+    @State private var catalogues: [Int: [RemoteEpisode]] = [:]
 
     private var list: HouseholdList? { store.sharedShows.lists.first { $0.id == listID } }
 
@@ -84,19 +86,13 @@ private struct HouseholdListView: View {
                 if list.programmes.isEmpty {
                     Text("Add programmes from My Shows or search for something new.")
                 }
-                ForEach(list.programmes) { programme in
-                    NavigationLink {
-                        SharedProgrammeView(listID: listID, showID: programme.id)
-                    } label: {
-                        SharedProgrammeRow(list: list, programme: programme)
-                    }
-                    .swipeActions(allowsFullSwipe: false) {
-                        Button("Move", systemImage: "folder") { moving = programme }.tint(themeAccent)
-                        Button("Remove", role: .destructive) { removing = programme }
-                    }
-                    .contextMenu {
-                        Button("Move to My Shows or another list", systemImage: "folder") { moving = programme }
-                        Button("Remove from shared list", role: .destructive) { removing = programme }
+                let completedIDs = completedProgrammeIDs(in: list)
+                let active = list.programmes.filter { !completedIDs.contains($0.id) }
+                let completed = list.programmes.filter { completedIDs.contains($0.id) }
+                programmeRows(active, in: list)
+                if !completed.isEmpty {
+                    Section("Completed") {
+                        programmeRows(completed, in: list)
                     }
                 }
             } else {
@@ -104,6 +100,7 @@ private struct HouseholdListView: View {
                                        description: Text("Pull to refresh. The owner may have stopped sharing this list."))
             }
         }
+        .task(id: list?.programmes.map(\.id)) { await loadCatalogues() }
         .navigationTitle(list?.name ?? "Shared Shows")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -124,7 +121,10 @@ private struct HouseholdListView: View {
                 .disabled(list == nil || working || store.busy)
             }
         }
-        .refreshable { await store.refreshSharedShows() }
+        .refreshable {
+            await store.refreshSharedShows()
+            await loadCatalogues()
+        }
         .sheet(isPresented: $adding) {
             if let list { NavigationStack { SharedProgrammePicker(list: list) } }
         }
@@ -149,6 +149,65 @@ private struct HouseholdListView: View {
             }
         } message: {
             Text("This removes the programme and its shared progress from this list. Everyone’s personal Trakt history is kept.")
+        }
+    }
+
+    private func programmeRows(_ programmes: [SharedProgramme], in list: HouseholdList) -> some View {
+        ForEach(programmes) { programme in
+            NavigationLink {
+                SharedProgrammeView(listID: listID, showID: programme.id)
+            } label: {
+                SharedProgrammeRow(list: list, programme: programme)
+            }
+            .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
+            .swipeActions(allowsFullSwipe: false) {
+                Button("Move", systemImage: "folder") { moving = programme }.tint(themeAccent)
+                Button("Remove", role: .destructive) { removing = programme }
+            }
+            .contextMenu {
+                Button("Move to My Shows or another list", systemImage: "folder") { moving = programme }
+                Button("Remove from shared list", role: .destructive) { removing = programme }
+            }
+        }
+    }
+
+    private func completedProgrammeIDs(in list: HouseholdList) -> Set<Int> {
+        let now = Date()
+        return Set(list.programmes.compactMap { programme in
+            guard let episodes = episodes(for: programme) else { return nil }
+            let watched = Set(programme.episodes.map(\.id))
+            let skipped = programme.skippedEpisodeIDs ?? []
+            let states = episodes.map {
+                EpisodeState(season: $0.season, number: $0.number, firstAired: Dates.parse($0.firstAired),
+                             watched: watched.contains($0.ids.trakt), skipped: skipped.contains($0.ids.trakt))
+            }
+            return EpisodeRules.isCaughtUp(states, now: now, includeSpecials: store.settings.includeSpecials) ? programme.id : nil
+        })
+    }
+
+    private func episodes(for programme: SharedProgramme) -> [RemoteEpisode]? {
+        if let show = shows.first(where: { $0.traktID == programme.id }), show.catalogueUpdatedAt != nil {
+            return show.episodes.map {
+                RemoteEpisode(season: $0.season, number: $0.number, title: $0.title,
+                              ids: IDs(trakt: $0.traktID, tmdb: nil), overview: $0.overview,
+                              firstAired: $0.firstAired.map { Dates.string($0) }, runtime: $0.runtime)
+            }
+        }
+        return catalogues[programme.id]
+    }
+
+    private func loadCatalogues() async {
+        guard let list else { return }
+        for programme in list.programmes {
+            if let show = shows.first(where: { $0.traktID == programme.id }), show.catalogueUpdatedAt != nil { continue }
+            do {
+                let episodes = try await TraktService(auth: store.auth).episodes(showID: programme.id)
+                try Task.checkCancellation()
+                catalogues[programme.id] = episodes
+            } catch {
+                if Task.isCancelled { return }
+                // Keep programmes with unavailable episode details in the main section.
+            }
         }
     }
 }

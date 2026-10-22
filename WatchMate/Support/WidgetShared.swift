@@ -40,6 +40,17 @@ struct WidgetEpisodeLink: Hashable, Sendable {
     }
 }
 
+enum AirDates {
+    // Use the displayed local calendar date, including for previously cached timestamps.
+    static func day(_ date: Date, calendar: Calendar = .current) -> Date {
+        calendar.startOfDay(for: date)
+    }
+
+    static func hasAired(_ date: Date, now: Date = Date()) -> Bool {
+        day(date) <= day(now)
+    }
+}
+
 struct WidgetEpisode: Codable, Equatable, Sendable, Identifiable {
     let id: String
     let season: Int
@@ -57,12 +68,12 @@ struct WidgetShow: Codable, Equatable, Sendable, Identifiable {
     var posterPath: String? = nil
 
     func nextEpisode(at date: Date) -> WidgetEpisode? {
-        episodes.filter { $0.firstAired <= date }
+        episodes.filter { AirDates.hasAired($0.firstAired, now: date) }
             .min { ($0.season, $0.number) < ($1.season, $1.number) }
     }
 
     func nextAirDate(after date: Date) -> Date? {
-        episodes.map(\.firstAired).filter { $0 > date }.min()
+        episodes.map { AirDates.day($0.firstAired) }.filter { $0 > AirDates.day(date) }.min()
     }
 }
 

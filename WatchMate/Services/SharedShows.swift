@@ -448,7 +448,7 @@ final class SharedShows {
                 record["number"] = episode.number as CKRecordValue
                 switch action {
                 case .watched(let watched):
-                    if watched && Dates.parse(episode.firstAired).map({ $0 > Date() }) == true {
+                    if watched && Dates.parse(episode.firstAired).map({ !AirDates.hasAired($0) }) == true {
                         progress(index + 1)
                         continue
                     }

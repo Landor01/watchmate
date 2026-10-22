@@ -7,7 +7,7 @@ struct SharedProgrammeProgressTests {
     private func episode(_ id: Int, season: Int, runtime: Int? = 45, future: Bool = false) -> RemoteEpisode {
         RemoteEpisode(season: season, number: id, title: "Episode",
                       ids: IDs(trakt: id, tmdb: nil), overview: nil,
-                      firstAired: Dates.string(now.addingTimeInterval(future ? 3600 : -3600)), runtime: runtime)
+                      firstAired: Dates.string(now.addingTimeInterval(future ? 86_400 : -86_400)), runtime: runtime)
     }
     private func programme(watched: [SharedEpisode] = [], skipped: Set<Int> = []) -> SharedProgramme {
         SharedProgramme(show: RemoteShow(title: "Test", year: nil, ids: IDs(trakt: 1, tmdb: nil)),

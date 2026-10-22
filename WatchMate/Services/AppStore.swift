@@ -178,6 +178,7 @@ final class AppStore {
                 if local[source.id] == nil {
                     context.insert(show); local[source.id] = show
                     show.notificationsEnabled = cloudDecode(Bool.self, key: "reminders:\(source.id)") ?? false
+                    show.reminderMinutes = cloudDecode(Int.self, key: "reminderTime:\(source.id)") ?? 540
                 }
                 show.title = source.title; show.tmdbID = source.ids.tmdb; show.isFollowing = true
                 do {
@@ -247,7 +248,7 @@ final class AppStore {
         }
         for (index, episode) in episodes.enumerated() {
             try Task.checkCancellation()
-            guard !watched || Dates.parse(episode.firstAired).map({ $0 <= Date() }) != false else { continue }
+            guard !watched || Dates.parse(episode.firstAired).map({ AirDates.hasAired($0) }) != false else { continue }
             try await updateTraktProgress(episode, showID: showID, watched: watched)
             do {
                 try await syncAndRetainSharedProgress(episode, showID: showID, watched: watched, source: list)
@@ -502,6 +503,15 @@ final class AppStore {
         queueCloudChanges()
         if let shows = try? allShows() { await Notifications.rebuild(shows: shows, includeSpecials: settings.includeSpecials, demo: settings.demoMode) }
     }
+    func setReminderTime(_ show: Show, date: Date) {
+        let components = Calendar.current.dateComponents([.hour, .minute], from: date)
+        show.reminderMinutes = (components.hour ?? 9) * 60 + (components.minute ?? 0)
+        do {
+            try context.save()
+            Task { await reschedule() }
+        } catch { errorMessage = error.localizedDescription }
+    }
+
     func enableNotifications(_ show: Show, enabled: Bool) async {
         guard !busy else { return }
         busy = true
@@ -531,6 +541,7 @@ final class AppStore {
             snapshot["show:\(show.traktID)"] = try encoder.encode(source)
             snapshot["following:\(show.traktID)"] = try encoder.encode(show.isFollowing && !settings.hiddenShowIDs.contains(show.traktID))
             snapshot["reminders:\(show.traktID)"] = try encoder.encode(show.notificationsEnabled)
+            snapshot["reminderTime:\(show.traktID)"] = try encoder.encode(show.reminderMinutes)
             for episode in show.episodes where episode.isSkipped || cloud.data(for: "skip:" + episode.key) != nil {
                 snapshot["skip:" + episode.key] = try encoder.encode(episode.isSkipped)
             }
@@ -580,6 +591,9 @@ final class AppStore {
         for show in shows.values {
             if let enabled = cloudDecode(Bool.self, key: "reminders:\(show.traktID)") {
                 show.notificationsEnabled = enabled
+            }
+            if let minutes = cloudDecode(Int.self, key: "reminderTime:\(show.traktID)"), (0..<1440).contains(minutes) {
+                show.reminderMinutes = minutes
             }
             for episode in show.episodes {
                 if let skipped = cloudDecode(Bool.self, key: "skip:" + episode.key) {

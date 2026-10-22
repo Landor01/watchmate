@@ -34,7 +34,7 @@ struct NextEpisodeProvider: AppIntentTimelineProvider {
         let current = await entry(for: configuration, at: now)
         var entries = [current]
         let refresh = now.addingTimeInterval(3_600)
-        // Make newly aired episodes actionable at their air time without waiting for an app launch.
+        // Make episodes actionable at the start of their air date without waiting for an app launch.
         if let airDate = current.show?.nextAirDate(after: now), airDate < refresh {
             entries.append(await entry(for: configuration, at: airDate))
         }
@@ -105,7 +105,7 @@ struct WatchMateWidgetEntryView: View {
                     Label("You’re all caught up", systemImage: "checkmark.circle")
                         .font(.headline)
                     if let airDate = show.nextAirDate(after: entry.date) {
-                        Text("Next episode airs \(airDate, format: .dateTime.day().month().hour().minute())")
+                        Text("Next episode airs \(airDate, format: .dateTime.day().month().year())")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     } else {

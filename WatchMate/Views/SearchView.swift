@@ -192,9 +192,6 @@ private struct SearchProgrammeDetailView: View {
             Section("Synopsis") {
                 Text(details?.overview.isEmpty == false ? details?.overview ?? "" : "No synopsis available.")
             }
-            if let link = details?.watchURL, let url = URL(string: link), url.scheme == "https" {
-                Link("Check where to watch", destination: url)
-            }
             Text("Streaming availability powered by JustWatch. Listings are for the series, not individual episodes.")
                 .font(.caption).foregroundStyle(.secondary)
         }

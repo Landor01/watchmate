@@ -41,3 +41,12 @@ struct WatchMateApp: App {
         }
     }
 }
+
+#if DEBUG
+#Preview("WatchMate") {
+    PreviewHost { _ in
+        AppEntryView()
+            .dynamicTypeSize(.large)
+    }
+}
+#endif

@@ -15,6 +15,8 @@ final class Show {
     var catalogueUpdatedAt: Date?
     var isFollowing: Bool = true
     var notificationsEnabled: Bool = false
+    // Minutes after local midnight; independent of the catalogue's broadcast time.
+    var reminderMinutes: Int = 540
     @Relationship(deleteRule: .cascade, inverse: \Episode.show) var episodes: [Episode] = []
 
     init(traktID: Int, tmdbID: Int?, title: String) {
@@ -71,25 +73,46 @@ struct EpisodeState: Equatable {
 }
 
 enum EpisodeRules {
+    static func isComplete(_ episodes: [EpisodeState], includeSpecials: Bool) -> Bool {
+        let included = episodes.filter { includeSpecials || $0.season > 0 }
+        return !included.isEmpty && included.allSatisfy { $0.watched }
+    }
+
+    static func isUpToDate(_ episodes: [EpisodeState], now: Date, includeSpecials: Bool) -> Bool {
+        let included = episodes.filter { includeSpecials || $0.season > 0 }
+        return !included.isEmpty && !isComplete(included, includeSpecials: true)
+            && included.allSatisfy {
+                $0.watched || $0.firstAired.map { !AirDates.hasAired($0, now: now) } == true
+            }
+    }
+
+    static func isCaughtUp(_ episodes: [EpisodeState], now: Date, includeSpecials: Bool) -> Bool {
+        let included = episodes.filter { includeSpecials || $0.season > 0 }
+        guard !included.isEmpty else { return false }
+        return included.allSatisfy {
+            $0.watched || $0.skipped || $0.firstAired.map { !AirDates.hasAired($0, now: now) } == true
+        }
+    }
+
     // The set of unwatched episodes matters: subtracting counts loses gaps and rewatches.
     static func waiting(_ episodes: [EpisodeState], now: Date, includeSpecials: Bool) -> [EpisodeState] {
         episodes.filter {
             !$0.watched && !$0.skipped && (includeSpecials || $0.season > 0)
-                && $0.firstAired.map { $0 <= now } == true
+                && $0.firstAired.map { AirDates.hasAired($0, now: now) } == true
         }.sorted { ($0.season, $0.number) < ($1.season, $1.number) }
     }
     static func upcoming(_ episodes: [EpisodeState], now: Date, days: Int = 30, includeSpecials: Bool) -> [EpisodeState] {
-        let end = now.addingTimeInterval(Double(days) * 86_400)
+        let end = Calendar.current.date(byAdding: .day, value: days, to: AirDates.day(now)) ?? now
         return episodes.filter {
             !$0.watched && !$0.skipped && (includeSpecials || $0.season > 0)
-                && $0.firstAired.map { $0 > now && $0 <= end } == true
-        }.sorted { $0.firstAired! < $1.firstAired! }
+                && $0.firstAired.map { !AirDates.hasAired($0, now: now) && AirDates.day($0) <= end } == true
+        }.sorted { AirDates.day($0.firstAired!) < AirDates.day($1.firstAired!) }
     }
 }
 
 extension Episode {
     var isScheduledInFuture: Bool {
-        firstAired.map { $0 > Date() } ?? false
+        firstAired.map { !AirDates.hasAired($0) } ?? false
     }
 
     var state: EpisodeState {

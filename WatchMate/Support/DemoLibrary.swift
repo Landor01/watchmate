@@ -84,7 +84,7 @@ enum DemoLibrary {
                     runtime: chapter.runtime
                 )
                 let episode = Episode(showID: show.traktID, remote: remote)
-                if chapter.watched, let aired = episode.firstAired, aired < Date() {
+                if chapter.watched, let aired = episode.firstAired, AirDates.hasAired(aired) {
                     episode.watchedAt = min(aired.addingTimeInterval(86_400), Date())
                 }
                 context.insert(episode)

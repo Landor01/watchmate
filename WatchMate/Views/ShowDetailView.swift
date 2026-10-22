@@ -23,7 +23,7 @@ struct ShowDetailView: View {
             let remaining = (grouped[season] ?? []).filter { $0.watchedAt == nil && !$0.isSkipped }
             if remaining.isEmpty {
                 completed.append(season)
-            } else if remaining.contains(where: { $0.firstAired.map { $0 <= now } == true }) {
+            } else if remaining.contains(where: { $0.firstAired.map { AirDates.hasAired($0, now: now) } == true }) {
                 ready.append(season)
             } else {
                 upcoming.append(season)
@@ -57,13 +57,25 @@ struct ShowDetailView: View {
                     .buttonStyle(.borderless)
                     .accessibilityLabel("About streaming availability")
                 }
+                .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
+                .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
                 if !show.overview.isEmpty { Text(show.overview).font(.subheadline) }
-                if show.providerRegion == store.settings.region, let link = show.watchURL, let url = URL(string: link), url.scheme == "https" {
-                    Link("Check where to watch", destination: url)
-                }
                 Toggle("Remind me on scheduled air dates", isOn: Binding(get: { show.notificationsEnabled }, set: { enabled in
                     Task { await store.enableNotifications(show, enabled: enabled) }
                 })).disabled(store.busy || store.settings.demoMode)
+                if show.notificationsEnabled {
+                    DatePicker("Reminder time", selection: Binding(
+                        get: {
+                            Calendar.current.date(bySettingHour: show.reminderMinutes / 60,
+                                                  minute: show.reminderMinutes % 60, second: 0,
+                                                  of: Date()) ?? Date()
+                        },
+                        set: { store.setReminderTime(show, date: $0) }
+                    ), displayedComponents: .hourAndMinute)
+                    .disabled(store.busy || store.settings.demoMode)
+                    Text("Remind me at this local time on each scheduled air date.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             }
             if groups.ready.isEmpty && groups.upcoming.isEmpty && groups.completed.isEmpty {
                 Text("Episode details haven't loaded. Pull to refresh to try again.").foregroundStyle(.secondary)
@@ -270,7 +282,7 @@ private struct SeasonEpisodeRow: View {
                 .accessibilityHint("Show episode details")
                 if let date = episode.firstAired {
                     Group {
-                        if date >= Calendar.current.startOfDay(for: Date()) {
+                        if !AirDates.hasAired(date) {
                             Text("Airs: \(Text(date, style: .date))")
                         } else {
                             Text("Aired: \(Text(date, style: .date))")
@@ -278,7 +290,7 @@ private struct SeasonEpisodeRow: View {
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    if date > Date() { Text("Scheduled").font(.caption).foregroundStyle(.orange) }
+                    if !AirDates.hasAired(date) { Text("Scheduled").font(.caption).foregroundStyle(.orange) }
                 } else { Text("Air date unknown").font(.caption).foregroundStyle(.secondary) }
                 if let watchedAt = episode.watchedAt {
                     if watchedAt == .distantPast {

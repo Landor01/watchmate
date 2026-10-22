@@ -33,9 +33,18 @@ struct SettingsView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                if let date = store.cloud.lastSync {
+                    LabeledContent("Last iCloud sync") { Text(date, style: .relative) }
+                }
+                if let date = settings.lastSync {
+                    LabeledContent("Last Trakt sync") { Text(date, style: .relative) }
+                }
                 NavigationLink("Help") {
                     HelpView()
                 }
+            }
+            if TipStore.isEnabled {
+                CoffeeTipSection()
             }
             AppearanceSettingsSection()
             Section("Trakt account") {
@@ -60,7 +69,6 @@ struct SettingsView: View {
                 StreamingRegionPicker()
                 Toggle("Include specials", isOn: $settings.includeSpecials)
                 DeviceRemindersControl()
-                if let date = settings.lastSync { LabeledContent("Last viewing sync") { Text(date, style: .relative) } }
             }
             Section("My streaming services") {
                 NavigationLink {
@@ -74,27 +82,6 @@ struct SettingsView: View {
                 Toggle("Highlight available services", isOn: $settings.highlightAvailableServices)
                     .disabled(settings.selectedProviders.isEmpty && !settings.highlightAvailableServices)
                 Text("Shows all streaming services in your region, with your selected services in the highlight colour. Applies to programme lists, Search and detail views.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            if TipStore.isEnabled {
-                CoffeeTipSection()
-            }
-            Section("iCloud sync") {
-                if store.cloud.syncing {
-                    ProgressView("Syncing with iCloud…")
-                } else {
-                    Text(store.cloud.status)
-                }
-                if let date = store.cloud.lastSync {
-                    LabeledContent("Last iCloud sync") { Text(date, style: .relative) }
-                }
-                if store.cloud.pendingCount > 0 {
-                    Text("\(store.cloud.pendingCount) changes waiting to sync")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-                Button("Sync now") { Task { await store.refresh() } }
-                    .disabled(store.busy || !store.connected || store.settings.demoMode)
-                Text("Use the same Apple Account and Trakt account on each device. Your profile photo, skips, followed and hidden shows, reminder choices and viewing preferences sync through your private iCloud storage. Watched history syncs through Trakt. Demo data and sign-in credentials stay on this device.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("Credits & privacy") {
