@@ -3,6 +3,7 @@ import SwiftData
 
 struct UpNextView: View {
     @State private var showingAirDateInfo = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(AppStore.self) private var store
     @Query(Show.withEpisodes) private var shows: [Show]
 
@@ -24,7 +25,10 @@ struct UpNextView: View {
         let remainingEpisodes = followedShows.flatMap { store.waiting($0) }
         ThemedList {
             Section {
-                HStack(spacing: 12) {
+                let summaryLayout = dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+                    : AnyLayout(HStackLayout(spacing: 12))
+                summaryLayout {
                     let count = entries.reduce(0) { $0 + $1.waitingCount }
                     VStack(alignment: .leading, spacing: 8) {
                         Text("^[\(count) episode](inflect: true) left to watch")
@@ -34,7 +38,9 @@ struct UpNextView: View {
                         Label("Left to watch: \(duration(of: remainingEpisodes))", systemImage: "hourglass")
                     }
                     .font(.subheadline)
-                    Spacer(minLength: 0)
+                    if !dynamicTypeSize.isAccessibilitySize {
+                        Spacer(minLength: 0)
+                    }
                     Button {
                         showingAirDateInfo = true
                     } label: {
@@ -56,9 +62,14 @@ struct UpNextView: View {
                         } label: {
                             ShowRow(show: entry.show, episode: entry.episode, squareArtwork: true, showsAiredPrefix: true, squareArtworkSize: 96)
                         }
-                        HStack {
+                        let actionsLayout = dynamicTypeSize.isAccessibilitySize
+                            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+                            : AnyLayout(HStackLayout())
+                        actionsLayout {
                             Text("\(entry.waitingCount) to watch").font(.caption.bold()).foregroundStyle(.tint)
-                            Spacer()
+                            if !dynamicTypeSize.isAccessibilitySize {
+                                Spacer()
+                            }
                             Button("Mark watched") {
                                 Task { await store.setWatched(entry.episode, watched: true) }
                             }

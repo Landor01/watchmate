@@ -365,7 +365,7 @@ struct SharedProgrammePicker: View {
                 Section("Move from My Shows") {
                     ForEach(personal) { show in
                         Button(show.title) {
-                            selection = RemoteShow(title: show.title, year: nil, ids: IDs(trakt: show.traktID, tmdb: show.tmdbID))
+                            selection = RemoteShow(title: show.title, year: nil, ids: IDs(trakt: show.traktID, tmdb: show.tmdbID, imdb: show.imdbID))
                         }
                     }
                 }
@@ -518,7 +518,7 @@ struct MoveToSharedListView: View {
                 ForEach(store.sharedShows.lists) { list in
                     NavigationLink(list.name) {
                         SharedProgrammePicker(list: list, initialShow: RemoteShow(title: show.title, year: nil,
-                                                                                ids: IDs(trakt: show.traktID, tmdb: show.tmdbID)))
+                                                                                ids: IDs(trakt: show.traktID, tmdb: show.tmdbID, imdb: show.imdbID)))
                     }
                 }
             }

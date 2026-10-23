@@ -20,7 +20,7 @@ struct WhatsNewView: View {
             id: "shared-progress",
             systemImage: "person.2.badge.gearshape",
             title: "Shared progress, your choice",
-            detail: "See episodes watched together, time watched and time left. Mark or skip episodes and whole seasons together. Your personal Trakt history changes only when you choose to sync it, with a preview and confirmation before existing progress is overwritten."
+            detail: "See episodes watched together, time watched and time left. Mark or skip episodes and whole seasons together. Watched changes also update your own Trakt history when Shared shows update Trakt history is on in Settings. Replacing your complete history with a shared list’s progress requires a separate review and confirmation."
         ),
         Item(
             id: "next-episode-widget",

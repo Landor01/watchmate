@@ -7,6 +7,7 @@ struct SharedProgrammeView: View {
     let showID: Int
     @State private var episodes: [RemoteEpisode] = []
     @State private var posterPath: String?
+    @State private var resolvedIMDbURL: URL?
     @State private var seasonPosters: [Int: String] = [:]
     @State private var loading = false
     @State private var working = false
@@ -27,14 +28,7 @@ struct SharedProgrammeView: View {
         }
         ThemedList {
             if let programme, let progress {
-                SharedProgrammeSummary(title: programme.show.title, posterPath: posterPath, progress: progress)
-                if let imdbURL = programme.show.ids.imdbURL {
-                    Section("More information") {
-                        Link(destination: imdbURL) {
-                            Label("View show on IMDb", systemImage: "arrow.up.right.square")
-                        }
-                    }
-                }
+                SharedProgrammeSummary(title: programme.show.title, posterPath: posterPath, progress: progress, imdbURL: programme.show.ids.imdbURL ?? resolvedIMDbURL)
                 if loading { ProgressView("Loading episodes…") }
                 if let message { Text(message).foregroundStyle(.secondary) }
                 if !loading && episodes.isEmpty {
@@ -89,15 +83,10 @@ struct SharedProgrammeView: View {
         } message: {
             Text("When Shared shows update Trakt history is on in Settings, marking episodes watched or unwatched also updates your Trakt account and matching shared lists. When off, shared progress stays separate. Skips belong to this list. Sync my Trakt history replaces your personal progress with this list’s progress after you review and confirm the changes.")
         }
-        .safeAreaInset(edge: .bottom) {
+        .accessibilityHidden(working)
+        .overlay {
             if working {
-                VStack(spacing: 8) {
-                    ProgressView(value: Double(completed), total: Double(max(1, total)))
-                    Text("\(completed) of \(total) episodes updated").font(.subheadline)
-                }
-                .padding()
-                .background(.regularMaterial)
-                .accessibilityElement(children: .combine)
+                SeasonUpdateOverlay(title: "Updating shared progress…", total: total)
             }
         }
         .animation(reduceMotion ? nil : .easeInOut, value: progress?.completed.map(\.id))
@@ -108,6 +97,9 @@ struct SharedProgrammeView: View {
                 importing = true
                 store.sharedShows.review(offer)
             }
+        }
+        .task(id: programme?.show.id) {
+            await resolveIMDbURL()
         }
         .refreshable {
             guard !working else { return }
@@ -123,6 +115,22 @@ struct SharedProgrammeView: View {
         SharedSeasonSection(season: season, listID: listID, showID: showID,
                             tmdbID: programme.show.ids.tmdb, posterPath: seasonPosters[season.id] ?? posterPath,
                             update: update)
+    }
+
+    private func resolveIMDbURL() async {
+        resolvedIMDbURL = nil
+        guard let programme, programme.show.ids.imdbURL == nil else { return }
+        // Older shared payloads may predate IMDb IDs. Prefer an offline local match.
+        if let show = try? store.allShows().first(where: { $0.traktID == showID }),
+           let url = show.imdbURL {
+            resolvedIMDbURL = url
+            return
+        }
+        guard !PreviewEnvironment.isRunning, !store.settings.demoMode else { return }
+        if let show = try? await TraktService(auth: store.auth).show(showID: showID),
+           !Task.isCancelled, show.id == showID {
+            resolvedIMDbURL = show.ids.imdbURL
+        }
     }
 
     private func loadEpisodes() async {
@@ -176,6 +184,8 @@ private struct SharedProgrammeSummary: View {
     let title: String
     let posterPath: String?
     let progress: SharedProgrammeProgress
+    var imdbURL: URL? = nil
+    @State private var showingTimeInfo = false
 
     var body: some View {
         Section {
@@ -191,13 +201,29 @@ private struct SharedProgrammeSummary: View {
                 }
                 .font(.subheadline)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                Button {
+                    showingTimeInfo = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .frame(minWidth: 44, minHeight: 44)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("About viewing time totals")
             }
             .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
-            Text("Time left covers aired episodes, excluding skipped episodes. Totals follow your Specials setting.")
-                .font(.caption).foregroundStyle(.secondary)
+            if let imdbURL {
+                Link(destination: imdbURL) {
+                    Label("View show on IMDb", systemImage: "arrow.up.right.square")
+                }
+            }
+        }
+        .alert("Viewing time totals", isPresented: $showingTimeInfo) {
+            Button("OK", role: .cancel) {}
+        } message: {
             if progress.unknownWatchedRuntimes + progress.unknownRemainingRuntimes > 0 {
-                Text("Some episode runtimes are unavailable; time totals include known runtimes only.")
-                    .font(.caption).foregroundStyle(.secondary)
+                Text("Time left covers aired episodes, excluding skipped episodes. Totals follow your Specials setting. Some episode runtimes are unavailable; time totals include known runtimes only.")
+            } else {
+                Text("Time left covers aired episodes, excluding skipped episodes. Totals follow your Specials setting.")
             }
         }
     }
@@ -379,26 +405,23 @@ private struct SharedEpisodeDetails: View {
     var body: some View {
         let row = SharedEpisodeProgress(episode: episode, watchedAt: programme?.episodes.first { $0.id == episode.ids.trakt }?.watchedAt,
                                         skipped: programme?.skippedEpisodeIDs?.contains(episode.ids.trakt) ?? false)
-        ThemedList {
-            Section {
-                SharedEpisodeArtwork(tmdbID: tmdbID, episode: episode, posterPath: posterPath, width: 240)
-                    .frame(maxWidth: .infinity)
-                Text(episode.title ?? "Episode").font(.title2.bold()).accessibilityAddTraits(.isHeader)
-                SharedEpisodeStatus(row: row)
-                if let overview = episode.overview, !overview.isEmpty { Text(overview).font(.subheadline) }
-                SharedEpisodeButtons(row: row, update: update).disabled(store.busy || programme == nil)
-                if store.busy { ProgressView("Updating shared progress…") }
-            }
-            if let imdbURL = episode.ids.imdbURL ?? programme?.show.ids.imdbURL {
-                Section("More information") {
-                    Link(destination: imdbURL) {
-                        Label(episode.ids.imdbURL != nil ? "View episode on IMDb" : "View show on IMDb", systemImage: "arrow.up.right.square")
-                    }
-                }
-            }
+        EpisodeDetailsScreen(
+            details: EpisodeDetails(episode: episode, showTitle: programme?.show.title,
+                                    showIMDbURL: programme?.show.ids.imdbURL),
+            navigationTitle: "S\(episode.season) E\(episode.number)"
+        ) {
+            SharedEpisodeArtwork(tmdbID: tmdbID, episode: episode, posterPath: posterPath, width: 120)
+        } streaming: {
+            EmptyView()
+        } watching: {
+            EpisodeWatchSection(
+                watchedAt: row.watchedAt, isSkipped: row.skipped,
+                isFuture: row.isFuture, isShared: true,
+                isDisabled: store.busy || programme == nil, isUpdating: store.busy,
+                toggleWatched: { update([episode], .watched(row.watchedAt == nil)) },
+                toggleSkipped: { update([episode], .skipped(!row.skipped)) }
+            )
         }
-        .navigationTitle("S\(episode.season) E\(episode.number)")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -412,7 +435,7 @@ private struct SharedEpisodeDetails: View {
 
 #Preview("Shared summary") {
     PreviewHost { data in
-        List { SharedProgrammeSummary(title: data.show.title, posterPath: data.show.posterPath, progress: data.sharedProgress) }
+        List { SharedProgrammeSummary(title: data.show.title, posterPath: data.show.posterPath, progress: data.sharedProgress, imdbURL: URL(string: "https://www.imdb.com/title/tt11280740/")) }
     }
 }
 

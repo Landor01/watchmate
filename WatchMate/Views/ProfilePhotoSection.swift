@@ -12,6 +12,7 @@ struct ProfilePhotoSection: View {
     @State private var confirmingPhotoRemoval = false
     @State private var cameraDenied = false
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var requestingCamera = false
     @State private var cameraPresentationPending = false
 
@@ -57,7 +58,10 @@ struct ProfilePhotoSection: View {
                         }
                     }
                     .frame(maxWidth: .infinity)
-                HStack {
+                let controlsLayout = dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 16))
+                    : AnyLayout(HStackLayout())
+                controlsLayout {
                     photoControls
                 }
                 .buttonStyle(.borderless)
@@ -149,10 +153,18 @@ struct ProfilePhotoSection: View {
     @ViewBuilder
     private var photoControls: some View {
         PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-            Label("Choose Photo", systemImage: "photo")
+            if dynamicTypeSize.isAccessibilitySize {
+                Text("Choose Photo")
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Label("Choose Photo", systemImage: "photo")
+            }
         }
         .accessibilityLabel("Choose profile photo")
-        Spacer(minLength: 16)
+        if !dynamicTypeSize.isAccessibilitySize {
+            Spacer(minLength: 16)
+        }
         Button {
             requestingCamera = true
         } label: {

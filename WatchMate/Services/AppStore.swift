@@ -249,6 +249,18 @@ final class AppStore {
             publishWidgetSnapshot()
             queueCloudChanges()
         }
+        if watched {
+            let eligible = episodes.filter { Dates.parse($0.firstAired).map { AirDates.hasAired($0) } != false }
+            let confirmed = try await markTraktEpisodesWatched(eligible, showID: showID)
+            try saveConfirmedWatches(eligible, showID: showID, confirmed: confirmed)
+            let accepted = eligible.filter { confirmed[$0.ids.trakt] != nil }
+            try await syncAndRetainSharedWatches(accepted, showID: showID, source: list, progress: progress)
+            await reschedule()
+            guard accepted.count == eligible.count else {
+                throw APIError.message("Trakt could not find \(eligible.count - accepted.count) episodes. Confirmed watches were saved; refresh before retrying.")
+            }
+            return
+        }
         for (index, episode) in episodes.enumerated() {
             try Task.checkCancellation()
             guard !watched || Dates.parse(episode.firstAired).map({ AirDates.hasAired($0) }) != false else { continue }
@@ -261,6 +273,46 @@ final class AppStore {
             progress(index + 1)
         }
         await reschedule()
+    }
+
+    /// One history snapshot and at most one write, regardless of season length.
+    func markTraktEpisodesWatched(_ episodes: [RemoteEpisode], showID: Int) async throws -> [Int: Date] {
+        guard !episodes.isEmpty else { return [:] }
+        let history = try await viewing.watchedShows().first { $0.show.id == showID }
+        var existing: [String: Date] = [:]
+        for season in history?.seasons ?? [] {
+            for episode in season.episodes {
+                existing["\(season.number):\(episode.number)"] = Dates.parse(episode.lastWatchedAt) ?? .distantPast
+            }
+        }
+        var confirmed: [Int: Date] = [:]
+        var missing: [Int] = []
+        for episode in episodes {
+            if let date = existing["\(episode.season):\(episode.number)"] {
+                confirmed[episode.ids.trakt] = date
+            } else {
+                missing.append(episode.ids.trakt)
+            }
+        }
+        try Task.checkCancellation()
+        if !missing.isEmpty {
+            let date = Date()
+            let accepted = try await viewing.markWatched(episodeIDs: missing)
+            for id in accepted where missing.contains(id) { confirmed[id] = date }
+        }
+        return confirmed
+    }
+
+    private func saveConfirmedWatches(_ episodes: [RemoteEpisode], showID: Int, confirmed: [Int: Date]) throws {
+        let local = try allShows().first { $0.traktID == showID }
+        for episode in episodes {
+            guard let date = confirmed[episode.ids.trakt],
+                  let saved = local?.episodes.first(where: { $0.season == episode.season && $0.number == episode.number }) else { continue }
+            saved.watchedAt = date
+            saved.isSkipped = false
+        }
+        try context.save()
+        if !confirmed.isEmpty { settings.historyRevision = UUID().uuidString }
     }
 
     private func remoteEpisode(_ episode: Episode) -> RemoteEpisode {
@@ -323,6 +375,50 @@ final class AppStore {
         pending = try pendingSharedProgress(accountID: accountID)
         pending.removeValue(forKey: change.key)
         try savePendingSharedProgress(pending, accountID: accountID)
+    }
+
+    private func syncAndRetainSharedWatches(_ episodes: [RemoteEpisode], showID: Int,
+                                           source: HouseholdList? = nil,
+                                           progress: (Int) -> Void = { _ in }) async throws {
+        guard !episodes.isEmpty, settings.sharedShowsUpdateTraktHistory, !settings.demoMode,
+              let accountID = settings.traktAccountID else {
+            progress(episodes.count)
+            return
+        }
+        // Journal the entire acknowledged batch before any CloudKit work, so a
+        // failure on the first episode cannot lose the remaining shared updates.
+        var pending = try pendingSharedProgress(accountID: accountID)
+        for episode in episodes {
+            let change = PendingSharedProgress(episode: episode, showID: showID, watched: true)
+            pending[change.key] = change
+        }
+        try savePendingSharedProgress(pending, accountID: accountID)
+        do {
+            sharedShows.activate(accountID: accountID)
+            while sharedShows.loading { try await Task.sleep(for: .milliseconds(50)) }
+            await sharedShows.refresh(reportErrors: false, automatic: true)
+            if let message = sharedShows.refreshMessage { throw APIError.message(message) }
+            var lists = sharedShows.lists.filter { $0.programmes.contains { $0.id == showID } }
+            if let source, !lists.contains(where: { $0.id == source.id }) { lists.append(source) }
+            for (index, list) in lists.enumerated() {
+                guard let programme = list.programmes.first(where: { $0.id == showID }) else { continue }
+                let changes = episodes.filter { episode in
+                    !programme.episodes.contains { $0.id == episode.ids.trakt }
+                        || programme.skippedEpisodeIDs?.contains(episode.ids.trakt) == true
+                }
+                if !changes.isEmpty {
+                    try await sharedShows.updateEpisodes(changes, showID: showID, in: list, action: .watched(true)) { completed in
+                        if index == lists.count - 1 { progress(episodes.count - changes.count + completed) }
+                    }
+                }
+            }
+            pending = try pendingSharedProgress(accountID: accountID)
+            for episode in episodes { pending.removeValue(forKey: "\(showID):\(episode.season):\(episode.number)") }
+            try savePendingSharedProgress(pending, accountID: accountID)
+            progress(episodes.count)
+        } catch {
+            throw APIError.message("Your Trakt history is saved. Shared progress is waiting to sync; refresh to retry. \(error.localizedDescription)")
+        }
     }
 
     /// Retry only the iCloud side of acknowledged Trakt writes, including after a relaunch.
@@ -411,36 +507,30 @@ final class AppStore {
             status = previousStatus
         }
 
-        // Stage confirmed results so observed episode rows change together, even after a partial failure.
-        var confirmed: [(episode: Episode, watchedAt: Date)] = []
-        var failureMessage: String?
         do {
-            for episode in episodes {
-                try Task.checkCancellation()
-                if settings.sharedShowsUpdateTraktHistory {
-                    try await updatePersonalProgress(episode, watched: true)
-                } else if episode.watchedAt == nil && !settings.demoMode {
-                    try await viewing.setWatched(episodeID: episode.traktID, watched: true)
+            let remote = episodes.map(remoteEpisode)
+            if settings.demoMode {
+                for episode in episodes {
+                    episode.watchedAt = episode.watchedAt ?? Date()
+                    episode.isSkipped = false
                 }
-                confirmed.append((episode, episode.watchedAt ?? Date()))
-                seasonUpdateCompleted += 1
+                try context.save()
+                seasonUpdateCompleted = episodes.count
+            } else {
+                let confirmed = try await markTraktEpisodesWatched(remote, showID: show.traktID)
+                try saveConfirmedWatches(remote, showID: show.traktID, confirmed: confirmed)
+                let accepted = remote.filter { confirmed[$0.ids.trakt] != nil }
+                try await syncAndRetainSharedWatches(accepted, showID: show.traktID) { completed in
+                    seasonUpdateCompleted = completed
+                }
+                if accepted.count != remote.count {
+                    errorMessage = "Trakt could not find \(remote.count - accepted.count) episodes. Confirmed watches were saved; refresh before retrying."
+                }
             }
         } catch {
-            failureMessage = "Updated \(confirmed.count) of \(episodes.count) episodes. \(error.localizedDescription) You can retry to finish the season."
-        }
-
-        for result in confirmed {
-            result.episode.watchedAt = result.watchedAt
-            result.episode.isSkipped = false
-        }
-        do {
-            try context.save()
-            if !confirmed.isEmpty && !settings.demoMode { settings.historyRevision = UUID().uuidString }
-        } catch {
-            failureMessage = "Could not save the season update. Pull to refresh to reload your Trakt history. \(error.localizedDescription)"
+            errorMessage = "\(error.localizedDescription) Refresh before retrying to reconcile any watches already saved by Trakt."
         }
         await reschedule()
-        if let failureMessage { errorMessage = failureMessage }
     }
 
     func skipSeason(_ show: Show, season: Int) async {

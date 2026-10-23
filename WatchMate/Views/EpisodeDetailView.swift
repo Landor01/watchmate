@@ -1,65 +1,126 @@
 import SwiftUI
 
-struct EpisodeDetailView: View {
-    let episode: Episode
+/// Display values only; each caller retains its own source of watch progress.
+struct EpisodeDetails {
+    let title: String
+    let showTitle: String?
+    let season: Int
+    let number: Int
+    let firstAired: Date?
+    let runtime: Int?
+    let overview: String
+    let episodeIMDbURL: URL?
+    let showIMDbURL: URL?
+
+    init(episode: Episode) {
+        title = episode.title
+        showTitle = episode.show?.title
+        season = episode.season
+        number = episode.number
+        firstAired = episode.firstAired
+        runtime = episode.runtime
+        overview = episode.overview
+        episodeIMDbURL = episode.imdbURL
+        showIMDbURL = episode.show?.imdbURL
+    }
+
+    init(episode: RemoteEpisode, showTitle: String?, showIMDbURL: URL?) {
+        title = episode.title ?? String(localized: "Episode")
+        self.showTitle = showTitle
+        season = episode.season
+        number = episode.number
+        firstAired = Dates.parse(episode.firstAired)
+        runtime = episode.runtime
+        overview = episode.overview ?? ""
+        episodeIMDbURL = episode.ids.imdbURL
+        self.showIMDbURL = showIMDbURL
+    }
+}
+
+/// One layout for personal and shared episodes, with source-specific content.
+struct EpisodeDetailsScreen<Artwork: View, Streaming: View, Watching: View>: View {
+    let details: EpisodeDetails
+    let navigationTitle: String
+    @ViewBuilder let artwork: Artwork
+    @ViewBuilder let streaming: Streaming
+    @ViewBuilder let watching: Watching
 
     var body: some View {
         ThemedList {
-            EpisodeSummarySection(episode: episode)
-            Section("Synopsis") {
-                if episode.overview.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Text("No synopsis is available for this episode yet.")
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text(episode.overview)
-                }
-            }
-            if let imdbURL = episode.imdbURL ?? episode.show?.imdbURL {
-                Section("More information") {
-                    Link(destination: imdbURL) {
-                        Label(episode.imdbURL != nil ? "View episode on IMDb" : "View show on IMDb", systemImage: "arrow.up.right.square")
-                    }
-                }
-            }
-            EpisodeStreamingSection(show: episode.show)
-            EpisodeViewingSection(episode: episode)
+            EpisodeSummarySection(details: details) { artwork }
+            EpisodeSynopsisSection(overview: details.overview)
+            streaming
+            watching
         }
-        .navigationTitle(episode.label)
+        .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
     }
 }
 
-private struct EpisodeSummarySection: View {
+private struct EpisodeSynopsisSection: View {
+    let overview: String
+
+    var body: some View {
+        Section("Synopsis") {
+            if overview.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Text("No synopsis is available for this episode yet.")
+                    .foregroundStyle(.secondary)
+            } else {
+                Text(overview)
+            }
+        }
+    }
+}
+
+struct EpisodeDetailView: View {
     let episode: Episode
 
     var body: some View {
-        Section {
+        EpisodeDetailsScreen(details: EpisodeDetails(episode: episode), navigationTitle: episode.label) {
             if let show = episode.show {
-                HStack(alignment: .top, spacing: 16) {
-                    EpisodeArtworkView(show: show, episode: episode, width: 120, adaptsToImage: true)
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(show.title).font(.subheadline).foregroundStyle(.secondary)
-                        Text(episode.title).font(.title2.bold()).accessibilityAddTraits(.isHeader)
-                        Text("Season \(episode.season) · Episode \(episode.number)")
-                            .font(.subheadline)
-                    }
-                }
-                .alignmentGuide(.listRowSeparatorLeading) { dimensions in
-                    dimensions[.leading]
-                }
-            } else {
-                Text(episode.title).font(.title2.bold()).accessibilityAddTraits(.isHeader)
+                EpisodeArtworkView(show: show, episode: episode, width: 120, adaptsToImage: true)
             }
-            if let date = episode.firstAired {
+        } streaming: {
+            EpisodeStreamingSection(show: episode.show)
+        } watching: {
+            EpisodeViewingSection(episode: episode)
+        }
+    }
+}
+
+struct EpisodeSummarySection<Artwork: View>: View {
+    let details: EpisodeDetails
+    @ViewBuilder let artwork: Artwork
+
+    var body: some View {
+        Section {
+            HStack(alignment: .top, spacing: 16) {
+                artwork
+                VStack(alignment: .leading, spacing: 8) {
+                    if let showTitle = details.showTitle {
+                        Text(showTitle).font(.subheadline).foregroundStyle(.secondary)
+                    }
+                    Text(details.title).font(.title2.bold()).accessibilityAddTraits(.isHeader)
+                    Text("Season \(details.season) · Episode \(details.number)")
+                        .font(.subheadline)
+                }
+            }
+            .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
+            if let date = details.firstAired {
                 LabeledContent(!AirDates.hasAired(date) ? "Scheduled air date" : "First aired") {
                     Text(date, format: .dateTime.day().month(.wide).year())
                 }
             } else {
                 LabeledContent("First aired", value: "Unknown")
             }
-            if let runtime = episode.runtime, runtime > 0 {
+            if let runtime = details.runtime, runtime > 0 {
                 LabeledContent("Runtime") {
                     Text("\(runtime) minutes")
+                }
+            }
+            if let imdbURL = details.episodeIMDbURL ?? details.showIMDbURL {
+                Link(destination: imdbURL) {
+                    Label(details.episodeIMDbURL != nil ? "View episode on IMDb" : "View show on IMDb", systemImage: "arrow.up.right.square")
                 }
             }
         }
@@ -96,40 +157,66 @@ private struct EpisodeViewingSection: View {
     let episode: Episode
 
     var body: some View {
+        EpisodeWatchSection(
+            watchedAt: episode.watchedAt, isSkipped: episode.isSkipped,
+            isFuture: episode.isScheduledInFuture, isShared: false,
+            isDisabled: store.busy, isUpdating: false,
+            toggleWatched: {
+                Task { await store.setWatched(episode, watched: episode.watchedAt == nil) }
+            },
+            toggleSkipped: {
+                Task { await store.skip(episode) }
+            }
+        )
+    }
+}
+
+struct EpisodeWatchSection: View {
+    let watchedAt: Date?
+    let isSkipped: Bool
+    let isFuture: Bool
+    let isShared: Bool
+    let isDisabled: Bool
+    let isUpdating: Bool
+    let toggleWatched: () -> Void
+    let toggleSkipped: () -> Void
+
+    var body: some View {
         Section("Watch status") {
             HStack(spacing: 8) {
-                if let watchedAt = episode.watchedAt {
+                if let watchedAt {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(.tint)
-                        .accessibilityLabel("Watched")
+                        .accessibilityLabel(isShared ? Text("Watched together") : Text("Watched"))
                     if watchedAt != .distantPast {
                         Text(watchedAt, format: .dateTime.day().month(.abbreviated).year())
                             .font(.body)
                             .foregroundStyle(.secondary)
-                            .accessibilityLabel("Watched on \(watchedAt.formatted(date: .abbreviated, time: .omitted))")
+                            .accessibilityLabel(isShared
+                                ? Text("Watched together on \(watchedAt.formatted(date: .abbreviated, time: .omitted))")
+                                : Text("Watched on \(watchedAt.formatted(date: .abbreviated, time: .omitted))"))
                     }
-                } else if episode.isSkipped {
+                } else if isSkipped {
                     Image(systemName: "forward.end.circle")
                         .foregroundStyle(.secondary)
-                        .accessibilityLabel("Skipped")
+                        .accessibilityLabel(isShared ? Text("Skipped in this shared list") : Text("Skipped"))
                 } else {
                     Label("Unwatched", systemImage: "circle")
                         .font(.body)
                         .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 8)
-                Button(episode.watchedAt == nil ? "Mark watched" : "Unwatch") {
-                    Task { await store.setWatched(episode, watched: episode.watchedAt == nil) }
-                }
-                .disabled(episode.watchedAt == nil && episode.isScheduledInFuture)
-                Button(episode.isSkipped ? "Unskip" : "Skip") {
-                    Task { await store.skip(episode) }
-                }
-                .disabled(episode.watchedAt != nil)
+                Button(watchedAt == nil ? "Mark watched" : "Unwatch", action: toggleWatched)
+                    .disabled(watchedAt == nil && isFuture)
+                Button(isSkipped ? "Unskip" : "Skip", action: toggleSkipped)
+                    .disabled(watchedAt != nil)
             }
             .buttonStyle(.bordered)
             .font(.caption)
-            .disabled(store.busy)
+            .disabled(isDisabled)
+            if isUpdating {
+                ProgressView("Updating shared progress…")
+            }
         }
     }
 }
@@ -144,7 +231,11 @@ private struct EpisodeViewingSection: View {
 
 #Preview("Episode summary") {
     PreviewHost { data in
-        List { EpisodeSummarySection(episode: data.episode) }
+        List {
+            EpisodeSummarySection(details: EpisodeDetails(episode: data.episode)) {
+                EpisodeArtworkView(show: data.show, episode: data.episode, width: 120, adaptsToImage: true)
+            }
+        }
     }
 }
 

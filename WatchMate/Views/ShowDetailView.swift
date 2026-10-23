@@ -60,6 +60,11 @@ struct ShowDetailView: View {
                 .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
                 .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
                 if !show.overview.isEmpty { Text(show.overview).font(.subheadline) }
+                if let imdbURL = show.imdbURL {
+                    Link(destination: imdbURL) {
+                        Label("View show on IMDb", systemImage: "arrow.up.right.square")
+                    }
+                }
                 Toggle("Remind me on scheduled air dates", isOn: Binding(get: { show.notificationsEnabled }, set: { enabled in
                     Task { await store.enableNotifications(show, enabled: enabled) }
                 })).disabled(store.busy || store.settings.demoMode)
@@ -75,13 +80,6 @@ struct ShowDetailView: View {
                     .disabled(store.busy || store.settings.demoMode)
                     Text("Remind me at this local time on each scheduled air date.")
                         .font(.caption).foregroundStyle(.secondary)
-                }
-            }
-            if let imdbURL = show.imdbURL {
-                Section("More information") {
-                    Link(destination: imdbURL) {
-                        Label("View show on IMDb", systemImage: "arrow.up.right.square")
-                    }
                 }
             }
             if groups.ready.isEmpty && groups.upcoming.isEmpty && groups.completed.isEmpty {

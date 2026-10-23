@@ -19,6 +19,27 @@ struct NextEpisodeEntry: TimelineEntry {
                           firstAired: Date().addingTimeInterval(-86_400), runtime: 45)
         ]), needsSelection: false
     )
+
+    static let previewLongTitles = NextEpisodeEntry(
+        date: .now, accountScope: "demo",
+        show: WidgetShow(id: -1, title: "A Very Long Programme Title That Needs More Space", episodes: [
+            WidgetEpisode(id: "-1:12:24", season: 12, number: 24,
+                          title: "An Unexpected Journey With a Very Long Episode Title",
+                          overview: "A synopsis that is secondary to the episode and actions.",
+                          firstAired: .distantPast, runtime: 90)
+        ]), needsSelection: false
+    )
+    static let previewCaughtUp = NextEpisodeEntry(
+        date: .now, accountScope: "demo",
+        show: WidgetShow(id: -1, title: "Harbour Lights", episodes: []), needsSelection: false
+    )
+    static let previewUnconfigured = NextEpisodeEntry(
+        date: .now, accountScope: "", show: nil, needsSelection: true
+    )
+    static let previewFailure = NextEpisodeEntry(
+        date: .now, accountScope: preview.accountScope, show: preview.show,
+        needsSelection: false, errorMessage: "Could not save your change. Check your connection and try again."
+    )
 }
 
 struct NextEpisodeProvider: AppIntentTimelineProvider {
@@ -60,6 +81,27 @@ struct NextEpisodeProvider: AppIntentTimelineProvider {
 
 struct WatchMateWidgetEntryView: View {
     @Environment(\.widgetFamily) private var family
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    let entry: NextEpisodeEntry
+
+    var body: some View {
+        Group {
+            if dynamicTypeSize >= .xxLarge || (family == .systemSmall && entry.errorMessage != nil) {
+                LargeTextWidgetContent(entry: entry)
+            } else {
+                StandardWidgetContent(entry: entry)
+            }
+        }
+        .containerBackground(.fill.tertiary, for: .widget)
+        .widgetURL(entry.show?.nextEpisode(at: entry.date).flatMap {
+            WidgetEpisodeLink(episodeKey: $0.id, accountScope: entry.accountScope).url
+        })
+    }
+
+}
+
+private struct StandardWidgetContent: View {
+    @Environment(\.widgetFamily) private var family
     let entry: NextEpisodeEntry
 
     var body: some View {
@@ -68,8 +110,7 @@ struct WatchMateWidgetEntryView: View {
                 HStack {
                     Text(show.title)
                         .font(family == .systemSmall ? .subheadline.bold() : .headline)
-                        .lineLimit(family == .systemSmall ? nil : 1)
-                        .fixedSize(horizontal: false, vertical: family == .systemSmall)
+                        .lineLimit(family == .systemSmall ? 2 : 1)
                         .layoutPriority(1)
                     Spacer(minLength: 0)
                     if family != .systemSmall {
@@ -130,11 +171,69 @@ struct WatchMateWidgetEntryView: View {
                 Spacer(minLength: 0)
             }
         }
-        .dynamicTypeSize(.large)
-        .containerBackground(.fill.tertiary, for: .widget)
-        .widgetURL(entry.show?.nextEpisode(at: entry.date).flatMap {
-            WidgetEpisodeLink(episodeKey: $0.id, accountScope: entry.accountScope).url
-        })
+
+    }
+}
+
+// Widgets cannot scroll or grow. Give larger text space by dropping secondary
+// visuals, while keeping the full episode title and air date available to VoiceOver.
+private struct LargeTextWidgetContent: View {
+    @Environment(\.widgetFamily) private var family
+    let entry: NextEpisodeEntry
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if let show = entry.show {
+                Text(entry.errorMessage == nil ? show.title : String(localized: "Update failed"))
+                    .accessibilityLabel(entry.errorMessage.map { show.title + ". " + $0 } ?? show.title)
+                    .font(.caption.bold())
+                    .lineLimit(family == .systemLarge ? 2 : 1)
+                    .accessibilityAddTraits(.isHeader)
+                if let episode = show.nextEpisode(at: entry.date) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(family == .systemMedium
+                             ? "S\(episode.season) E\(episode.number) · \(episode.title)"
+                             : "S\(episode.season) E\(episode.number)")
+                            .font(.caption2)
+                            .lineLimit(1)
+                        if family == .systemLarge {
+                            Text(episode.title)
+                                .font(.caption.bold())
+                                .lineLimit(2)
+                            Text(episode.firstAired, format: .dateTime.day().month(.abbreviated).year())
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("Season \(episode.season), episode \(episode.number), \(episode.title)")
+                    .accessibilityValue(Text("Aired: \(episode.firstAired, format: .dateTime.day().month().year())"))
+                    Spacer(minLength: 0)
+                    WidgetEpisodeActions(showID: show.id, episodeKey: episode.id,
+                                         accountScope: entry.accountScope, compact: true)
+                } else {
+                    Text("Caught up")
+                        .font(.caption)
+                        .lineLimit(2)
+                    if family == .systemLarge, let date = show.nextAirDate(after: entry.date) {
+                        Text("Next episode airs \(date, format: .dateTime.day().month().year())")
+                            .font(.caption2)
+                    }
+                    Spacer(minLength: 0)
+                }
+            } else {
+                Text(entry.needsSelection ? "Choose a show" : "Open WatchMate")
+                    .font(.caption.bold())
+                    .lineLimit(2)
+                if family == .systemLarge {
+                    Text(entry.errorMessage ?? "Edit this widget to choose a programme from My Shows.")
+                        .font(.caption2)
+                }
+                Spacer(minLength: 0)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
 
@@ -197,34 +296,49 @@ private struct WidgetEpisodeActions: View {
             Toggle(isOn: false, intent: MarkWidgetEpisodeWatched(showID: showID, episodeKey: episodeKey, accountScope: accountScope)) {
                 if compact {
                     Image(systemName: "checkmark")
-                        .frame(minWidth: 28, minHeight: 28)
+                        .frame(minWidth: 44, minHeight: 44)
                         .accessibilityLabel("Mark watched")
                 } else {
                     Label("Mark watched", systemImage: "checkmark")
                 }
             }
-            .toggleStyle(WidgetPendingActionStyle(message: compact ? "Saving…" : "Marking watched…"))
-            .buttonStyle(.borderedProminent)
+            .toggleStyle(WidgetPendingActionStyle(message: compact ? "Saving…" : "Marking watched…", compact: compact))
+            .buttonStyle(WidgetActionButtonStyle(prominent: true, compact: compact))
 
             Toggle(isOn: false, intent: SkipWidgetEpisode(showID: showID, episodeKey: episodeKey, accountScope: accountScope)) {
                 if compact {
                     Image(systemName: "forward.end")
-                        .frame(minWidth: 28, minHeight: 28)
+                        .frame(minWidth: 44, minHeight: 44)
                         .accessibilityLabel("Skip")
                 } else {
                     Label("Skip", systemImage: "forward.end")
                 }
             }
-            .toggleStyle(WidgetPendingActionStyle(message: "Skipping…"))
-            .buttonStyle(.bordered)
+            .toggleStyle(WidgetPendingActionStyle(message: "Skipping…", compact: compact))
+            .buttonStyle(WidgetActionButtonStyle(prominent: false, compact: compact))
         }
         .font(.caption)
         .disabled(accountScope.isEmpty)
     }
 }
 
+private struct WidgetActionButtonStyle: ButtonStyle {
+    let prominent: Bool
+    let compact: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding(.horizontal, compact ? 0 : 8)
+            .frame(minWidth: 44, minHeight: 44)
+            .foregroundStyle(prominent ? Color.white : Color.accentColor)
+            .background(prominent ? Color.accentColor : Color.accentColor.opacity(0.15), in: Capsule())
+            .opacity(configuration.isPressed ? 0.7 : 1)
+    }
+}
+
 private struct WidgetPendingActionStyle: ToggleStyle {
     let message: LocalizedStringKey
+    let compact: Bool
 
     func makeBody(configuration: Configuration) -> some View {
         // WidgetKit archives both toggle appearances and switches immediately on tap.
@@ -233,8 +347,14 @@ private struct WidgetPendingActionStyle: ToggleStyle {
             configuration.isOn = true
         } label: {
             if configuration.isOn {
-                Text(message)
-                    .frame(minHeight: 28)
+                if compact {
+                    Image(systemName: "hourglass")
+                        .frame(minWidth: 44, minHeight: 44)
+                        .accessibilityLabel(message)
+                } else {
+                    Text(message)
+                        .frame(minHeight: 28)
+                }
             } else {
                 configuration.label
             }
@@ -260,18 +380,30 @@ struct WatchMateWidget: Widget {
     WatchMateWidget()
 } timeline: {
     NextEpisodeEntry.preview
+    NextEpisodeEntry.previewLongTitles
+    NextEpisodeEntry.previewCaughtUp
+    NextEpisodeEntry.previewUnconfigured
+    NextEpisodeEntry.previewFailure
 }
 
 #Preview(as: .systemLarge) {
     WatchMateWidget()
 } timeline: {
     NextEpisodeEntry.preview
+    NextEpisodeEntry.previewLongTitles
+    NextEpisodeEntry.previewCaughtUp
+    NextEpisodeEntry.previewUnconfigured
+    NextEpisodeEntry.previewFailure
 }
 
 #Preview(as: .systemSmall) {
     WatchMateWidget()
 } timeline: {
     NextEpisodeEntry.preview
+    NextEpisodeEntry.previewLongTitles
+    NextEpisodeEntry.previewCaughtUp
+    NextEpisodeEntry.previewUnconfigured
+    NextEpisodeEntry.previewFailure
 }
 
 #Preview("Compact episode details") {

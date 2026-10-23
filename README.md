@@ -5,13 +5,13 @@ A native iPhone app for seeing what to watch next across your followed TV progra
 ## Open it when you get home
 
 1. Clone this repository, or unzip the supplied project.
-2. Open **WatchMate.xcodeproj** in **Xcode 16 or later**.
+2. Open **WatchMate.xcodeproj** in **Xcode 27 or later** (the source references iOS 27 APIs behind availability checks).
 3. Select the **WatchMate** scheme and an **iPhone simulator running iOS 18 or later**.
 4. Press **Run (⌘R)**. WatchMate opens in demo mode without API keys, a server or an Apple developer team.
 
-The three demo programmes are fictional. Their viewing history and dates are sample data. Try marking episodes watched, skipping episodes and browsing Coming Soon. Settings → Load fresh demo data resets the demo.
+Demo mode uses real programme information with sample viewing progress and bundled artwork. Try marking episodes watched, skipping episodes and browsing Coming Soon. Settings → Switch to demo data resets the demo.
 
-For a physical iPhone, choose your Apple signing team and a unique bundle identifier in Signing & Capabilities. The app targets iPhone; iPad layout is not part of this starter.
+For a physical device, choose your Apple signing team and verify the bundle identifiers and capabilities in Signing & Capabilities. The app targets iPhone and iPad; both need release testing.
 
 ## Included
 
@@ -77,7 +77,7 @@ The algorithm selects the **set** of episodes that:
 
 1. Have not been watched.
 2. Have not been skipped in WatchMate.
-3. Have a known first-air timestamp at or before the current time.
+3. Have a known air date on or before today in the device’s local calendar.
 4. Are not specials unless the user includes specials.
 
 It sorts that set by season and episode number. Gaps in viewing history are retained, and a complete-season release counts all qualifying unwatched episodes. Rewatches count as watched rather than starting an automatic new viewing cycle. Trakt progress resets are not yet supported.
@@ -145,7 +145,7 @@ xcodebuild test -project WatchMate.xcodeproj -scheme WatchMate \
 
 Use a simulator name available on your Mac. The GitHub Actions workflow selects an available iPhone automatically and builds/tests without signing.
 
-**Validation during creation:** all Swift files passed a Swift syntax parser; the Xcode project parsed successfully, and property lists, schemes, JSON and workflow YAML were checked. An actual Xcode build and XCTest execution have **not** run in the creation environment, which has no macOS/Xcode. Live OAuth/API integration also needs your registered credentials and callback domain before testing.
+See [the pre-release review](PRE_RELEASE_REVIEW.md) for current build/test evidence and the checks still required for distribution. Live OAuth/API integration needs your registered credentials and callback domain.
 
 ## Before an App Store release
 
@@ -161,7 +161,7 @@ Settings includes small, medium and large one-off tips using StoreKit 2. Tips un
 
 Tips are enabled in Debug. Release builds hide them unless `ENABLE_TIPS` is added to the app target's Swift Active Compilation Conditions. Leave that condition absent while awaiting TMDB's licensing clarification.
 
-The shared WatchMate Run scheme uses `Configuration/CoffeeTips.storekit` for local purchases with no real charge:
+For local purchases with no real charge, select `Configuration/CoffeeTips.storekit` in Edit Scheme → Run → Options → StoreKit Configuration. The checked-in scheme does not select a StoreKit configuration:
 
 | Product ID | Type | Local UK price |
 | --- | --- | --- |

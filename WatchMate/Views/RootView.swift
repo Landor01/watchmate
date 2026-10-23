@@ -87,7 +87,7 @@ struct RootView: View {
                     .alert("Shared Shows and viewing history", isPresented: $showingSharingInfo) {
                         Button("OK", role: .cancel) {}
                     } message: {
-                        Text("Share programmes and group progress while keeping separate Trakt accounts. Personal history changes only when you choose to sync it.")
+                        Text("Share programmes and group progress while keeping separate Trakt accounts. Marking shared episodes watched or unwatched also updates your own Trakt history when Shared shows update Trakt history is enabled in Settings. Other participants’ Trakt histories are unchanged.")
                     }
             }
                 .tabItem { Label("Shared Shows", systemImage: "person.2") }
@@ -123,16 +123,7 @@ struct RootView: View {
                 }.padding(.horizontal).padding(.vertical, 8).background(.thinMaterial)
             }
         }
-        .disabled(store.seasonUpdateInProgress)
-        .accessibilityHidden(store.seasonUpdateInProgress)
-        .overlay {
-            if store.seasonUpdateInProgress {
-                SeasonUpdateOverlay(
-                    completed: store.seasonUpdateCompleted,
-                    total: store.seasonUpdateTotal
-                )
-            }
-        }
+        .modifier(SeasonUpdatePresentationModifier())
         .sheet(isPresented: $settingsOpen) {
             NavigationStack { SettingsView() }
                 .modifier(AppAppearanceModifier())
@@ -148,6 +139,8 @@ struct RootView: View {
                     }
             }
             .modifier(AppAppearanceModifier())
+            .modifier(SeasonUpdatePresentationModifier())
+            .interactiveDismissDisabled(store.seasonUpdateInProgress)
             .alert("WatchMate", isPresented: Binding(
                 get: { store.errorMessage != nil },
                 set: { if !$0 { store.errorMessage = nil } }
@@ -237,8 +230,23 @@ private struct ActivityToastModifier: ViewModifier {
     }
 }
 
-private struct SeasonUpdateOverlay: View {
-    let completed: Int
+struct SeasonUpdatePresentationModifier: ViewModifier {
+    @Environment(AppStore.self) private var store
+
+    func body(content: Content) -> some View {
+        content
+            .disabled(store.seasonUpdateInProgress)
+            .accessibilityHidden(store.seasonUpdateInProgress)
+            .overlay {
+                if store.seasonUpdateInProgress {
+                    SeasonUpdateOverlay(total: store.seasonUpdateTotal)
+                }
+            }
+    }
+}
+
+struct SeasonUpdateOverlay: View {
+    var title: LocalizedStringKey = "Marking season watched…"
     let total: Int
 
     var body: some View {
@@ -249,9 +257,9 @@ private struct SeasonUpdateOverlay: View {
             VStack(spacing: 16) {
                 ProgressView()
                     .controlSize(.large)
-                Text("Marking season watched…")
+                Text(title)
                     .font(.headline)
-                Text("\(completed) of \(total) episodes processed")
+                Text("Processing \(total) episodes")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -299,6 +307,7 @@ struct PosterImageView: View {
 
 struct ShowRow: View {
     @Environment(AppStore.self) private var store
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let show: Show
     var episode: Episode?
     var squareArtwork = false
@@ -312,7 +321,10 @@ struct ShowRow: View {
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 14) {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 14))
+            : AnyLayout(HStackLayout(alignment: .center, spacing: 14))
+        layout {
             if let episode {
                 EpisodeArtworkView(show: show, episode: episode, width: squareArtwork ? squareArtworkSize : 96, squareCrop: squareArtwork)
             } else {
@@ -321,7 +333,9 @@ struct ShowRow: View {
             VStack(alignment: .leading, spacing: 5) {
                 Text(show.title).font(.headline)
                 if let episode {
-                    Text("\(episode.label) · \(episode.title)").font(.subheadline).lineLimit(2)
+                    Text("\(episode.label) · \(episode.title)")
+                        .font(.subheadline)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
                     if showsAirDate, let date = episode.firstAired {
                         Group {
                             if showsAiredPrefix {
@@ -347,7 +361,9 @@ struct ShowRow: View {
                     ProviderNamesView(providers: displayedProviders).font(.caption).foregroundStyle(.secondary)
                 } else { Text("Streaming availability unknown").font(.caption).foregroundStyle(.secondary) }
             }
-            Spacer(minLength: 0)
+            if !dynamicTypeSize.isAccessibilitySize {
+                Spacer(minLength: 0)
+            }
         }.padding(.vertical, 6)
     }
 }
@@ -378,9 +394,25 @@ struct ShowRow: View {
     }
 }
 
+#Preview("Season update in search sheet") {
+    PreviewHost { data in
+        Color.clear
+            .sheet(isPresented: .constant(true)) {
+                NavigationStack { ShowDetailView(show: data.show) }
+                    .modifier(SeasonUpdatePresentationModifier())
+                    .interactiveDismissDisabled()
+            }
+            .task {
+                data.store.seasonUpdateTotal = 9
+                data.store.seasonUpdateCompleted = 3
+                data.store.seasonUpdateInProgress = true
+            }
+    }
+}
+
 #Preview("Season update") {
     PreviewHost { data in
-        SeasonUpdateOverlay(completed: 3, total: 9)
+        SeasonUpdateOverlay(total: 9)
     }
 }
 #endif

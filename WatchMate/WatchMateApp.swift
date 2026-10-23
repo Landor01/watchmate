@@ -1,16 +1,64 @@
 import SwiftUI
 import SwiftData
+import OSLog
 
 @main
 struct WatchMateApp: App {
     @UIApplicationDelegateAdaptor(SharingAppDelegate.self) private var sharingDelegate
-    private let container: ModelContainer
-    @State private var store: AppStore
+
+    var body: some Scene {
+        WindowGroup {
+            AppStartupView()
+                .modifier(AppAppearanceModifier())
+        }
+    }
+}
+
+private struct AppStartupView: View {
+    @State private var services: AppServices?
+    @State private var startupFailed = false
     @State private var tips = TipStore()
-    init() {
+    @State private var pendingEpisodeLink: WidgetEpisodeLink?
+
+    var body: some View {
+        Group {
+            if let services {
+                AppEntryView()
+                    .environment(services.store)
+                    .modelContainer(services.container)
+                    .environment(tips)
+                    .task {
+                        guard !AppStoreScreenshotMode.isEnabled else { return }
+                        await tips.finishUnfinishedTransactions()
+                    }
+            } else if startupFailed {
+                ContentUnavailableView {
+                    Label("Couldn’t Open Your Library", systemImage: "externaldrive.badge.exclamationmark")
+                } description: {
+                    Text("WatchMate couldn’t open its saved data. Your data hasn’t been removed. Check your device’s available storage and try again.")
+                } actions: {
+                    Button("Try Again", action: loadServices)
+                        .buttonStyle(.borderedProminent)
+                }
+            } else {
+                ProgressView("Opening your library…")
+            }
+        }
+        .task { loadServices() }
+        .onOpenURL { url in
+            guard let link = WidgetEpisodeLink(url: url) else { return }
+            if let services {
+                services.store.widgetEpisodeLink = link
+            } else {
+                pendingEpisodeLink = link
+            }
+        }
+    }
+
+    private func loadServices() {
+        guard services == nil else { return }
         do {
             let services = try AppServices.shared()
-            self.container = services.container
             let store = services.store
             store.publishStartupWidgetSnapshot()
             // Preserve the startup experience for people already using the app.
@@ -20,24 +68,14 @@ struct WatchMateApp: App {
                (store.connected && !store.settings.demoMode) || ((try? store.hasShows()) == true) {
                 UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
             }
-            _store = State(initialValue: store)
-        } catch { fatalError("WatchMate could not open its local database: \(error)") }
-    }
-    var body: some Scene {
-        WindowGroup {
-            AppEntryView().environment(store).modelContainer(container)
-                .modifier(AppAppearanceModifier())
-                .environment(tips)
-                .dynamicTypeSize(.large)
-                .task {
-                    guard !AppStoreScreenshotMode.isEnabled else { return }
-                    await tips.finishUnfinishedTransactions()
-                }
-                .onOpenURL { url in
-                    if let link = WidgetEpisodeLink(url: url) {
-                        store.widgetEpisodeLink = link
-                    }
-                }
+            store.widgetEpisodeLink = pendingEpisodeLink
+            pendingEpisodeLink = nil
+            startupFailed = false
+            self.services = services
+        } catch {
+            Logger(subsystem: Bundle.main.bundleIdentifier ?? "WatchMate", category: "Startup")
+                .error("Could not open local database: \(error.localizedDescription, privacy: .private)")
+            startupFailed = true
         }
     }
 }
@@ -46,7 +84,6 @@ struct WatchMateApp: App {
 #Preview("WatchMate") {
     PreviewHost { _ in
         AppEntryView()
-            .dynamicTypeSize(.large)
     }
 }
 #endif

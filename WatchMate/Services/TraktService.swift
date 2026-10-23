@@ -1,5 +1,34 @@
 import Foundation
 
+enum TraktHistoryBatch {
+    static func payload(episodeIDs: [Int], watchedAt: Date = Date()) -> [String: Any] {
+        let timestamp = Dates.string(watchedAt)
+        return ["episodes": Set(episodeIDs).sorted().map {
+            ["ids": ["trakt": $0], "watched_at": timestamp] as [String: Any]
+        }]
+    }
+
+    static func confirmedIDs(in data: Data, requestedIDs: Set<Int>) throws -> Set<Int> {
+        struct Response: Decodable {
+            struct Counts: Decodable { let episodes: Int }
+            struct Missing: Decodable {
+                struct Episode: Decodable { let ids: IDs }
+                let episodes: [Episode]
+            }
+            let added: Counts
+            let notFound: Missing
+        }
+        let response = try HTTP.decoder.decode(Response.self, from: data)
+        let missing = Set(response.notFound.episodes.map(\.ids.trakt))
+        let confirmed = requestedIDs.subtracting(missing)
+        // A successful HTTP response can still reject individual IDs.
+        guard missing.isSubset(of: requestedIDs), response.added.episodes == confirmed.count else {
+            throw APIError.message("Trakt returned an unexpected history result. Refresh before retrying to avoid duplicate watches.")
+        }
+        return confirmed
+    }
+}
+
 @MainActor
 final class TraktService: ViewingService {
     let auth: TraktAuth
@@ -69,6 +98,11 @@ final class TraktService: ViewingService {
     func watchlist() async throws -> [RemoteShow] {
         try await page("sync/watchlist/shows", as: ListedShow.self).map(\.show)
     }
+    func show(showID: Int) async throws -> RemoteShow {
+        let request = try await request("shows/\(showID)", authenticated: false)
+        return try await HTTP.decode(RemoteShow.self, request: request)
+    }
+
     func episodes(showID: Int) async throws -> [RemoteEpisode] {
         let request = try await request("shows/\(showID)/seasons", query: [URLQueryItem(name: "extended", value: "full,episodes")], authenticated: false)
         let seasons = try await HTTP.decode([RemoteSeason].self, request: request)
@@ -78,12 +112,17 @@ final class TraktService: ViewingService {
         let request = try await request("search/show", query: [URLQueryItem(name: "query", value: query), URLQueryItem(name: "limit", value: "30")], authenticated: false)
         return try await HTTP.decode([SearchResult].self, request: request).compactMap(\.show)
     }
-    private func write(_ path: String, object: [String: Any]) async throws {
+    private func sendWrite(_ path: String, object: [String: Any]) async throws -> Data {
         let delay = 1.1 - Date().timeIntervalSince(lastWrite)
         if delay > 0 { try await Task.sleep(for: .seconds(delay)) }
         lastWrite = Date()
         let request = try await request(path, method: "POST", body: JSONSerialization.data(withJSONObject: object))
         let (data, _) = try await HTTP.send(request)
+        return data
+    }
+
+    private func write(_ path: String, object: [String: Any]) async throws {
+        let data = try await sendWrite(path, object: object)
         // A 200 may still contain not_found entries. Do not claim a successful mutation.
         if let result = try JSONSerialization.jsonObject(with: data) as? [String: Any],
            let missing = result["not_found"] as? [String: Any],
@@ -97,6 +136,12 @@ final class TraktService: ViewingService {
     func recordSharedWatch(_ episode: SharedEpisode) async throws {
         let date = episode.watchedAt == .distantPast ? "unknown" : Dates.string(episode.watchedAt)
         try await write("sync/history", object: ["episodes": [["ids": ["trakt": episode.id], "watched_at": date]]])
+    }
+
+    func markWatched(episodeIDs: [Int]) async throws -> Set<Int> {
+        guard !episodeIDs.isEmpty else { return [] }
+        let data = try await sendWrite("sync/history", object: TraktHistoryBatch.payload(episodeIDs: episodeIDs))
+        return try TraktHistoryBatch.confirmedIDs(in: data, requestedIDs: Set(episodeIDs))
     }
 
     func setWatched(episodeID: Int, watched: Bool) async throws {

@@ -51,6 +51,7 @@ protocol ViewingService {
     func search(_ query: String) async throws -> [RemoteShow]
     func follow(_ show: RemoteShow) async throws
     func setWatched(episodeID: Int, watched: Bool) async throws
+    func markWatched(episodeIDs: [Int]) async throws -> Set<Int>
 }
 
 @MainActor

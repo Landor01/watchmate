@@ -47,24 +47,6 @@ struct SettingsView: View {
                 CoffeeTipSection()
             }
             AppearanceSettingsSection()
-            Section("Trakt account") {
-                Label(store.settings.demoMode ? "Exploring demo data" : store.connected ? "Trakt connected" : "Trakt disconnected",
-                      systemImage: store.connected ? "checkmark.circle.fill" : "person.crop.circle")
-                if store.connected {
-                    Button("Disconnect & clear local viewing data", role: .destructive) { confirmDisconnect = true }.disabled(store.busy)
-                } else {
-                    Button("Connect Trakt") { Task { await store.connect() } }
-                        .disabled(store.busy || store.auth.clientID.isEmpty || !Configuration.callbackConfigured)
-                    if store.auth.clientID.isEmpty || !Configuration.callbackConfigured {
-                        Text("Trakt sign-in is unavailable in this version of WatchMate. Please contact support.").font(.caption).foregroundStyle(.secondary)
-                    }
-                }
-                Toggle("Shared shows update Trakt history", isOn: $settings.sharedShowsUpdateTraktHistory)
-                    .disabled(store.busy)
-                Text("Keep watched progress in sync between your shared lists and your Trakt account when you mark episodes watched or unwatched. Turning this off keeps shared progress separate.")
-                    .font(.caption).foregroundStyle(.secondary)
-                Button("Switch to demo data") { confirmDemo = true }.disabled(store.busy)
-            }
             Section("Viewing preferences") {
                 StreamingRegionPicker()
                 Toggle("Include specials", isOn: $settings.includeSpecials)
@@ -83,6 +65,24 @@ struct SettingsView: View {
                     .disabled(settings.selectedProviders.isEmpty && !settings.highlightAvailableServices)
                 Text("Shows all streaming services in your region, with your selected services in the highlight colour. Applies to programme lists, Search and detail views.")
                     .font(.caption).foregroundStyle(.secondary)
+            }
+            Section("Trakt account") {
+                Label(store.settings.demoMode ? "Exploring demo data" : store.connected ? "Trakt connected" : "Trakt disconnected",
+                      systemImage: store.connected ? "checkmark.circle.fill" : "person.crop.circle")
+                if store.connected {
+                    Button("Disconnect & clear local viewing data", role: .destructive) { confirmDisconnect = true }.disabled(store.busy)
+                } else {
+                    Button("Connect Trakt") { Task { await store.connect() } }
+                        .disabled(store.busy || store.auth.clientID.isEmpty || !Configuration.callbackConfigured)
+                    if store.auth.clientID.isEmpty || !Configuration.callbackConfigured {
+                        Text("Trakt sign-in is unavailable in this version of WatchMate. Please contact support.").font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                Toggle("Shared shows update Trakt history", isOn: $settings.sharedShowsUpdateTraktHistory)
+                    .disabled(store.busy)
+                Text("Keep watched progress in sync between your shared lists and your Trakt account when you mark episodes watched or unwatched. Turning this off keeps shared progress separate.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Button("Switch to demo data") { confirmDemo = true }.disabled(store.busy)
             }
             Section("Credits & privacy") {
                 Image("TMDBLogo").resizable().scaledToFit().frame(width: 100, height: 24).accessibilityLabel("TMDB")
