@@ -66,6 +66,13 @@ struct WidgetShow: Codable, Equatable, Sendable, Identifiable {
     let title: String
     let episodes: [WidgetEpisode]
     var posterPath: String? = nil
+    // Optional so snapshots written by older versions still decode.
+    var sharedListNames: [String]? = nil
+
+    var sharingSummary: String? {
+        guard let names = sharedListNames, !names.isEmpty else { return nil }
+        return names.formatted()
+    }
 
     func nextEpisode(at date: Date) -> WidgetEpisode? {
         episodes.filter { AirDates.hasAired($0.firstAired, now: date) }
@@ -79,7 +86,7 @@ struct WidgetShow: Codable, Equatable, Sendable, Identifiable {
 
 struct WidgetLibrary: Codable, Equatable, Sendable {
     let accountScope: String
-    let shows: [WidgetShow]
+    var shows: [WidgetShow]
     var errorShowID: Int? = nil
     var errorMessage: String? = nil
 
@@ -121,13 +128,22 @@ struct WidgetShowEntity: AppEntity {
     let id: Int
     @Property(title: "Title") var title: String
 
-    init(id: Int, title: String) {
+    var sharingSummary: String?
+
+    init(id: Int, title: String, sharingSummary: String? = nil) {
         self.id = id
         self.title = title
+        self.sharingSummary = sharingSummary
     }
 
     var displayRepresentation: DisplayRepresentation {
-        DisplayRepresentation(title: "\(title)")
+        if let sharingSummary {
+            DisplayRepresentation(title: "\(title)", subtitle: "Personal progress · Also shared: \(sharingSummary)",
+                                  image: .init(systemName: "person.2"))
+        } else {
+            DisplayRepresentation(title: "\(title)", subtitle: "Personal progress",
+                                  image: .init(systemName: "person"))
+        }
     }
 }
 
@@ -146,13 +162,13 @@ struct WidgetShowQuery: EntityStringQuery {
     }
 
     private func entities() throws -> [WidgetShowEntity] {
-        try WidgetSnapshotStore.read().shows.map { WidgetShowEntity(id: $0.id, title: $0.title) }
+        try WidgetSnapshotStore.read().shows.map { WidgetShowEntity(id: $0.id, title: $0.title, sharingSummary: $0.sharingSummary) }
     }
 }
 
 struct NextEpisodeConfiguration: WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "Next Episode"
-    static let description = IntentDescription("Choose a programme from My Shows.")
+    static let description = IntentDescription("Choose a programme to follow your personal viewing progress. Shared-list membership is shown separately.")
     @Parameter(title: "Show") var show: WidgetShowEntity?
 }
 

@@ -141,11 +141,11 @@ extension EnvironmentValues {
 
 struct AppAppearanceModifier: ViewModifier {
     @AppStorage("appTheme") private var themeValue = AppTheme.system.rawValue
-    @AppStorage("appAppearance") private var appearanceValue = AppAppearance.system.rawValue
+    @AppStorage("appAppearance") private var appearanceValue = AppAppearance.dark.rawValue
     @Environment(\.colorScheme) private var systemScheme
 
     func body(content: Content) -> some View {
-        let appearance = AppAppearance(rawValue: appearanceValue) ?? .system
+        let appearance = AppAppearance(rawValue: appearanceValue) ?? .dark
         let theme = AppTheme(rawValue: themeValue) ?? .system
         let scheme = appearance.colorScheme ?? systemScheme
         let accent = theme.progressColor(for: scheme)
@@ -230,7 +230,7 @@ struct ThemedForm<Content: View>: View {
 struct AppearanceSettingsSection: View {
     @Environment(\.themeAccent) private var themeAccent
     @AppStorage("appTheme") private var themeValue = AppTheme.system.rawValue
-    @AppStorage("appAppearance") private var appearanceValue = AppAppearance.system.rawValue
+    @AppStorage("appAppearance") private var appearanceValue = AppAppearance.dark.rawValue
 
     var body: some View {
         Section("Appearance") {

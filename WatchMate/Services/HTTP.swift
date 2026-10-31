@@ -42,16 +42,65 @@ enum HTTP {
     }
 }
 
+/// A short-lived cache for public catalogue reads only. Concurrent callers share
+/// the same request; errors are never cached and one cancelled waiter cannot
+/// cancel a request still needed by another screen.
+@MainActor
+final class CatalogueReadCache<Key: Hashable, Value: Sendable> {
+    private var values: [Key: (date: Date, value: Value)] = [:]
+    private var requests: [Key: Task<Value, Error>] = [:]
+    private let lifetime: TimeInterval
+    private let now: () -> Date
+
+    init(lifetime: TimeInterval, now: @escaping () -> Date = Date.init) {
+        self.lifetime = lifetime
+        self.now = now
+    }
+
+    func invalidate(_ key: Key) { values[key] = nil }
+
+    func value(for key: Key, load: @escaping @MainActor () async throws -> Value) async throws -> Value {
+        try Task.checkCancellation()
+        let date = now()
+        values = values.filter { date.timeIntervalSince($0.value.date) < lifetime }
+        if let cached = values[key] { return cached.value }
+        if let request = requests[key] {
+            let value = try await request.value
+            try Task.checkCancellation()
+            return value
+        }
+        let request = Task { try await load() }
+        requests[key] = request
+        defer { requests[key] = nil }
+        let value = try await request.value
+        // Bound retained catalogue data even when browsing a large library.
+        if values.count >= 128, let oldest = values.min(by: { $0.value.date < $1.value.date })?.key {
+            values[oldest] = nil
+        }
+        values[key] = (now(), value)
+        try Task.checkCancellation()
+        return value
+    }
+}
+
 @MainActor
 protocol ViewingService {
     func accountID() async throws -> String
     func watchedShows() async throws -> [WatchedShow]
     func watchlist() async throws -> [RemoteShow]
     func episodes(showID: Int) async throws -> [RemoteEpisode]
+    func refreshEpisodes(showID: Int) async throws -> [RemoteEpisode]
     func search(_ query: String) async throws -> [RemoteShow]
     func follow(_ show: RemoteShow) async throws
     func setWatched(episodeID: Int, watched: Bool) async throws
     func markWatched(episodeIDs: [Int]) async throws -> Set<Int>
+    func markUnwatched(episodeIDs: [Int]) async throws -> Set<Int>
+}
+
+extension ViewingService {
+    func refreshEpisodes(showID: Int) async throws -> [RemoteEpisode] {
+        try await episodes(showID: showID)
+    }
 }
 
 @MainActor

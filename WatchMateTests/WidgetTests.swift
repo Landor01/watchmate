@@ -11,6 +11,22 @@ struct WidgetTests {
                       runtime: 45)
     }
 
+    @Test func oldSnapshotsDecodeWithoutSharedMembership() throws {
+        let data = Data(#"{"id":12,"title":"Example","episodes":[]}"#.utf8)
+        let show = try JSONDecoder().decode(WidgetShow.self, from: data)
+        #expect(show.sharedListNames == nil)
+        #expect(show.sharingSummary == nil)
+    }
+
+    @Test func sharedMembershipRoundTripsWithoutChangingPersonalEpisodeSelection() throws {
+        let show = WidgetShow(id: 12, title: "Example", episodes: [episode(2), episode(1)],
+                              sharedListNames: ["Family", "Friday night TV"])
+        let decoded = try JSONDecoder().decode(WidgetShow.self, from: JSONEncoder().encode(show))
+        #expect(decoded.sharedListNames == ["Family", "Friday night TV"])
+        #expect(decoded.sharingSummary?.contains("Family") == true)
+        #expect(decoded.nextEpisode(at: now)?.number == 1)
+    }
+
     @Test func selectsEpisodeOrderRatherThanAirDateOrder() {
         let show = WidgetShow(id: 12, title: "Example", episodes: [
             episode(3, offset: -300), episode(1, offset: -10), episode(2, offset: -200)

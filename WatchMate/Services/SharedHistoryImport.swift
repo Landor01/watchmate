@@ -8,7 +8,8 @@ struct SharedHistoryChange: Identifiable {
 }
 
 struct SharedHistoryPreview {
-    let programme: SharedProgramme
+    let programmes: [SharedProgramme]
+    let batches: [[SharedHistoryChange]]
     let accountID: String
     let changes: [SharedHistoryChange]
     let existingCount: Int
@@ -28,6 +29,10 @@ final class SharedHistoryImport {
     private var task: Task<Void, Never>?
 
     func prepare(programme: SharedProgramme, store: AppStore) async {
+        await prepare(programmes: [programme], store: store)
+    }
+
+    func prepare(programmes: [SharedProgramme], store: AppStore) async {
         guard !running, !preparing, !store.busy, store.connected, !store.settings.demoMode else { return }
         preparing = true
         store.busy = true
@@ -37,13 +42,36 @@ final class SharedHistoryImport {
         do {
             let service = TraktService(auth: store.auth)
             let account = try await service.accountID()
-            let history = try await service.watchedShows().first { $0.show.id == programme.id }
-            let catalogue = try await service.episodes(showID: programme.id)
-            let watched = Set(history?.seasons.flatMap { season in
-                season.episodes.map { "\(season.number):\($0.number)" }
-            } ?? [])
-            let changes = try SharedHistoryPlan.changes(shared: programme.episodes, watched: watched, catalogue: catalogue)
-            preview = SharedHistoryPreview(programme: programme, accountID: account, changes: changes, existingCount: watched.count)
+            let history = try await service.watchedShows()
+            var changes: [SharedHistoryChange] = []
+            var batches: [[SharedHistoryChange]] = []
+            var existingCount = 0
+            var seen: [Int: Set<Int>] = [:]
+            for programme in programmes {
+                let sharedIDs = Set(programme.episodes.map(\.id))
+                if let previous = seen[programme.id] {
+                    guard previous == sharedIDs else {
+                        throw APIError.message("This selection contains different shared progress for \(programme.show.title). Sync that programme from the list you want to use.")
+                    }
+                    continue
+                }
+                seen[programme.id] = sharedIDs
+                try Task.checkCancellation()
+                let catalogue = try await service.episodes(showID: programme.id)
+                let watched = Set(history.first { $0.show.id == programme.id }?.seasons.flatMap { season in
+                    season.episodes.map { "\(season.number):\($0.number)" }
+                } ?? [])
+                let planned = try SharedHistoryPlan.changes(shared: programme.episodes, watched: watched, catalogue: catalogue)
+                changes += planned
+                batches += SharedHistoryBatchPlan.batches(planned)
+                existingCount += watched.count
+            }
+            try Task.checkCancellation()
+            guard store.connected, store.settings.traktAccountID == account else {
+                throw APIError.message("Your Trakt account changed. Review again.")
+            }
+            preview = SharedHistoryPreview(programmes: programmes, batches: batches, accountID: account,
+                                           changes: changes, existingCount: existingCount)
             status = changes.isEmpty ? "Your progress already matches." : ""
         } catch { status = error.localizedDescription }
     }
@@ -69,16 +97,26 @@ final class SharedHistoryImport {
                 guard try await service.accountID() == preview.accountID else {
                     throw APIError.message("Your Trakt account changed. Sync stopped.")
                 }
-                for change in preview.changes {
+                for batch in preview.batches {
                     try Task.checkCancellation()
                     guard store.connected, store.settings.traktAccountID == preview.accountID else {
                         throw APIError.message("Your Trakt account changed. Sync stopped.")
                     }
-                    currentEpisode = "Season \(change.episode.season), episode \(change.episode.number) · " +
-                        (change.watched ? "marking watched" : "marking unwatched")
-                    if change.watched { try await service.recordSharedWatch(change.episode) }
-                    else { try await service.setWatched(episodeID: change.id, watched: false) }
-                    completed += 1
+                    guard let change = batch.first else { continue }
+                    currentEpisode = "Season \(change.episode.season) · \(batch.count) episodes"
+                    if change.watched {
+                        let confirmed = try await service.recordSharedWatches(batch.map(\.episode))
+                        completed += confirmed.count
+                        guard confirmed.count == batch.count else {
+                            throw APIError.message("Trakt could not find some episodes.")
+                        }
+                    } else {
+                        let confirmed = try await service.markUnwatched(episodeIDs: batch.map(\.id))
+                        completed += confirmed.count
+                        guard confirmed.count == batch.count else {
+                            throw APIError.message("Trakt could not find some episodes.")
+                        }
+                    }
                 }
                 try Task.checkCancellation()
                 status = "Finished. Your progress now matches the shared progress."
@@ -88,11 +126,22 @@ final class SharedHistoryImport {
                 status = "Stopped after \(completed) of \(total) episodes. \(error.localizedDescription) Changes already made are kept. Review and sync again to finish."
             }
             currentEpisode = ""
-            store.settings.lastSync = nil
             store.busy = false
-            await store.refresh()
+            await store.refresh(showIDs: Set(preview.programmes.map(\.id)))
         }
     }
 
     func cancel() { task?.cancel() }
+}
+
+enum SharedHistoryBatchPlan {
+    static func batches(_ changes: [SharedHistoryChange]) -> [[SharedHistoryChange]] {
+        let seasons = Dictionary(grouping: changes, by: { $0.episode.season })
+        return seasons.keys.sorted().flatMap { season -> [[SharedHistoryChange]] in
+            let changes = seasons[season] ?? []
+            let removals = changes.filter { !$0.watched }
+            let watches = changes.filter(\.watched)
+            return (removals.isEmpty ? [] : [removals]) + (watches.isEmpty ? [] : [watches])
+        }
+    }
 }

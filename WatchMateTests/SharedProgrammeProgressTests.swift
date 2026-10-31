@@ -1,3 +1,4 @@
+import CloudKit
 import Foundation
 import Testing
 @testable import WatchMate
@@ -12,6 +13,40 @@ struct SharedProgrammeProgressTests {
     private func programme(watched: [SharedEpisode] = [], skipped: Set<Int> = []) -> SharedProgramme {
         SharedProgramme(show: RemoteShow(title: "Test", year: nil, ids: IDs(trakt: 1, tmdb: nil)),
                         addedBy: "owner", episodes: watched, skippedEpisodeIDs: skipped)
+    }
+
+    @Test func sharedDiscoveryIncludesSharedOnlyShowsAndUsesEachListsProgress() {
+        let catalogue = [episode(1, season: 1), episode(2, season: 1), episode(3, season: 1),
+                         episode(4, season: 1, future: true), episode(5, season: 0)]
+        let first = HouseholdList(zoneID: CKRecordZone.ID(zoneName: "first"), name: "First", shared: true,
+                                  programmes: [programme(watched: [SharedEpisode(id: 1, season: 1, number: 1, watchedAt: now)], skipped: [3])])
+        let second = HouseholdList(zoneID: CKRecordZone.ID(zoneName: "second"), name: "Second", shared: true,
+                                   programmes: [programme(skipped: [2, 3])])
+        let entries = SharedDiscoveryEntry.entries(lists: [first, second], catalogues: [1: catalogue], includeSpecials: false)
+        #expect(entries.count == 8)
+        #expect(Set(entries.map(\.id)).count == 8)
+        let waiting = SharedDiscoveryEntry.waiting(entries, now: now)
+        #expect(waiting.filter { $0.listID == first.id }.map { $0.episode.ids.trakt } == [2])
+        #expect(waiting.filter { $0.listID == second.id }.map { $0.episode.ids.trakt } == [1])
+        #expect(SharedDiscoveryEntry.next(waiting).count == 2)
+        let scheduled = SharedDiscoveryEntry.scheduled(entries)
+        #expect(scheduled.filter { $0.date.map { !AirDates.hasAired($0, now: now) } == true }.count == 2)
+        #expect(scheduled.allSatisfy { !$0.watched && !$0.skipped })
+        #expect(SharedDiscoveryEntry.entries(lists: [], catalogues: [1: catalogue], includeSpecials: true).isEmpty)
+    }
+
+    @Test func sharedDiscoveryHandlesSpecialsUnknownDatesAndEpisodeOrder() {
+        let unknown = RemoteEpisode(season: 1, number: 99, title: nil, ids: IDs(trakt: 99, tmdb: nil),
+                                    overview: nil, firstAired: nil, runtime: nil)
+        let list = HouseholdList(zoneID: CKRecordZone.ID(zoneName: "list"), name: "List", shared: true,
+                                 programmes: [programme()])
+        let entries = SharedDiscoveryEntry.entries(lists: [list],
+            catalogues: [1: [episode(3, season: 2), unknown, episode(2, season: 1), episode(1, season: 0)]],
+            includeSpecials: true)
+        let waiting = SharedDiscoveryEntry.waiting(entries, now: now)
+        #expect(waiting.map { $0.episode.ids.trakt } == [1, 2, 3])
+        #expect(SharedDiscoveryEntry.next(waiting).first?.episode.ids.trakt == 1)
+        #expect(!SharedDiscoveryEntry.scheduled(entries).contains { $0.episode.ids.trakt == 99 })
     }
 
     @Test func seasonOrderSeparatesReadyUpcomingAndCompleted() {

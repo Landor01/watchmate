@@ -42,6 +42,7 @@ final class PreviewData {
     let episode: Episode
     let list: HouseholdList
     let programme: SharedProgramme
+    let historyOffers: [SharedHistoryOffer]
 
     var sharedRow: SharedEpisodeProgress {
         SharedEpisodeProgress(episode: remoteEpisode, watchedAt: nil, skipped: false)
@@ -88,8 +89,21 @@ final class PreviewData {
             })
         list = HouseholdList(zoneID: CKRecordZone.ID(zoneName: "preview", ownerName: CKCurrentUserDefaultName),
                              name: "Friday night TV", shared: false, programmes: [programme])
+        let historyList = list
+        historyOffers = shows.sorted { $0.title < $1.title }.prefix(3).map { show in
+            let sharedProgramme = SharedProgramme(
+                show: RemoteShow(title: show.title, year: nil, ids: IDs(trakt: show.traktID, tmdb: nil)),
+                addedBy: "preview-sharer",
+                episodes: show.episodes.compactMap { episode in
+                    episode.watchedAt.map { SharedEpisode(id: episode.traktID, season: episode.season,
+                                                         number: episode.number, watchedAt: $0) }
+                })
+            return SharedHistoryOffer(listID: historyList.id, listName: historyList.name, programme: sharedProgramme)
+        }
         store.sharedHistoryImport.preview = SharedHistoryPreview(
-            programme: programme, accountID: "preview",
+            programmes: [programme],
+            batches: SharedHistoryBatchPlan.batches(programme.episodes.map { SharedHistoryChange(episode: $0, watched: true) }),
+            accountID: "preview",
             changes: programme.episodes.map { SharedHistoryChange(episode: $0, watched: true) },
             existingCount: 0)
         store.sharedShows.preparePreview(lists: [

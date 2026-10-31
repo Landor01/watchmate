@@ -129,7 +129,8 @@ struct ShowDetailView: View {
             .navigationDestination(item: $selectedEpisode) { episode in
                 EpisodeDetailView(episode: episode)
             }
-            .refreshable { await store.refresh() }
+            .refreshable { await store.refresh(showIDs: [show.traktID]) }
+            .task(id: show.traktID) { await store.refreshShow(show) }
             .task(id: show.tmdbID) {
                 guard let tmdbID = show.tmdbID, store.catalogue.configured else { return }
                 if let posters = try? await store.catalogue.seasonPosters(tmdbID: tmdbID), !Task.isCancelled {

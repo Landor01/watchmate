@@ -29,6 +29,12 @@ struct NextEpisodeEntry: TimelineEntry {
                           firstAired: .distantPast, runtime: 90)
         ]), needsSelection: false
     )
+    static var previewShared: NextEpisodeEntry {
+        var show = preview.show
+        show?.sharedListNames = ["Friday night TV"]
+        return NextEpisodeEntry(date: .now, accountScope: "demo", show: show, needsSelection: false)
+    }
+
     static let previewCaughtUp = NextEpisodeEntry(
         date: .now, accountScope: "demo",
         show: WidgetShow(id: -1, title: "Harbour Lights", episodes: []), needsSelection: false
@@ -110,7 +116,7 @@ private struct StandardWidgetContent: View {
                 HStack {
                     Text(show.title)
                         .font(family == .systemSmall ? .subheadline.bold() : .headline)
-                        .lineLimit(family == .systemSmall ? 2 : 1)
+                        .lineLimit(1)
                         .layoutPriority(1)
                     Spacer(minLength: 0)
                     if family != .systemSmall {
@@ -119,9 +125,10 @@ private struct StandardWidgetContent: View {
                             .accessibilityHidden(true)
                     }
                 }
+                WidgetProgressSource(show: show)
                 if let episode = show.nextEpisode(at: entry.date) {
                     if family == .systemSmall {
-                        SmallWidgetEpisodeDetails(episode: episode)
+                        SmallWidgetEpisodeDetails(episode: episode, showsAirDate: show.sharingSummary == nil)
                     } else {
                         HStack(alignment: .top, spacing: 12) {
                             if let artwork = entry.artwork {
@@ -132,7 +139,7 @@ private struct StandardWidgetContent: View {
                                     .clipShape(RoundedRectangle(cornerRadius: 10))
                                     .accessibilityHidden(true)
                             }
-                            WidgetEpisodeDetails(episode: episode, expanded: family == .systemLarge)
+                            WidgetEpisodeDetails(episode: episode, expanded: family == .systemLarge, showsAirDate: family == .systemLarge)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
@@ -189,6 +196,7 @@ private struct LargeTextWidgetContent: View {
                     .font(.caption.bold())
                     .lineLimit(family == .systemLarge ? 2 : 1)
                     .accessibilityAddTraits(.isHeader)
+                WidgetProgressSource(show: show)
                 if let episode = show.nextEpisode(at: entry.date) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(family == .systemMedium
@@ -237,8 +245,32 @@ private struct LargeTextWidgetContent: View {
     }
 }
 
+private struct WidgetProgressSource: View {
+    @Environment(\.widgetFamily) private var family
+    let show: WidgetShow
+
+    var body: some View {
+        let layout = family == .systemMedium
+            ? AnyLayout(HStackLayout(spacing: 8))
+            : AnyLayout(VStackLayout(alignment: .leading, spacing: 1))
+        layout {
+            Label(family == .systemLarge ? "Personal progress" : "Personal", systemImage: "person")
+            if let names = show.sharingSummary {
+                Label("Shared: \(names)", systemImage: "person.2")
+            }
+        }
+        .font(.caption2)
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Personal viewing progress"))
+        .accessibilityValue(Text(show.sharingSummary.map { String(localized: "Also shared: \($0)") } ?? ""))
+    }
+}
+
 private struct SmallWidgetEpisodeDetails: View {
     let episode: WidgetEpisode
+    var showsAirDate = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -248,10 +280,15 @@ private struct SmallWidgetEpisodeDetails: View {
             Text(episode.title)
                 .font(.caption.bold())
                 .lineLimit(1)
-            Text("Aired: \(episode.firstAired, format: .dateTime.day().month(.abbreviated).year())")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            if showsAirDate {
+                Text("Aired: \(episode.firstAired, format: .dateTime.day().month(.abbreviated).year())")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Season \(episode.season), episode \(episode.number), \(episode.title)")
+        .accessibilityValue(Text("Aired: \(episode.firstAired, format: .dateTime.day().month().year())"))
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
@@ -259,6 +296,7 @@ private struct SmallWidgetEpisodeDetails: View {
 private struct WidgetEpisodeDetails: View {
     let episode: WidgetEpisode
     let expanded: Bool
+    var showsAirDate = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -278,10 +316,14 @@ private struct WidgetEpisodeDetails: View {
                     .font(.body)
                     .lineLimit(5)
             }
-            Text("Aired: \(episode.firstAired, format: .dateTime.day().month(.abbreviated).year())")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            if showsAirDate {
+                Text("Aired: \(episode.firstAired, format: .dateTime.day().month(.abbreviated).year())")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(Text("Aired: \(episode.firstAired, format: .dateTime.day().month().year())"))
     }
 }
 
@@ -380,6 +422,7 @@ struct WatchMateWidget: Widget {
     WatchMateWidget()
 } timeline: {
     NextEpisodeEntry.preview
+    NextEpisodeEntry.previewShared
     NextEpisodeEntry.previewLongTitles
     NextEpisodeEntry.previewCaughtUp
     NextEpisodeEntry.previewUnconfigured
@@ -390,6 +433,7 @@ struct WatchMateWidget: Widget {
     WatchMateWidget()
 } timeline: {
     NextEpisodeEntry.preview
+    NextEpisodeEntry.previewShared
     NextEpisodeEntry.previewLongTitles
     NextEpisodeEntry.previewCaughtUp
     NextEpisodeEntry.previewUnconfigured
@@ -400,6 +444,7 @@ struct WatchMateWidget: Widget {
     WatchMateWidget()
 } timeline: {
     NextEpisodeEntry.preview
+    NextEpisodeEntry.previewShared
     NextEpisodeEntry.previewLongTitles
     NextEpisodeEntry.previewCaughtUp
     NextEpisodeEntry.previewUnconfigured
@@ -420,4 +465,10 @@ struct WatchMateWidget: Widget {
 
 #Preview("Episode actions") {
     WidgetEpisodeActions(showID: -1, episodeKey: "-1:1:4", accountScope: "preview").padding()
+}
+
+#Preview("Shared programme", as: .systemSmall) {
+    WatchMateWidget()
+} timeline: {
+    NextEpisodeEntry.previewShared
 }

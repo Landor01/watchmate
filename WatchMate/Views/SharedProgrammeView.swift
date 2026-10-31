@@ -104,7 +104,7 @@ struct SharedProgrammeView: View {
         .refreshable {
             guard !working else { return }
             await store.refreshSharedShows()
-            await loadEpisodes()
+            await loadEpisodes(forceRefresh: true)
         }
         .sheet(isPresented: $importing) {
             if let programme { NavigationStack { SharedHistoryImportView(programme: programme) } }
@@ -133,7 +133,7 @@ struct SharedProgrammeView: View {
         }
     }
 
-    private func loadEpisodes() async {
+    private func loadEpisodes(forceRefresh: Bool = false) async {
         guard let programme else { return }
         if PreviewEnvironment.isRunning {
             if let show = try? store.allShows().first(where: { $0.traktID == showID }) {
@@ -146,11 +146,21 @@ struct SharedProgrammeView: View {
             }
             return
         }
-        loading = true
+        let cached = EpisodeCatalogueCache.read(showID)
+        if let cached { episodes = cached.episodes }
+        loading = episodes.isEmpty
         message = nil
         defer { loading = false }
         do {
-            let found = try await TraktService(auth: store.auth).episodes(showID: showID)
+            let service = TraktService(auth: store.auth)
+            let found: [RemoteEpisode]
+            if forceRefresh {
+                found = try await service.refreshEpisodes(showID: showID)
+            } else if let cached, !RefreshPolicy.isStale(cached.updatedAt, interval: 21_600, now: Date()) {
+                found = cached.episodes
+            } else {
+                found = try await service.episodes(showID: showID)
+            }
             try Task.checkCancellation()
             episodes = found
         } catch is CancellationError { return }

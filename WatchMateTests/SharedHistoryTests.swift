@@ -149,6 +149,59 @@ struct SharedTraktProgressTests {
         }
     }
 
+    @Test func removalsBatchOnlyWatchedEpisodesAndRetainRejectedLocalProgress() async throws {
+        try await withBatchStore { store, container, service in
+            let show = Show(traktID: 7, tmdbID: nil, title: "Test")
+            container.mainContext.insert(show)
+            let episodes = (1...3).map { number in
+                RemoteEpisode(season: 1, number: number, title: nil, ids: IDs(trakt: number, tmdb: nil),
+                              overview: nil, firstAired: nil, runtime: nil)
+            }
+            for remote in episodes {
+                let episode = Episode(showID: 7, remote: remote)
+                episode.watchedAt = Date()
+                episode.isSkipped = true
+                show.episodes.append(episode)
+            }
+            try container.mainContext.save()
+            service.watchedNumbers = [1, 2]
+            service.rejectedIDs = [2]
+            let confirmed = try await store.markTraktEpisodesUnwatched(episodes, showID: 7)
+            #expect(confirmed == [1, 3])
+            #expect(service.historyReads == 1)
+            #expect(service.removalBatches == [[1, 2]])
+            #expect(service.singleWrites == 0)
+            #expect(show.episodes.first { $0.number == 2 }?.watchedAt != nil)
+            #expect(show.episodes.filter { $0.watchedAt == nil }.count == 2)
+            #expect(show.episodes.allSatisfy { $0.isSkipped })
+
+            service.rejectedIDs = []
+            _ = try await store.markTraktEpisodesUnwatched(episodes, showID: 7)
+            #expect(service.removalBatches == [[1, 2], [2]])
+            _ = try await store.markTraktEpisodesUnwatched(episodes, showID: 7)
+            #expect(service.removalBatches.count == 2)
+        }
+    }
+
+    @Test func failedRemovalLeavesLocalHistoryUnchanged() async throws {
+        try await withBatchStore { store, container, service in
+            let show = Show(traktID: 7, tmdbID: nil, title: "Test")
+            container.mainContext.insert(show)
+            let remote = RemoteEpisode(season: 1, number: 1, title: nil, ids: IDs(trakt: 1, tmdb: nil),
+                                       overview: nil, firstAired: nil, runtime: nil)
+            let episode = Episode(showID: 7, remote: remote)
+            episode.watchedAt = Date()
+            show.episodes.append(episode)
+            try container.mainContext.save()
+            service.watchedNumbers = [1]
+            service.shouldFail = true
+            await #expect(throws: (any Error).self) {
+                try await store.markTraktEpisodesUnwatched([remote], showID: 7)
+            }
+            #expect(episode.watchedAt != nil)
+        }
+    }
+
     @Test func sharedOnlyShowUpdatesTraktWithoutLocalCatalogue() async throws {
         let defaults = UserDefaults.standard
         let revision = defaults.object(forKey: "historyRevision")
@@ -184,6 +237,10 @@ private final class ProgressViewingService: ViewingService {
         for id in episodeIDs { try await setWatched(episodeID: id, watched: true) }
         return Set(episodeIDs)
     }
+    func markUnwatched(episodeIDs: [Int]) async throws -> Set<Int> {
+        for id in episodeIDs { try await setWatched(episodeID: id, watched: false) }
+        return Set(episodeIDs)
+    }
     func setWatched(episodeID: Int, watched: Bool) async throws {
         #expect(episodeID == 42)
         writes.append(watched)
@@ -196,6 +253,7 @@ private final class BatchViewingService: ViewingService {
     var historyReads = 0
     var singleWrites = 0
     var batches: [[Int]] = []
+    var removalBatches: [[Int]] = []
     var watchedNumbers: Set<Int> = []
     var rejectedIDs: Set<Int> = []
     var shouldFail = false
@@ -214,6 +272,13 @@ private final class BatchViewingService: ViewingService {
     func search(_ query: String) async throws -> [RemoteShow] { [] }
     func follow(_ show: RemoteShow) async throws {}
     func setWatched(episodeID: Int, watched: Bool) async throws { singleWrites += 1 }
+    func markUnwatched(episodeIDs: [Int]) async throws -> Set<Int> {
+        removalBatches.append(episodeIDs)
+        if shouldFail { throw APIError.message("Simulated failure") }
+        let accepted = Set(episodeIDs).subtracting(rejectedIDs)
+        watchedNumbers.subtract(accepted)
+        return accepted
+    }
     func markWatched(episodeIDs: [Int]) async throws -> Set<Int> {
         onBatch?()
         batches.append(episodeIDs)
@@ -225,6 +290,24 @@ private final class BatchViewingService: ViewingService {
 }
 
 struct TraktHistoryBatchTests {
+    @Test(arguments: [0, 1, 5])
+    func removalCountsPlaysRatherThanUniqueEpisodes(deleted: Int) throws {
+        let data = Data("{\"deleted\":{\"episodes\":\(deleted)},\"not_found\":{\"episodes\":[{\"ids\":{\"trakt\":2}}]}}".utf8)
+        #expect(try TraktHistoryBatch.confirmedRemovalIDs(in: data, requestedIDs: [1, 2]) == [1])
+    }
+
+    @Test func malformedRemovalDoesNotClaimSuccess() {
+        for json in [
+            #"{"deleted":{"episodes":-1},"not_found":{"episodes":[]}}"#,
+            #"{"deleted":{"episodes":1},"not_found":{"episodes":[{"ids":{"trakt":999}}]}}"#,
+            #"{"not_found":{"episodes":[]}}"#
+        ] {
+            #expect(throws: (any Error).self) {
+                try TraktHistoryBatch.confirmedRemovalIDs(in: Data(json.utf8), requestedIDs: [1])
+            }
+        }
+    }
+
     @Test func payloadIsOneDeduplicatedEpisodeArrayWithWatchDates() throws {
         let payload = TraktHistoryBatch.payload(episodeIDs: [3, 1, 3], watchedAt: Date(timeIntervalSince1970: 100))
         let data = try JSONSerialization.data(withJSONObject: payload)
@@ -257,6 +340,29 @@ struct TraktHistoryBatchTests {
 }
 
 struct SharedHistoryTests {
+    @Test func seasonWatchesUseOneBatchAndKeepRemovalsSeparate() {
+        let changes = [
+            SharedHistoryChange(episode: shared(1, number: 1), watched: true),
+            SharedHistoryChange(episode: shared(2, number: 2), watched: true),
+            SharedHistoryChange(episode: shared(3, number: 3), watched: false),
+            SharedHistoryChange(episode: shared(5, number: 5), watched: false),
+            SharedHistoryChange(episode: shared(4, season: 2, number: 1), watched: true)
+        ]
+        let batches = SharedHistoryBatchPlan.batches(changes)
+        #expect(batches.map { $0.map(\.id) } == [[3, 5], [1, 2], [4]])
+        #expect(SharedHistoryBatchPlan.batches([]).isEmpty)
+    }
+
+    @Test func sharedBatchPreservesIndividualDatesAndUnknownDates() throws {
+        let first = shared(1, number: 1)
+        let second = SharedEpisode(id: 2, season: 1, number: 2, watchedAt: .distantPast)
+        let payload = TraktHistoryBatch.sharedPayload([first, second, first])
+        let rows = try #require(payload["episodes"] as? [[String: Any]])
+        #expect(rows.count == 2)
+        #expect(rows[0]["watched_at"] as? String == Dates.string(first.watchedAt))
+        #expect(rows[1]["watched_at"] as? String == "unknown")
+    }
+
     private func remote(_ id: Int, season: Int = 1, number: Int) -> RemoteEpisode {
         RemoteEpisode(season: season, number: number, title: nil, ids: IDs(trakt: id, tmdb: nil),
                       overview: nil, firstAired: nil, runtime: nil)

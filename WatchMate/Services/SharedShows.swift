@@ -39,7 +39,21 @@ struct SharedHistoryOffer: Identifiable {
 @MainActor @Observable
 final class SharedShows {
     let container = CKContainer(identifier: "iCloud.net.andrewroland.WatchMate")
-    private(set) var lists: [HouseholdList] = []
+    private(set) var lists: [HouseholdList] = [] {
+        didSet {
+            if Self.listNames(in: oldValue) != widgetListNames { onMembershipChanged?() }
+        }
+    }
+    @ObservationIgnored var onMembershipChanged: (() -> Void)?
+    var widgetListNames: [Int: [String]] { Self.listNames(in: lists) }
+
+    private static func listNames(in lists: [HouseholdList]) -> [Int: [String]] {
+        var names: [Int: Set<String>] = [:]
+        for list in lists {
+            for programme in list.programmes { names[programme.id, default: []].insert(list.name) }
+        }
+        return names.mapValues { $0.sorted() }
+    }
     private(set) var loading = false
     var errorMessage: String?
     var invitationReceived = false
@@ -168,24 +182,37 @@ final class SharedShows {
             var firstError: Error?
             for (shared, zones) in inventories {
                 let database = shared ? container.sharedCloudDatabase : container.privateCloudDatabase
-                for zone in zones where zone.zoneID.zoneName.hasPrefix("Household-") {
-                    let key = SharedZoneCache.key(zoneID: zone.zoneID, shared: shared)
-                    let revision = cacheRevision
-                    let previous = cache?.zones[key] ?? SharedZoneCache(zoneID: zone.zoneID, shared: shared)
+                let previous = zones.filter { $0.zoneID.zoneName.hasPrefix("Household-") }.map { zone in
+                    cache?.zones[SharedZoneCache.key(zoneID: zone.zoneID, shared: shared)]
+                        ?? SharedZoneCache(zoneID: zone.zoneID, shared: shared)
+                }
+                let revision = cacheRevision
+                let results = await SharedZoneBatchFetch.fetch(previous, database: database)
+                guard session == generation else { return }
+                guard revision == cacheRevision else { refreshRequested = true; continue }
+                for zone in previous {
                     do {
-                        let updated = try await fetchZone(previous, database: database)
+                        guard let result = results[zone.zoneID] else {
+                            throw APIError.message("iCloud did not return a shared list.")
+                        }
+                        let updated: SharedZoneCache
+                        do { updated = try result.get() }
+                        catch let error as CKError where error.code == .changeTokenExpired {
+                            // Only the expired zone needs a new full snapshot.
+                            updated = try await fetchZone(SharedZoneCache(zoneID: zone.zoneID, shared: shared), database: database)
+                        }
                         guard session == generation else { return }
                         guard revision == cacheRevision else { refreshRequested = true; continue }
-                        // Only publish a complete page sequence; a failed page must not advance the token.
                         _ = try updated.list()
-                        cache?.zones[key] = updated
-                        if updated.recordData != previous.recordData { publishCache(persist: false) }
+                        cache?.zones[zone.key] = updated
+                        if updated.recordData != zone.recordData { publishCache(persist: false) }
                     } catch {
                         guard session == generation else { return }
+                        guard revision == cacheRevision else { refreshRequested = true; continue }
                         if let cloudError = error as? CKError,
                            [.zoneNotFound, .userDeletedZone, .permissionFailure, .unknownItem].contains(cloudError.code) {
-                            cache?.zones.removeValue(forKey: key)
-                            publishCache()
+                            cache?.zones.removeValue(forKey: zone.key)
+                            publishCache(persist: false)
                         } else { firstError = firstError ?? error }
                     }
                 }
@@ -242,14 +269,18 @@ final class SharedShows {
 
     /// Merge acknowledged writes immediately, without advancing the server's change token.
     private func remember(_ record: CKRecord, shared: Bool, session: UUID) {
-        guard session == generation else { return }
+        remember([record], shared: shared, session: session)
+    }
+
+    private func remember(_ records: [CKRecord], shared: Bool, session: UUID) {
+        guard session == generation, let record = records.first else { return }
         cacheRevision += 1
         guard cache != nil else { return }
         let key = SharedZoneCache.key(zoneID: record.recordID.zoneID, shared: shared)
         var zone = cache?.zones[key] ?? SharedZoneCache(zoneID: record.recordID.zoneID, shared: shared)
         do {
             let token = try zone.changeToken()
-            try zone.apply(records: [record], deleted: [], token: token)
+            try zone.apply(records: records, deleted: [], token: token)
             cache?.zones[key] = zone
             publishCache()
         } catch {
@@ -277,13 +308,21 @@ final class SharedShows {
         let session = generation
         let data = try image.map { try Settings.profilePhotoData(for: $0) }
         let database = database(for: list)
-        let header = try await database.record(for: .init(recordName: "list", zoneID: list.zoneID))
+        let headerID = CKRecord.ID(recordName: "list", zoneID: list.zoneID)
+        let shareID = CKRecord.ID(recordName: CKRecordNameZoneWideShare, zoneID: list.zoneID)
+        let fetched = try await database.records(for: list.shared ? [headerID] : [headerID, shareID])
+        guard let headerResult = fetched[headerID] else {
+            throw APIError.message("iCloud did not return the shared list.")
+        }
+        let header = try headerResult.get()
         header["photoData"] = data as CKRecordValue?
         var saving = [header]
         if !list.shared {
-            let shareID = CKRecord.ID(recordName: CKRecordNameZoneWideShare, zoneID: list.zoneID)
+            guard let shareResult = fetched[shareID] else {
+                throw APIError.message("iCloud did not return the list invitation.")
+            }
             do {
-                if let share = try await database.record(for: shareID) as? CKShare {
+                if let share = try shareResult.get() as? CKShare {
                     share[CKShare.SystemFieldKey.thumbnailImageData] = SharedListAvatar.image(name: list.name, photoData: data).pngData() as CKRecordValue?
                     saving.append(share)
                 }
@@ -413,7 +452,7 @@ final class SharedShows {
         try await updateEpisodes([episode], showID: showID, in: list, action: .watched(watched))
     }
 
-    /// Each acknowledged episode is retained if a later write fails. Refresh once for the whole action.
+    /// Fetch and save episodes in batches, retaining confirmed saves if part of a batch fails.
     func updateEpisodes(_ episodes: [RemoteEpisode], showID: Int, in list: HouseholdList,
                         action: SharedEpisodeAction, progress: (Int) -> Void = { _ in }) async throws {
         let database = database(for: list)
@@ -431,40 +470,78 @@ final class SharedShows {
             guard seed.revision == programme.revision else {
                 throw APIError.message("This shared programme has changed. Refresh the list before editing its progress.")
             }
-            for (index, episode) in episodes.enumerated() {
+            var completed = 0
+            var seen = Set<Int>()
+            let unique = episodes.filter { seen.insert($0.ids.trakt).inserted }
+            // Bound requests for unusually long seasons while batching ordinary seasons.
+            for offset in stride(from: 0, to: unique.count, by: 100) {
                 try Task.checkCancellation()
                 guard session == generation else { throw APIError.message("Your account changed. Update stopped.") }
-                let id = CKRecord.ID(recordName: "episode-\(programme.revision)-\(episode.ids.trakt)", zoneID: list.zoneID)
-                let record: CKRecord
-                do { record = try await database.record(for: id) }
-                catch let error as CKError where error.code == .unknownItem {
-                    record = CKRecord(recordType: "HouseholdEpisode", recordID: id)
-                    record["watchedAt"] = seed.episodes.first { $0.id == episode.ids.trakt }?.watchedAt as CKRecordValue?
+                let chunk = Array(unique[offset..<min(offset + 100, unique.count)])
+                let ids = chunk.map {
+                    CKRecord.ID(recordName: "episode-\(programme.revision)-\($0.ids.trakt)", zoneID: list.zoneID)
                 }
-                record["revision"] = programme.revision as CKRecordValue
-                record["showID"] = showID as CKRecordValue
-                record["episodeID"] = episode.ids.trakt as CKRecordValue
-                record["season"] = episode.season as CKRecordValue
-                record["number"] = episode.number as CKRecordValue
-                switch action {
-                case .watched(let watched):
-                    if watched && Dates.parse(episode.firstAired).map({ !AirDates.hasAired($0) }) == true {
-                        progress(index + 1)
-                        continue
+                let fetched = try await database.records(for: ids)
+                guard session == generation else { throw APIError.message("Your account changed. Update stopped.") }
+                var records: [CKRecord] = []
+                for (episode, id) in zip(chunk, ids) {
+                    guard let result = fetched[id] else {
+                        throw APIError.message("iCloud did not return an episode. Refresh and try again.")
                     }
-                    if watched {
-                        if record["watchedAt"] == nil { record["watchedAt"] = Date() as CKRecordValue }
-                        record["skipped"] = 0 as CKRecordValue
-                    } else { record["watchedAt"] = nil }
-                case .skipped(let skipped):
-                    // Preserve watches made by another participant after this screen loaded.
-                    record["skipped"] = (skipped && record["watchedAt"] == nil ? 1 : 0) as CKRecordValue
+                    let record: CKRecord
+                    do { record = try result.get() }
+                    catch let error as CKError where error.code == .unknownItem {
+                        record = CKRecord(recordType: "HouseholdEpisode", recordID: id)
+                        record["watchedAt"] = seed.episodes.first { $0.id == episode.ids.trakt }?.watchedAt as CKRecordValue?
+                    }
+                    record["revision"] = programme.revision as CKRecordValue
+                    record["showID"] = showID as CKRecordValue
+                    record["episodeID"] = episode.ids.trakt as CKRecordValue
+                    record["season"] = episode.season as CKRecordValue
+                    record["number"] = episode.number as CKRecordValue
+                    switch action {
+                    case .watched(let watched):
+                        if watched && Dates.parse(episode.firstAired).map({ !AirDates.hasAired($0) }) == true {
+                            completed += 1
+                            continue
+                        }
+                        if watched {
+                            if record["watchedAt"] == nil { record["watchedAt"] = Date() as CKRecordValue }
+                            record["skipped"] = 0 as CKRecordValue
+                        } else { record["watchedAt"] = nil }
+                    case .skipped(let skipped):
+                        // Preserve watches made by another participant after this screen loaded.
+                        record["skipped"] = (skipped && record["watchedAt"] == nil ? 1 : 0) as CKRecordValue
+                    }
+
+                    records.append(record)
                 }
+                try Task.checkCancellation()
                 guard session == generation else { throw APIError.message("Your account changed. Update stopped.") }
-                let saved = try await database.save(record)
-                guard session == generation else { throw APIError.message("Your account changed. Update stopped.") }
-                remember(saved, shared: list.shared, session: session)
-                progress(index + 1)
+                if !records.isEmpty {
+                    let result = try await database.modifyRecords(saving: records, deleting: [],
+                                                                  savePolicy: .ifServerRecordUnchanged, atomically: false)
+                    guard session == generation else { throw APIError.message("Your account changed. Update stopped.") }
+                    var failure: (any Error)?
+                    var savedRecords: [CKRecord] = []
+                    // Retain every successful save, even when another record conflicts.
+                    for record in records {
+                        switch result.saveResults[record.recordID] {
+                        case .success(let saved):
+                            savedRecords.append(saved)
+                            completed += 1
+                        case .failure(let error):
+                            failure = failure ?? error
+                        case nil:
+                            failure = failure ?? APIError.message("iCloud did not confirm an episode update.")
+                        }
+                    }
+                    remember(savedRecords, shared: list.shared, session: session)
+                    progress(completed)
+                    if let failure { throw failure }
+                } else {
+                    progress(completed)
+                }
             }
         } catch {
             await refresh(reportErrors: false)

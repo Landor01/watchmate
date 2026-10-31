@@ -22,6 +22,12 @@ struct SharedShowsView: View {
                     ContentUnavailableView("Watch together", systemImage: "person.2",
                                            description: Text("Create a list, then invite someone to share it."))
                 }
+                if store.sharedShows.lists.contains(where: { !$0.programmes.isEmpty }) {
+                    NavigationLink("Sync Progress to Trakt") {
+                        SharedHistoryImportView(programmes: store.sharedShows.lists.flatMap(\.programmes))
+                    }
+                    .disabled(store.busy)
+                }
                 if !store.sharedShows.historyOffers.isEmpty {
                     NavigationLink("New shared programmes: review viewing history") { SharedHistoryInboxView() }
                 }
@@ -83,6 +89,12 @@ private struct HouseholdListView: View {
         ThemedList {
             if let list {
                 SharedListPhotoSection(list: list)
+                if !list.programmes.isEmpty {
+                    NavigationLink("Sync Progress to Trakt") {
+                        SharedHistoryImportView(programmes: list.programmes)
+                    }
+                    .disabled(store.busy)
+                }
                 if list.programmes.isEmpty {
                     Text("Add programmes from My Shows or search for something new.")
                 }
@@ -123,7 +135,7 @@ private struct HouseholdListView: View {
         }
         .refreshable {
             await store.refreshSharedShows()
-            await loadCatalogues()
+            await loadCatalogues(forceRefresh: true)
         }
         .sheet(isPresented: $adding) {
             if let list { NavigationStack { SharedProgrammePicker(list: list) } }
@@ -186,6 +198,7 @@ private struct HouseholdListView: View {
     }
 
     private func episodes(for programme: SharedProgramme) -> [RemoteEpisode]? {
+        if let loaded = catalogues[programme.id] { return loaded }
         if let show = shows.first(where: { $0.traktID == programme.id }), show.catalogueUpdatedAt != nil {
             return show.episodes.map {
                 RemoteEpisode(season: $0.season, number: $0.number, title: $0.title,
@@ -196,12 +209,17 @@ private struct HouseholdListView: View {
         return catalogues[programme.id]
     }
 
-    private func loadCatalogues() async {
+    private func loadCatalogues(forceRefresh: Bool = false) async {
         guard let list else { return }
         for programme in list.programmes {
-            if let show = shows.first(where: { $0.traktID == programme.id }), show.catalogueUpdatedAt != nil { continue }
+            if !forceRefresh, let show = shows.first(where: { $0.traktID == programme.id }), show.catalogueUpdatedAt != nil { continue }
+            if !forceRefresh, let cached = EpisodeCatalogueCache.read(programme.id) {
+                catalogues[programme.id] = cached.episodes
+                continue
+            }
             do {
-                let episodes = try await TraktService(auth: store.auth).episodes(showID: programme.id)
+                let service = TraktService(auth: store.auth)
+                let episodes = forceRefresh ? try await service.refreshEpisodes(showID: programme.id) : try await service.episodes(showID: programme.id)
                 try Task.checkCancellation()
                 catalogues[programme.id] = episodes
             } catch {
@@ -327,7 +345,7 @@ private struct MoveSharedProgrammeView: View {
                 try await store.sharedShows.move(programme, from: source, to: destination)
             } else {
                 try await store.returnToMyShows(programme, from: source)
-                await store.refresh()
+                await store.refresh(showIDs: [programme.id])
             }
             dismiss()
         } catch { errorMessage = error.localizedDescription }
@@ -364,8 +382,14 @@ struct SharedProgrammePicker: View {
             if query.isEmpty {
                 Section("Move from My Shows") {
                     ForEach(personal) { show in
-                        Button(show.title) {
+                        Button {
                             selection = RemoteShow(title: show.title, year: nil, ids: IDs(trakt: show.traktID, tmdb: show.tmdbID, imdb: show.imdbID))
+                        } label: {
+                            HStack(spacing: 12) {
+                                SharedPickerThumbnail(tmdbID: show.tmdbID, posterPath: show.posterPath)
+                                Text(show.title).font(.headline)
+                                Spacer(minLength: 0)
+                            }
                         }
                     }
                 }
@@ -375,9 +399,15 @@ struct SharedProgrammePicker: View {
                         Button {
                             selection = show
                         } label: {
-                            HStack {
-                                Text(show.title)
-                                Spacer()
+                            HStack(spacing: 12) {
+                                SharedPickerThumbnail(tmdbID: show.ids.tmdb)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(show.title).font(.headline)
+                                    if let year = show.year {
+                                        Text(String(year)).font(.caption).foregroundStyle(.secondary)
+                                    }
+                                }
+                                Spacer(minLength: 0)
                                 if existingIDs.contains(show.id) { Image(systemName: "checkmark") }
                             }
                         }.disabled(existingIDs.contains(show.id))
@@ -447,45 +477,93 @@ struct SharedProgrammePicker: View {
 struct SharedHistoryImportView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
-    let programme: SharedProgramme
+    let programmes: [SharedProgramme]
+
+    init(programme: SharedProgramme) {
+        programmes = [programme]
+    }
+
+    init(programmes: [SharedProgramme]) {
+        self.programmes = programmes
+    }
+
+    private var selectionTitle: String {
+        programmes.count == 1 ? programmes[0].show.title : "\(programmes.count) shared programmes"
+    }
     @State private var confirming = false
 
     var body: some View {
         let importer = store.sharedHistoryImport
         ThemedList {
             Section {
-                Text(programme.show.title).font(.headline)
-                Text("Replace your viewing progress?")
-                    .font(.title3.bold())
-                Text("Syncing will overwrite your existing Trakt viewing progress for this programme to match the shared progress. Episodes you have watched beyond that progress will be marked unwatched. Removing a watched episode also removes its Trakt watch history, including repeat watches.")
-                Text("All seasons and specials are included. This can take several minutes for a long-running programme. Keep WatchMate open and connected to the internet.")
-                    .foregroundStyle(.secondary)
+                SharedHistoryImportHeader(selectionTitle: selectionTitle)
+                    .padding(.vertical, 12)
             }
-            if importer.preparing { ProgressView("Comparing all seasons and episodes…") }
+            if importer.preparing {
+                Section {
+                    VStack(alignment: .leading, spacing: 12) {
+                        ProgressView("Comparing your progress…").font(.headline)
+                        Text("Checking every season and special. Nothing changes until you confirm.")
+                            .font(.subheadline).foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 8)
+                }
+            }
             if let preview = importer.preview {
-                Section("Changes to your Trakt account") {
-                    Text("You currently have \(preview.existingCount) watched episodes.")
-                    Text("\(preview.watchCount) episodes will be marked watched.")
-                    Text("\(preview.unwatchCount) episodes will be marked unwatched.")
-                    Text("Estimated minimum time: \(max(1, Int(ceil(Double(preview.changes.count) * 1.1 / 60)))) minute(s). Network delays and Trakt limits may increase this.")
-                        .font(.caption).foregroundStyle(.secondary)
-                    Button("Overwrite my progress and sync", role: .destructive) { confirming = true }
-                        .disabled(preview.changes.isEmpty)
+                Section("Review your changes") {
+                    SharedHistoryChangeSummary(preview: preview)
+                    if !preview.changes.isEmpty {
+                        SharedHistoryOverwriteNotice()
+                        VStack(alignment: .leading, spacing: 16) {
+                            Label("Allow at least \(max(1, Int(ceil(Double(preview.batches.count) * 1.1 / 60)))) min", systemImage: "clock")
+                                .font(.subheadline.weight(.medium))
+                            Text("Large libraries can take several minutes. Keep WatchMate open and connected. Network delays and Trakt limits may add time.")
+                                .font(.caption).foregroundStyle(.secondary)
+                            Button(role: .destructive) { confirming = true } label: {
+                                Label("Replace progress & sync", systemImage: "arrow.triangle.2.circlepath")
+                                    .font(.headline)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 6)
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                        .padding(.vertical, 8)
+                    }
                 }
             }
             if importer.running {
-                Section {
-                    ProgressView(value: Double(importer.completed), total: Double(max(1, importer.total)))
-                    Text("\(importer.completed) of \(importer.total) episodes updated")
-                    Text(importer.currentEpisode).font(.caption)
-                    Button("Stop syncing", role: .cancel) { importer.cancel() }
-                    Text("Stopping keeps changes already made. You can review and sync again to finish.")
-                        .font(.caption).foregroundStyle(.secondary)
+                Section("Syncing to Trakt") {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Label("Matching your shared progress", systemImage: "arrow.triangle.2.circlepath")
+                            .font(.headline)
+                        Text("\(importer.completed) of \(importer.total)")
+                            .font(.largeTitle.bold()).monospacedDigit()
+                        ProgressView("Episodes updated", value: Double(importer.completed), total: Double(max(1, importer.total)))
+                        Text(importer.currentEpisode).font(.caption).foregroundStyle(.secondary)
+                        Text("Keep WatchMate open and connected to the internet.")
+                            .font(.subheadline).foregroundStyle(.secondary)
+                        Button("Stop syncing", role: .cancel) { importer.cancel() }
+                            .buttonStyle(.bordered)
+                        Text("Stopping keeps changes already made. Review and sync again to finish.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 8)
                 }
             }
-            if !importer.status.isEmpty { Text(importer.status) }
+            if !importer.status.isEmpty && !importer.preparing && !importer.running && importer.preview?.changes.isEmpty != true {
+                Section {
+                    Label(importer.status, systemImage: "info.circle")
+                        .padding(.vertical, 8)
+                }
+            }
             if !importer.running && !importer.preparing {
-                Button("Review changes again") { Task { await importer.prepare(programme: programme, store: store) } }
+                Section {
+                    Button {
+                        Task { await importer.prepare(programmes: programmes, store: store) }
+                    } label: {
+                        Label("Review changes again", systemImage: "arrow.clockwise")
+                    }
+                }
             }
         }
         .navigationTitle("Sync viewing history")
@@ -497,15 +575,122 @@ struct SharedHistoryImportView: View {
             }
         }
         .interactiveDismissDisabled(importer.running || importer.preparing)
-        .task { if !PreviewEnvironment.isRunning, !importer.running { await importer.prepare(programme: programme, store: store) } }
+        .task { if !PreviewEnvironment.isRunning, !importer.running { await importer.prepare(programmes: programmes, store: store) } }
         .alert("Overwrite your existing progress?", isPresented: $confirming) {
             Button("Overwrite and sync", role: .destructive) { importer.start(store: store) }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Your existing viewing progress for \(programme.show.title) will be overwritten to match the sharer’s progress. \(importer.preview?.watchCount ?? 0) episodes will be marked watched and \(importer.preview?.unwatchCount ?? 0) will be marked unwatched. This cannot be automatically undone.")
+            Text("Your existing viewing progress for \(selectionTitle) will be overwritten to match the sharer’s progress. \(importer.preview?.watchCount ?? 0) episodes will be marked watched and \(importer.preview?.unwatchCount ?? 0) will be marked unwatched. This cannot be automatically undone.")
         }
     }
 }
+
+private struct SharedHistoryImportHeader: View {
+    @Environment(\.themeAccent) private var accent
+    let selectionTitle: String
+
+    var body: some View {
+        VStack(spacing: 18) {
+            HStack(spacing: 20) {
+                Image(systemName: "person.2.fill")
+                    .padding(18)
+                    .background(accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 22))
+                Image(systemName: "arrow.right")
+                    .font(.title3.weight(.semibold))
+                Image(systemName: "play.rectangle.fill")
+                    .padding(18)
+                    .background(accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 22))
+            }
+            .font(.largeTitle)
+            .foregroundStyle(accent)
+            .accessibilityHidden(true)
+
+            VStack(spacing: 8) {
+                Text("Get on the same episode")
+                    .font(.title2.bold())
+                Text(selectionTitle)
+                    .font(.headline).foregroundStyle(accent)
+                Text("Match your Trakt viewing history to the shared progress.")
+                    .font(.subheadline).foregroundStyle(.secondary)
+            }
+            .multilineTextAlignment(.center)
+
+            Label("Shared progress → Your Trakt", systemImage: "arrow.triangle.2.circlepath")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(accent)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(accent.opacity(0.10), in: Capsule())
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+private struct SharedHistoryChangeSummary: View {
+    let preview: SharedHistoryPreview
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if preview.changes.isEmpty {
+                Label("You're already in sync", systemImage: "checkmark.circle.fill")
+                    .font(.title3.bold())
+                Text("Your viewing progress matches. There's nothing to change.")
+                    .font(.subheadline).foregroundStyle(.secondary)
+            } else {
+                Text("Here's what will change")
+                    .font(.headline)
+                SharedHistoryCountRow(count: preview.watchCount, title: "Mark watched", symbol: "checkmark.circle.fill", color: .green)
+                SharedHistoryCountRow(count: preview.unwatchCount, title: "Mark unwatched", symbol: "arrow.uturn.backward.circle.fill", color: .orange)
+            }
+            Label("\(preview.existingCount) currently watched on Trakt", systemImage: "clock.arrow.circlepath")
+                .font(.subheadline).foregroundStyle(.secondary)
+            Text("Includes all seasons and specials for your selection.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 8)
+    }
+}
+
+private struct SharedHistoryCountRow: View {
+    let count: Int
+    let title: LocalizedStringKey
+    let symbol: String
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: symbol)
+                .font(.title2)
+                .foregroundStyle(color)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(count, format: .number)
+                    .font(.title.bold()).monospacedDigit()
+                Text(title).font(.subheadline.weight(.medium))
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(color.opacity(0.10), in: RoundedRectangle(cornerRadius: 16))
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private struct SharedHistoryOverwriteNotice: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("This replaces your progress", systemImage: "exclamationmark.triangle.fill")
+                .font(.headline)
+            Text("Episodes watched beyond the shared progress will become unwatched. Their Trakt watch history, including repeat watches, will be removed.")
+                .font(.subheadline).foregroundStyle(.secondary)
+            Text("This cannot be automatically undone.")
+                .font(.subheadline.weight(.semibold))
+        }
+        .padding(.vertical, 8)
+    }
+}
+
 
 struct MoveToSharedListView: View {
     @Environment(AppStore.self) private var store
@@ -536,35 +721,145 @@ struct SharedHistoryInboxView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @State private var offers: [SharedHistoryOffer] = []
+    @State private var selectedProgrammes: [SharedProgramme] = []
+    @State private var showingReview = false
+    private let previewOffers: [SharedHistoryOffer]?
+
+    init(previewOffers: [SharedHistoryOffer]? = nil) {
+        self.previewOffers = previewOffers
+    }
 
     var body: some View {
         ThemedList {
-            Section {
-                Text("New programmes have been shared with you. You can keep your own viewing history or replace it with the shared progress, programme by programme.")
-            }
-            ForEach(offers) { offer in
-                Section(offer.programme.show.title) {
-                    Text(offer.listName).font(.caption).foregroundStyle(.secondary)
-                    NavigationLink("Review and sync viewing history") {
-                        SharedHistoryImportView(programme: offer.programme)
-                            .onAppear { store.sharedShows.review(offer) }
+            if offers.isEmpty {
+                ContentUnavailableView("You're all caught up", systemImage: "checkmark.circle",
+                                       description: Text("You can sync later from Shared Shows."))
+            } else {
+                Section {
+                    SharedHistoryInboxHeader(count: offers.count) {
+                        review(offers)
                     }
-                    Button("Keep my existing history") {
-                        store.sharedShows.review(offer)
-                        offers.removeAll { $0.id == offer.id }
+                    .disabled(store.busy)
+                }
+                Section {
+                    ForEach(offers) { offer in
+                        SharedHistoryOfferRow(offer: offer) {
+                            review([offer])
+                        } keepHistory: {
+                            store.sharedShows.review(offer)
+                            offers.removeAll { $0.id == offer.id }
+                        }
+                        .disabled(store.busy)
                     }
+                } header: {
+                    Text("Or choose individually")
+                } footer: {
+                    Text("Syncing replaces your Trakt progress. You'll review changes before confirming.")
                 }
             }
-            if offers.isEmpty { Text("You can sync a programme later from its Shared Shows page.") }
         }
-        .navigationTitle("Shared viewing history")
+        .navigationTitle("Sync shared shows")
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(isPresented: $showingReview) {
+            SharedHistoryImportView(programmes: selectedProgrammes)
+        }
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Done") { dismiss() }.disabled(store.sharedHistoryImport.running || store.sharedHistoryImport.preparing)
             }
         }
         .interactiveDismissDisabled(store.sharedHistoryImport.running || store.sharedHistoryImport.preparing)
-        .onAppear { offers = store.sharedShows.historyOffers }
+        .onAppear { offers = previewOffers ?? store.sharedShows.historyOffers }
+    }
+
+    private func review(_ selection: [SharedHistoryOffer]) {
+        selectedProgrammes = selection.map(\.programme)
+        for offer in selection {
+            store.sharedShows.review(offer)
+        }
+        showingReview = true
+    }
+}
+
+private struct SharedHistoryInboxHeader: View {
+    @Environment(\.themeAccent) private var accent
+    let count: Int
+    let syncAll: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "person.2.fill")
+                .font(.largeTitle)
+                .foregroundStyle(accent)
+                .padding(18)
+                .background(accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 22))
+                .accessibilityHidden(true)
+            VStack(spacing: 6) {
+                Text("Watch together")
+                    .font(.title2.bold())
+                Text("Match your progress for \(count) shared programmes.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .multilineTextAlignment(.center)
+            Button(action: syncAll) {
+                Label("Sync all", systemImage: "arrow.triangle.2.circlepath")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+            }
+            .buttonStyle(.borderedProminent)
+            .accessibilityHint("Review changes for all shared programmes.")
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+    }
+}
+
+private struct SharedHistoryOfferRow: View {
+    let offer: SharedHistoryOffer
+    let sync: () -> Void
+    let keepHistory: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                SharedPickerThumbnail(tmdbID: offer.programme.show.ids.tmdb)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(offer.programme.show.title)
+                        .font(.headline)
+                    Text(offer.listName)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Label("\(offer.programme.episodes.count) watched", systemImage: "checkmark.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .accessibilityElement(children: .combine)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) {
+                    SharedHistoryOfferActions(sync: sync, keepHistory: keepHistory)
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    SharedHistoryOfferActions(sync: sync, keepHistory: keepHistory)
+                }
+            }
+        }
+        .padding(.vertical, 6)
+    }
+}
+
+private struct SharedHistoryOfferActions: View {
+    let sync: () -> Void
+    let keepHistory: () -> Void
+
+    var body: some View {
+        Button("Sync", systemImage: "arrow.triangle.2.circlepath", action: sync)
+            .buttonStyle(.bordered)
+        Button("Keep my progress", action: keepHistory)
+            .buttonStyle(.borderless)
     }
 }
 
@@ -614,7 +909,32 @@ struct SharedHistoryInboxView: View {
 
 #Preview("History inbox") {
     PreviewHost { data in
-        NavigationStack { SharedHistoryInboxView() }
+        NavigationStack { SharedHistoryInboxView(previewOffers: data.historyOffers) }
+    }
+}
+
+#Preview("History inbox — All caught up") {
+    PreviewHost { _ in
+        NavigationStack { SharedHistoryInboxView(previewOffers: []) }
     }
 }
 #endif
+
+private struct SharedPickerThumbnail: View {
+    @Environment(AppStore.self) private var store
+    let tmdbID: Int?
+    var posterPath: String? = nil
+    @State private var fetchedPath: String?
+
+    var body: some View {
+        PosterImageView(posterPath: posterPath ?? fetchedPath, width: 40)
+            .task(id: tmdbID) {
+                fetchedPath = nil
+                guard posterPath == nil, !PreviewEnvironment.isRunning,
+                      let tmdbID, store.catalogue.configured else { return }
+                let path = try? await store.catalogue.posterPath(tmdbID: tmdbID)
+                guard !Task.isCancelled else { return }
+                fetchedPath = path
+            }
+    }
+}

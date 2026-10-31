@@ -2,6 +2,14 @@ import Foundation
 
 @MainActor
 final class TMDBService: CatalogueService {
+    private let send: (URLRequest) async throws -> Data
+
+    init(send: @escaping (URLRequest) async throws -> Data = { request in
+        try await HTTP.send(request).0
+    }) {
+        self.send = send
+    }
+
     var configured: Bool { !Configuration.tmdbReadAccessToken.isEmpty }
     private func get<T: Decodable & Sendable>(_ path: String, query: [URLQueryItem] = [], type: T.Type) async throws -> T {
         let token = Configuration.tmdbReadAccessToken
@@ -11,7 +19,8 @@ final class TMDBService: CatalogueService {
         var request = URLRequest(url: components.url!)
         request.httpMethod = "GET"; request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         do {
-            return try await HTTP.decode(type, request: request)
+            let data = try await send(request)
+            return try HTTP.decoder.decode(type, from: data)
         } catch APIError.http(401, _) {
             throw APIError.message("Artwork and show information are unavailable because the TMDB credential is invalid.")
         }
@@ -24,20 +33,38 @@ final class TMDBService: CatalogueService {
     }
     #endif
 
-    private var posterCache: [Int: String] = [:]
+    private let showCache = CatalogueReadCache<Int, TVDetails>(lifetime: 3600)
+    private let regionCache = CatalogueReadCache<String, [String]>(lifetime: 86_400)
+    private let providerCache = CatalogueReadCache<String, [Provider]>(lifetime: 86_400)
+
+    private func showDetails(tmdbID: Int) async throws -> TVDetails {
+        try await showCache.value(for: tmdbID) {
+            let details = try await self.get("tv/\(tmdbID)",
+                                             query: [URLQueryItem(name: "append_to_response", value: "watch/providers")],
+                                             type: TVDetails.self)
+            guard details.watchProviders != nil else {
+                throw APIError.message("TMDB did not return streaming availability. Try refreshing again.")
+            }
+            return details
+        }
+    }
 
     func posterPath(tmdbID: Int) async throws -> String? {
-        if let cached = posterCache[tmdbID] { return cached.isEmpty ? nil : cached }
-        let details = try await get("tv/\(tmdbID)", type: TVDetails.self)
-        try Task.checkCancellation()
-        posterCache[tmdbID] = details.posterPath ?? ""
+        let details = try await showDetails(tmdbID: tmdbID)
         return details.posterPath
     }
 
     private struct TVDetails: Decodable {
+        let status: String?
         let overview: String?
         let posterPath: String?
         let seasons: [SeasonArtwork]?
+        let watchProviders: WatchResults?
+
+        enum CodingKeys: String, CodingKey {
+            case overview, posterPath, seasons, status
+            case watchProviders = "watch/providers"
+        }
     }
     private struct SeasonArtwork: Decodable {
         let seasonNumber: Int
@@ -45,7 +72,7 @@ final class TMDBService: CatalogueService {
     }
 
     func seasonPosters(tmdbID: Int) async throws -> [Int: String] {
-        let details = try await get("tv/\(tmdbID)", type: TVDetails.self)
+        let details = try await showDetails(tmdbID: tmdbID)
         var posters: [Int: String] = [:]
         for season in details.seasons ?? [] {
             posters[season.seasonNumber] = season.posterPath
@@ -94,8 +121,10 @@ final class TMDBService: CatalogueService {
 
     func availableRegions() async throws -> [String] {
         if PreviewEnvironment.isRunning { return ["AU", "CA", "GB", "US"] }
-        let response = try await get("watch/providers/regions", type: WatchRegionResults.self)
-        return Array(Set(response.results.map(\.iso31661))).sorted()
+        return try await regionCache.value(for: "regions") {
+            let response = try await self.get("watch/providers/regions", type: WatchRegionResults.self)
+            return Array(Set(response.results.map(\.iso31661))).sorted()
+        }
     }
 
     private struct WatchProvider: Decodable { let providerId: Int; let providerName: String }
@@ -108,8 +137,10 @@ final class TMDBService: CatalogueService {
     private struct WatchResults: Decodable { let results: [String: Country] }
     private struct ProviderResults: Decodable { let results: [WatchProvider] }
     func details(tmdbID: Int, region: String) async throws -> CatalogueDetails {
-        let details = try await get("tv/\(tmdbID)", type: TVDetails.self)
-        let providers = try await get("tv/\(tmdbID)/watch/providers", type: WatchResults.self)
+        let details = try await showDetails(tmdbID: tmdbID)
+        guard let providers = details.watchProviders else {
+            throw APIError.message("TMDB did not return streaming availability. Try refreshing again.")
+        }
         let country = providers.results[region]
         // Exclude buy/rent offers from the user's subscription filter.
         let offers = (country?.flatrate ?? []) + (country?.free ?? []) + (country?.ads ?? [])
@@ -117,11 +148,13 @@ final class TMDBService: CatalogueService {
         let mapped = offers.filter { seen.insert($0.providerId).inserted }
             .map { Provider(id: $0.providerId, name: $0.providerName) }
         return CatalogueDetails(overview: details.overview ?? "", posterPath: details.posterPath,
-                                providers: mapped, watchURL: country?.link)
+                                providers: mapped, watchURL: country?.link, seriesStatus: details.status)
     }
     func providers(region: String) async throws -> [Provider] {
         if PreviewEnvironment.isRunning { return PreviewEnvironment.providers }
-        let result = try await get("watch/providers/tv", query: [URLQueryItem(name: "watch_region", value: region)], type: ProviderResults.self)
-        return result.results.map { Provider(id: $0.providerId, name: $0.providerName) }.sorted { $0.name < $1.name }
+        return try await providerCache.value(for: region) {
+            let result = try await self.get("watch/providers/tv", query: [URLQueryItem(name: "watch_region", value: region)], type: ProviderResults.self)
+            return result.results.map { Provider(id: $0.providerId, name: $0.providerName) }.sorted { $0.name < $1.name }
+        }
     }
 }

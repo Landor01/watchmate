@@ -1,11 +1,39 @@
 import Foundation
 
 enum TraktHistoryBatch {
+    static func sharedPayload(_ episodes: [SharedEpisode]) -> [String: Any] {
+        var seen = Set<Int>()
+        return ["episodes": episodes.filter { seen.insert($0.id).inserted }.map {
+            ["ids": ["trakt": $0.id],
+             "watched_at": $0.watchedAt == .distantPast ? "unknown" : Dates.string($0.watchedAt)] as [String: Any]
+        }]
+    }
+
     static func payload(episodeIDs: [Int], watchedAt: Date = Date()) -> [String: Any] {
         let timestamp = Dates.string(watchedAt)
         return ["episodes": Set(episodeIDs).sorted().map {
             ["ids": ["trakt": $0], "watched_at": timestamp] as [String: Any]
         }]
+    }
+
+    static func confirmedRemovalIDs(in data: Data, requestedIDs: Set<Int>) throws -> Set<Int> {
+        struct Response: Decodable {
+            struct Counts: Decodable { let episodes: Int }
+            struct Missing: Decodable {
+                struct Episode: Decodable { let ids: IDs }
+                let episodes: [Episode]
+            }
+            let deleted: Counts
+            let notFound: Missing
+        }
+        let response = try HTTP.decoder.decode(Response.self, from: data)
+        let missing = Set(response.notFound.episodes.map(\.ids.trakt))
+        // Deleted counts are plays, not unique episodes: repeat watches can make
+        // the count larger, and an already removed episode can report zero.
+        guard missing.isSubset(of: requestedIDs), response.deleted.episodes >= 0 else {
+            throw APIError.message("Trakt returned an unexpected history removal result. Refresh before retrying.")
+        }
+        return requestedIDs.subtracting(missing)
     }
 
     static func confirmedIDs(in data: Data, requestedIDs: Set<Int>) throws -> Set<Int> {
@@ -32,7 +60,7 @@ enum TraktHistoryBatch {
 @MainActor
 final class TraktService: ViewingService {
     let auth: TraktAuth
-    private var lastWrite: Date = .distantPast
+    private static var nextWrite: Date = .distantPast
     init(auth: TraktAuth) { self.auth = auth }
 
     private func request(_ path: String, query: [URLQueryItem] = [], authenticated: Bool = true,
@@ -103,19 +131,42 @@ final class TraktService: ViewingService {
         return try await HTTP.decode(RemoteShow.self, request: request)
     }
 
+    private static let episodeCache = CatalogueReadCache<Int, [RemoteEpisode]>(lifetime: 900)
+
+    func refreshEpisodes(showID: Int) async throws -> [RemoteEpisode] {
+        Self.episodeCache.invalidate(showID)
+        return try await fetchEpisodes(showID: showID)
+    }
+
     func episodes(showID: Int) async throws -> [RemoteEpisode] {
-        let request = try await request("shows/\(showID)/seasons", query: [URLQueryItem(name: "extended", value: "full,episodes")], authenticated: false)
-        let seasons = try await HTTP.decode([RemoteSeason].self, request: request)
-        return seasons.flatMap { $0.episodes ?? [] }
+        if let cached = EpisodeCatalogueCache.read(showID),
+           !RefreshPolicy.isStale(cached.updatedAt, interval: 21_600, now: Date()) {
+            return cached.episodes
+        }
+        return try await fetchEpisodes(showID: showID)
+    }
+
+    private func fetchEpisodes(showID: Int) async throws -> [RemoteEpisode] {
+        try await Self.episodeCache.value(for: showID) {
+            let request = try await self.request("shows/\(showID)/seasons", query: [URLQueryItem(name: "extended", value: "full,episodes")], authenticated: false)
+            let seasons = try await HTTP.decode([RemoteSeason].self, request: request)
+            let episodes = seasons.flatMap { $0.episodes ?? [] }
+            EpisodeCatalogueCache.save(episodes, showID: showID)
+            return episodes
+        }
     }
     func search(_ query: String) async throws -> [RemoteShow] {
         let request = try await request("search/show", query: [URLQueryItem(name: "query", value: query), URLQueryItem(name: "limit", value: "30")], authenticated: false)
         return try await HTTP.decode([SearchResult].self, request: request).compactMap(\.show)
     }
     private func sendWrite(_ path: String, object: [String: Any]) async throws -> Data {
-        let delay = 1.1 - Date().timeIntervalSince(lastWrite)
+        // Reserve a slot before suspension, across every service instance.
+        let now = Date()
+        let slot = max(now, Self.nextWrite)
+        Self.nextWrite = slot.addingTimeInterval(1.1)
+        let delay = slot.timeIntervalSince(now)
         if delay > 0 { try await Task.sleep(for: .seconds(delay)) }
-        lastWrite = Date()
+        try Task.checkCancellation()
         let request = try await request(path, method: "POST", body: JSONSerialization.data(withJSONObject: object))
         let (data, _) = try await HTTP.send(request)
         return data
@@ -138,10 +189,24 @@ final class TraktService: ViewingService {
         try await write("sync/history", object: ["episodes": [["ids": ["trakt": episode.id], "watched_at": date]]])
     }
 
+    func recordSharedWatches(_ episodes: [SharedEpisode]) async throws -> Set<Int> {
+        guard !episodes.isEmpty else { return [] }
+        let data = try await sendWrite("sync/history", object: TraktHistoryBatch.sharedPayload(episodes))
+        return try TraktHistoryBatch.confirmedIDs(in: data, requestedIDs: Set(episodes.map(\.id)))
+    }
+
     func markWatched(episodeIDs: [Int]) async throws -> Set<Int> {
         guard !episodeIDs.isEmpty else { return [] }
         let data = try await sendWrite("sync/history", object: TraktHistoryBatch.payload(episodeIDs: episodeIDs))
         return try TraktHistoryBatch.confirmedIDs(in: data, requestedIDs: Set(episodeIDs))
+    }
+
+    func markUnwatched(episodeIDs: [Int]) async throws -> Set<Int> {
+        let ids = Set(episodeIDs)
+        guard !ids.isEmpty else { return [] }
+        let payload: [String: Any] = ["episodes": ids.sorted().map { ["ids": ["trakt": $0]] }]
+        let data = try await sendWrite("sync/history/remove", object: payload)
+        return try TraktHistoryBatch.confirmedRemovalIDs(in: data, requestedIDs: ids)
     }
 
     func setWatched(episodeID: Int, watched: Bool) async throws {

@@ -12,6 +12,7 @@ final class Show {
     var providerData: Data = Data()
     var watchURL: String?
     var providerRegion: String = ""
+    var seriesStatus: String?
     var metadataUpdatedAt: Date?
     var catalogueUpdatedAt: Date?
     var episodeIMDbIDsLoaded: Bool = false
@@ -182,4 +183,5 @@ struct CatalogueDetails {
     let posterPath: String?
     let providers: [Provider]
     let watchURL: String?
+    var seriesStatus: String? = nil
 }

@@ -8,14 +8,26 @@ struct ComingSoonView: View {
     @AppStorage("comingSoonCalendar") private var calendarMode = true
     @State private var selectedDate = AppStoreScreenshotMode.calendarDate
 
+    @State private var sharedCatalogue = SharedDiscoveryCatalogue()
+
     private var scheduledEntries: [ScheduledProgramme] {
-        shows.filter { $0.isFollowing }.flatMap { show in
+        let personal = shows.filter {
+            $0.isFollowing && (!store.sharedShows.showIDs.contains($0.traktID) || store.sharedShows.personalShowIDs.contains($0.traktID))
+        }.flatMap { show in
             show.episodes.compactMap { episode -> ScheduledProgramme? in
                 guard let date = episode.firstAired, episode.watchedAt == nil, !episode.isSkipped,
                       store.settings.includeSpecials || episode.season > 0 else { return nil }
                 return ScheduledProgramme(show: show, episode: episode, date: AirDates.day(date))
             }
-        }.sorted {
+        }
+        let sharedEntries = SharedDiscoveryEntry.entries(lists: store.sharedShows.lists, catalogues: sharedCatalogue.episodes,
+                                                         includeSpecials: store.settings.includeSpecials)
+        let shared = SharedDiscoveryEntry.scheduled(sharedEntries)
+            .compactMap { entry -> ScheduledProgramme? in
+                guard !entry.watched, !entry.skipped, let date = entry.date else { return nil }
+                return ScheduledProgramme(shared: entry, date: date)
+            }
+        return (personal + shared).sorted {
             $0.date == $1.date ? $0.id < $1.id : $0.date < $1.date
         }
     }
@@ -29,26 +41,54 @@ struct ComingSoonView: View {
             calendarMode ? calendar.isDate($0.date, inSameDayAs: selectedDate) : (!AirDates.hasAired($0.date, now: now) && $0.date <= end)
         }
         GeometryReader { geometry in
-            // Each calendar column needs room for seven 44-point targets plus padding.
-            let usesColumns = geometry.size.width > geometry.size.height && geometry.size.width >= 760
+            let insets = geometry.safeAreaInsets
+            let viewportWidth = geometry.size.width + insets.leading + insets.trailing
+            let viewportHeight = geometry.size.height + insets.top + insets.bottom
+            // Keep seven 44-point date targets and the calendar's horizontal padding.
+            let minimumCalendarWidth: CGFloat = 7 * 44 + 48
+            let minimumListWidth: CGFloat = 220
+            let usesColumns = viewportWidth > viewportHeight
+                && geometry.size.width >= minimumCalendarWidth + minimumListWidth + 1
             if calendarMode && usesColumns {
+                // Centre the divider on roomy displays; give the calendar enough
+                // space for its date buttons on smaller landscape phones.
+                let centredCalendarWidth = (geometry.size.width - 1 + insets.trailing - insets.leading) / 2
+                let calendarWidth = min(
+                    max(centredCalendarWidth, minimumCalendarWidth),
+                    geometry.size.width - minimumListWidth - 1
+                )
+                let listWidth = geometry.size.width - 1 - calendarWidth
                 HStack(spacing: 0) {
                     LandscapeCalendarPanel(
                         selectedDate: $selectedDate,
                         scheduledDates: dates
                     )
-                    .frame(width: (geometry.size.width - 1) / 2)
+                    .frame(width: calendarWidth)
 
                     Divider()
+                        .frame(width: 1)
 
                     ThemedList {
+                        if sharedCatalogue.loading { ProgressView("Loading shared programmes…") }
+                        if let message = sharedCatalogue.message { Text(message).foregroundStyle(.secondary) }
                         ScheduledDateSection(entries: visibleEntries, selectedDate: selectedDate)
                     }
-                    .refreshable { await store.refresh() }
-                    .frame(maxWidth: .infinity)
+                    .listStyle(.insetGrouped)
+                    .contentMargins(.leading, 12, for: .scrollContent)
+                    // Keep the entire rounded row clear of the trailing toolbar.
+                    .contentMargins(.trailing, 12 + insets.trailing, for: .scrollContent)
+                    .refreshable {
+                        await store.refresh(showIDs: Set(shows.filter { $0.isFollowing && $0.seriesStatus != "Ended" && $0.seriesStatus != "Canceled" }.map(\.traktID)))
+                        await store.refreshSharedShows()
+                        await sharedCatalogue.load(store: store, shows: shows, forceRefresh: true)
+                    }
+                    .frame(width: listWidth)
                 }
+                .frame(width: geometry.size.width, height: geometry.size.height)
             } else {
                 ThemedList {
+                    if sharedCatalogue.loading { ProgressView("Loading shared programmes…") }
+                    if let message = sharedCatalogue.message { Text(message).foregroundStyle(.secondary) }
                     if calendarMode {
                         Section {
                             ProgrammeCalendar(selectedDate: $selectedDate, scheduledDates: dates)
@@ -60,9 +100,14 @@ struct ComingSoonView: View {
                         }
                     }
                 }
-                .refreshable { await store.refresh() }
+                .refreshable {
+                    await store.refresh(showIDs: Set(shows.filter { $0.isFollowing && $0.seriesStatus != "Ended" && $0.seriesStatus != "Canceled" }.map(\.traktID)))
+                    await store.refreshSharedShows()
+                    await sharedCatalogue.load(store: store, shows: shows, forceRefresh: true)
+                }
             }
         }
+        .task(id: "\(store.sharedShows.showIDs.sorted()):\(store.catalogueRevision)") { await sharedCatalogue.load(store: store, shows: shows) }
         .navigationTitle("Coming Soon")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -122,10 +167,11 @@ private struct ScheduledDateSection: View {
 }
 
 private struct ScheduledProgramme: Identifiable {
-    let show: Show
-    let episode: Episode
+    var show: Show?
+    var episode: Episode?
+    var shared: SharedDiscoveryEntry?
     let date: Date
-    var id: String { episode.key }
+    var id: String { shared?.id ?? episode?.key ?? "" }
 }
 
 private struct ScheduledProgrammeRows: View {
@@ -141,10 +187,16 @@ private struct ScheduledProgrammeRows: View {
             )
         } else {
             ForEach(entries) { entry in
-                NavigationLink {
-                    EpisodeDetailView(episode: entry.episode)
-                } label: {
-                    ShowRow(show: entry.show, episode: entry.episode, squareArtwork: true, showsAiredPrefix: true, squareArtworkSize: 96)
+                VStack(alignment: .leading) {
+                    if let shared = entry.shared {
+                        SharedDiscoveryRow(entry: shared)
+                    } else if let show = entry.show, let episode = entry.episode {
+                        NavigationLink {
+                            EpisodeDetailView(episode: episode)
+                        } label: {
+                            ShowRow(show: show, episode: episode, squareArtwork: true, showsAiredPrefix: true, squareArtworkSize: 96)
+                        }
+                    }
                 }
                 .alignmentGuide(.listRowSeparatorLeading) { dimensions in
                     dimensions[.leading]

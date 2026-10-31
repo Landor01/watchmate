@@ -14,84 +14,96 @@ struct RootView: View {
     @State private var widgetEpisodePath: [WidgetEpisodeLink] = []
     var body: some View {
         @Bindable var store = store
-        TabView(selection: $selectedTab) {
-            NavigationStack(path: $widgetEpisodePath) {
-                UpNextView()
-                    .modifier(ActivityToastModifier())
-                    .toolbar { settingsButton }
-                    .navigationDestination(for: WidgetEpisodeLink.self) { link in
-                        if let episode = store.episode(forWidgetLink: link) {
-                            EpisodeDetailView(episode: episode)
-                        } else {
-                            ContentUnavailableView("Episode unavailable", systemImage: "tv",
-                                                   description: Text("This programme is no longer in your current library."))
-                        }
-                    }
+        // Reserve a separate row so the banner cannot overlap navigation controls.
+        VStack(spacing: 0) {
+            if store.settings.demoMode && !AppStoreScreenshotMode.isEnabled {
+                HStack(spacing: 8) {
+                    Image(systemName: "sparkles")
+                    Text("Demo mode · sample progress").font(.caption)
+                    Spacer()
+                    Button("Connect") { settingsOpen = true }.font(.caption.bold())
+                }.padding(.horizontal).padding(.vertical, 8).background(.thinMaterial)
             }
-                .tabItem { Label("Up Next", systemImage: "play.circle.fill") }
-                .tag(0)
-            NavigationStack {
-                ComingSoonView().modifier(ActivityToastModifier())
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button("About air dates and streaming availability", systemImage: "info.circle") {
-                                showingAirDateInfo = true
+
+            TabView(selection: $selectedTab) {
+                NavigationStack(path: $widgetEpisodePath) {
+                    UpNextView()
+                        .modifier(ActivityToastModifier())
+                        .toolbar { settingsButton }
+                        .navigationDestination(for: WidgetEpisodeLink.self) { link in
+                            if let episode = store.episode(forWidgetLink: link) {
+                                EpisodeDetailView(episode: episode)
+                            } else {
+                                ContentUnavailableView("Episode unavailable", systemImage: "tv",
+                                                       description: Text("This programme is no longer in your current library."))
                             }
-                            .labelStyle(.iconOnly)
-                            .imageScale(.large)
                         }
-                        if #available(iOS 26.0, *) {
-                            ToolbarSpacer(.fixed, placement: .topBarTrailing)
-                        }
-                        settingsButton
-                    }
-                    .alert("Air dates and streaming", isPresented: $showingAirDateInfo) {
-                        Button("OK", role: .cancel) {}
-                    } message: {
-                        Text("Air dates can change and may differ from local streaming release dates.")
-                    }
-            }
-                .tabItem { Label("Coming Soon", systemImage: "calendar") }
-                .tag(1)
-            NavigationStack {
-                MyShowsView()
-                    .navigationDestination(item: $screenshotShow) { show in
-                        ShowDetailView(show: show)
-                    }
-                    .modifier(ActivityToastModifier())
-                    .toolbar {
-                        ToolbarItem(placement: .topBarLeading) {
-                            Button("Add programme", systemImage: "plus") { searchOpen = true }
+                }
+                    .tabItem { Label("Up Next", systemImage: "play.circle.fill") }
+                    .tag(0)
+                NavigationStack {
+                    ComingSoonView().modifier(ActivityToastModifier())
+                        .toolbar {
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button("About air dates and streaming availability", systemImage: "info.circle") {
+                                    showingAirDateInfo = true
+                                }
                                 .labelStyle(.iconOnly)
-                        }
-                        settingsButton
-                    }
-            }
-            .tabItem { Label("My Shows", systemImage: "tv") }
-            .tag(2)
-            NavigationStack {
-                SharedShowsView()
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button("About shared shows and viewing history", systemImage: "info.circle") {
-                                showingSharingInfo = true
+                                .imageScale(.large)
                             }
-                            .labelStyle(.iconOnly)
-                            .imageScale(.large)
+                            if #available(iOS 26.0, *) {
+                                ToolbarSpacer(.fixed, placement: .topBarTrailing)
+                            }
+                            settingsButton
                         }
-                        if #available(iOS 26.0, *) {
-                            ToolbarSpacer(.fixed, placement: .topBarTrailing)
+                        .alert("Air dates and streaming", isPresented: $showingAirDateInfo) {
+                            Button("OK", role: .cancel) {}
+                        } message: {
+                            Text("Air dates can change and may differ from local streaming release dates.")
                         }
-                        settingsButton
-                    }
-                    .alert("Shared Shows and viewing history", isPresented: $showingSharingInfo) {
-                        Button("OK", role: .cancel) {}
-                    } message: {
-                        Text("Share programmes and group progress while keeping separate Trakt accounts. Marking shared episodes watched or unwatched also updates your own Trakt history when Shared shows update Trakt history is enabled in Settings. Other participants’ Trakt histories are unchanged.")
-                    }
+                }
+                    .tabItem { Label("Coming Soon", systemImage: "calendar") }
+                    .tag(1)
+                NavigationStack {
+                    MyShowsView()
+                        .navigationDestination(item: $screenshotShow) { show in
+                            ShowDetailView(show: show)
+                        }
+                        .modifier(ActivityToastModifier())
+                        .toolbar {
+                            ToolbarItem(placement: .topBarLeading) {
+                                Button("Add programme", systemImage: "plus") { searchOpen = true }
+                                    .labelStyle(.iconOnly)
+                            }
+                            settingsButton
+                        }
+                }
+                .tabItem { Label("My Shows", systemImage: "tv") }
+                .tag(2)
+                NavigationStack {
+                    SharedShowsView()
+                        .toolbar {
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button("About shared shows and viewing history", systemImage: "info.circle") {
+                                    showingSharingInfo = true
+                                }
+                                .labelStyle(.iconOnly)
+                                .imageScale(.large)
+                            }
+                            if #available(iOS 26.0, *) {
+                                ToolbarSpacer(.fixed, placement: .topBarTrailing)
+                            }
+                            settingsButton
+                        }
+                        .alert("Shared Shows and viewing history", isPresented: $showingSharingInfo) {
+                            Button("OK", role: .cancel) {}
+                        } message: {
+                            Text("Share programmes and group progress while keeping separate Trakt accounts. Marking shared episodes watched or unwatched also updates your own Trakt history when Shared shows update Trakt history is enabled in Settings. Other participants’ Trakt histories are unchanged.")
+                        }
+                }
+                    .tabItem { Label("Shared Shows", systemImage: "person.2") }
+                    .tag(3)
             }
-                .tabItem { Label("Shared Shows", systemImage: "person.2") }
-                .tag(3)
         }
         .onChange(of: store.sharedShows.historyOffers.map(\.id)) { _, offers in
             if !offers.isEmpty && !settingsOpen && !searchOpen && !store.sharedHistoryImport.running {
@@ -113,16 +125,6 @@ struct RootView: View {
         )) {
             Button("OK") { store.sharedShows.errorMessage = nil }
         } message: { Text(store.sharedShows.errorMessage ?? "") }
-        .safeAreaInset(edge: .top, spacing: 0) {
-            if store.settings.demoMode && !AppStoreScreenshotMode.isEnabled {
-                HStack(spacing: 8) {
-                    Image(systemName: "sparkles")
-                    Text("Demo mode · sample progress").font(.caption)
-                    Spacer()
-                    Button("Connect") { settingsOpen = true }.font(.caption.bold())
-                }.padding(.horizontal).padding(.vertical, 8).background(.thinMaterial)
-            }
-        }
         .modifier(SeasonUpdatePresentationModifier())
         .sheet(isPresented: $settingsOpen) {
             NavigationStack { SettingsView() }
