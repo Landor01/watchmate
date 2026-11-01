@@ -7,6 +7,7 @@ struct ComingSoonView: View {
     @Query(Show.withEpisodes) private var shows: [Show]
     @AppStorage("comingSoonCalendar") private var calendarMode = true
     @State private var selectedDate = AppStoreScreenshotMode.calendarDate
+    @State private var isHingeFullyOpen = false
 
     @State private var sharedCatalogue = SharedDiscoveryCatalogue()
 
@@ -50,11 +51,12 @@ struct ComingSoonView: View {
             let usesColumns = viewportWidth > viewportHeight
                 && geometry.size.width >= minimumCalendarWidth + minimumListWidth + 1
             if calendarMode && usesColumns {
-                // Centre the divider on roomy displays; give the calendar enough
-                // space for its date buttons on smaller landscape phones.
+                // Keep the divider at the fold while partially open. When flat,
+                // cap the calendar width to give programmes more room.
                 let centredCalendarWidth = (geometry.size.width - 1 + insets.trailing - insets.leading) / 2
+                let preferredCalendarWidth = isHingeFullyOpen ? min(centredCalendarWidth, 400) : centredCalendarWidth
                 let calendarWidth = min(
-                    max(centredCalendarWidth, minimumCalendarWidth),
+                    max(preferredCalendarWidth, minimumCalendarWidth),
                     geometry.size.width - minimumListWidth - 1
                 )
                 let listWidth = geometry.size.width - 1 - calendarWidth
@@ -107,6 +109,7 @@ struct ComingSoonView: View {
                 }
             }
         }
+        .modifier(CalendarHingeObserver(isFullyOpen: $isHingeFullyOpen))
         .task(id: "\(store.sharedShows.showIDs.sorted()):\(store.catalogueRevision)") { await sharedCatalogue.load(store: store, shows: shows) }
         .navigationTitle("Coming Soon")
         .navigationBarTitleDisplayMode(.inline)
@@ -121,6 +124,21 @@ struct ComingSoonView: View {
                     .foregroundStyle(!calendarMode ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
                     .accessibilityAddTraits(!calendarMode ? .isSelected : [])
             }
+        }
+    }
+}
+
+private struct CalendarHingeObserver: ViewModifier {
+    @Binding var isFullyOpen: Bool
+
+    func body(content: Content) -> some View {
+        if #available(iOS 27.1, *) {
+            content.onHingeChange { _, context in
+                // Store only the layout-relevant status, not every angle update.
+                isFullyOpen = context.hinge?.status == .fullyOpen
+            }
+        } else {
+            content
         }
     }
 }
