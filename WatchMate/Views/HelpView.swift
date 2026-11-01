@@ -33,11 +33,13 @@ private struct HelpShowsSection: View {
     var body: some View {
         Section("Finding Your Shows") {
             HelpRow(icon: "play.circle", title: "Up Next",
-                    description: "See the next aired, unwatched episode of each programme you follow. Watched and skipped episodes are left out. The remaining count helps you see how much you have to catch up on.")
+                    description: "See the next aired, unwatched episode from My Shows and your shared lists, grouped by shared list. Watched and skipped episodes are left out. Episode counts and viewing-time totals help you see how much you have to catch up on; time totals use known runtimes.")
             HelpRow(icon: "calendar", title: "Coming Soon",
-                    description: "Use the calendar and list buttons at the top left to switch displays. Select a date in the calendar, move between months or tap Today. The list shows episodes scheduled for the next 30 days.")
+                    description: "Use the Calendar and List toolbar buttons to switch displays. Select a date in the calendar, move between months or tap Today. The list shows episodes scheduled for the next 30 days. Both displays include My Shows and shared lists, leaving out watched and skipped episodes.")
             HelpRow(icon: "tv", title: "My Shows",
                     description: "Browse the programmes you follow and tap one to see its seasons and episodes. Removing a show from My Shows does not delete your Trakt history or watchlist.")
+            HelpRow(icon: "rectangle.split.2x1", title: "Use iPhone Duo in Landscape",
+                    description: "Open Coming Soon in Calendar mode and turn iPhone Duo to landscape. When there is enough room, the calendar appears beside the selected day’s episodes. With the device partially open, the panels sit either side of the fold. Open it flat and the calendar becomes narrower, giving the episode list more room. In My Shows, browse your list beside programme details. Use Expand show details to give the details more space, then Show My Shows list to bring the list back. These controls use the sidebar icon.")
             HelpRow(icon: "magnifyingglass", title: "Add a Programme",
                     description: "Tap + in My Shows and search by title. Tap a result to explore its details, or tap Add to follow it. Search requires a connected Trakt account.")
             Text("Air dates come from Trakt and may differ from release dates on your local streaming services.")
@@ -74,7 +76,7 @@ private struct HelpSharedShowsSection: View {
             HelpRow(icon: "checkmark.circle", title: "Track Episodes Together",
                     description: "Open a shared programme to browse collapsible seasons and episode artwork. Mark or skip individual episodes, or use the season buttons to update a whole season. Completed seasons appear at the end. The totals show episodes watched together, known time watched and time left for aired, unwatched, unskipped episodes.")
             HelpRow(icon: "arrow.triangle.2.circlepath", title: "Choose Whether to Sync Your History",
-                    description: "Shared episode actions update the list’s progress. By default, marking episodes watched or unwatched also updates your own Trakt history. Turn off Shared shows update Trakt history in Settings to keep your history separate. Other participants’ Trakt histories are not changed by your actions. When new programmes arrive, use the viewing-history review to keep your history or review a sync. You can also choose Sync viewing history from a shared programme’s three-dot menu.")
+                    description: "Shared episode actions update the list’s progress. By default, marking episodes watched or unwatched also updates your own Trakt history. Turn off Shared shows update Trakt history in Settings to keep your history separate. Watched changes also update matching programmes in your other shared lists when this setting is on; skips stay in their own list. Other participants’ Trakt histories are not changed by your actions. When new programmes arrive, use the viewing-history review to keep your history or review a sync. You can also choose Sync my Trakt history from a shared programme’s three-dot menu.")
             HelpRow(icon: "exclamationmark.triangle", title: "Syncing Replaces Existing Progress",
                     description: "Syncing overwrites your Trakt progress for that programme to match the shared progress across all seasons and specials. Episodes you have watched beyond that progress become unwatched, and their Trakt history, including repeat watches, is removed. Review the watched and unwatched counts before confirming. This cannot be automatically undone.")
             HelpRow(icon: "hourglass", title: "Allow Time for History Sync",
@@ -126,7 +128,7 @@ private struct HelpTroubleshootingSection: View {
     var body: some View {
         Section("Troubleshooting") {
             HelpRow(icon: "line.3.horizontal.decrease.circle", title: "A Programme Is Missing",
-                    description: "Check that it is in My Shows. Up Next shows aired episodes, and Coming Soon shows scheduled episodes. Streaming availability may not yet be confirmed for your region.")
+                    description: "Check My Shows or the programme’s shared list. Up Next shows aired, unwatched, unskipped episodes, and Coming Soon also leaves out watched and skipped episodes. Check Include Specials in Settings for season-zero episodes. Streaming availability may not yet be confirmed for your region.")
             HelpRow(icon: "arrow.triangle.2.circlepath", title: "An Update Didn’t Save",
                     description: "Check your internet connection and Trakt sign-in, then try again. If the app is already refreshing, wait for it to finish. The widget keeps the episode visible when a watched update fails.")
             HelpRow(icon: "rectangle", title: "The Widget Is Empty",

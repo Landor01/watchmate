@@ -20,7 +20,7 @@ struct WhatsNewView: View {
             id: "shared-progress",
             systemImage: "person.2.badge.gearshape",
             title: "Shared progress, your choice",
-            detail: "See episodes watched together, time watched and time left. Mark or skip episodes and whole seasons together. Watched changes also update your own Trakt history when Shared shows update Trakt history is on in Settings. Replacing your complete history with a shared list’s progress requires a separate review and confirmation."
+            detail: "See episodes watched together, time watched and time left. Mark or skip episodes and whole seasons together. Watched changes also update your own Trakt history when Shared shows update Trakt history is on in Settings. Replacing your history for a programme with a shared list’s progress requires a separate review and confirmation."
         ),
         Item(
             id: "next-episode-widget",
@@ -29,16 +29,22 @@ struct WhatsNewView: View {
             detail: "Add the Next Episode widget and choose a programme from My Shows. See artwork and details for the next aired episode to watch, then mark it watched or skip it without opening WatchMate. Available in small, medium and large sizes."
         ),
         Item(
+            id: "iphone-duo-layouts",
+            systemImage: "rectangle.split.2x1",
+            title: "Make more room on iPhone Duo",
+            detail: "In landscape, Coming Soon places the calendar and the selected day’s episodes side by side. With iPhone Duo partially open, the panels sit either side of the fold; open it flat to give the episode list more room. My Shows also keeps your list beside programme details, with a control to expand the details when you want more space."
+        ),
+        Item(
             id: "up-next",
             systemImage: "play.circle.fill",
             title: "Pick up where you left off",
-            detail: "Up Next brings together the next aired episode of each show you follow, with counts to help you see how much you have left to watch."
+            detail: "Up Next brings together the next aired, unwatched, unskipped episode from My Shows and your shared lists, with episode counts and viewing-time totals to help you see how much you have left to watch."
         ),
         Item(
             id: "coming-soon",
             systemImage: "calendar",
             title: "See what’s coming soon",
-            detail: "Browse scheduled episodes in a monthly calendar or see the next 30 days in a list. Air dates come from Trakt and may differ from local streaming releases."
+            detail: "Browse scheduled episodes from My Shows and your shared lists in a monthly calendar or see the next 30 days in a list. Air dates come from Trakt and may differ from local streaming releases."
         ),
         Item(
             id: "my-shows",
@@ -205,7 +211,7 @@ private struct WhatsNewFeatureRow: View {
 }
 
 #Preview("Current release") {
-    WhatsNewView(version: "1.1", onDismiss: {})
+    WhatsNewView(version: WhatsNewView.currentVersionDisplay, onDismiss: {})
 }
 
 #Preview("Custom release") {
@@ -227,7 +233,7 @@ private struct WhatsNewFeatureRow: View {
 }
 
 #Preview("Large text") {
-    WhatsNewView(version: "1.1", onDismiss: {})
+    WhatsNewView(version: WhatsNewView.currentVersionDisplay, onDismiss: {})
         .environment(\.dynamicTypeSize, .accessibility3)
 }
 
@@ -235,7 +241,7 @@ private struct WhatsNewFeatureRow: View {
 
 #Preview("Release header") {
     PreviewHost { data in
-        WhatsNewHeader(version: "1.0", introduction: "Welcome to WatchMate").padding()
+        WhatsNewHeader(version: WhatsNewView.currentVersionDisplay, introduction: "Welcome to WatchMate").padding()
     }
 }
 
