@@ -125,10 +125,9 @@ private struct StandardWidgetContent: View {
                             .accessibilityHidden(true)
                     }
                 }
-                WidgetProgressSource(show: show)
                 if let episode = show.nextEpisode(at: entry.date) {
                     if family == .systemSmall {
-                        SmallWidgetEpisodeDetails(episode: episode, showsAirDate: show.sharingSummary == nil)
+                        SmallWidgetEpisodeDetails(episode: episode)
                     } else {
                         HStack(alignment: .top, spacing: 12) {
                             if let artwork = entry.artwork {
@@ -196,7 +195,6 @@ private struct LargeTextWidgetContent: View {
                     .font(.caption.bold())
                     .lineLimit(family == .systemLarge ? 2 : 1)
                     .accessibilityAddTraits(.isHeader)
-                WidgetProgressSource(show: show)
                 if let episode = show.nextEpisode(at: entry.date) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(family == .systemMedium
@@ -242,29 +240,6 @@ private struct LargeTextWidgetContent: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-}
-
-private struct WidgetProgressSource: View {
-    @Environment(\.widgetFamily) private var family
-    let show: WidgetShow
-
-    var body: some View {
-        let layout = family == .systemMedium
-            ? AnyLayout(HStackLayout(spacing: 8))
-            : AnyLayout(VStackLayout(alignment: .leading, spacing: 1))
-        layout {
-            Label(family == .systemLarge ? "Personal progress" : "Personal", systemImage: "person")
-            if let names = show.sharingSummary {
-                Label("Shared: \(names)", systemImage: "person.2")
-            }
-        }
-        .font(.caption2)
-        .foregroundStyle(.secondary)
-        .lineLimit(1)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Personal viewing progress"))
-        .accessibilityValue(Text(show.sharingSummary.map { String(localized: "Also shared: \($0)") } ?? ""))
     }
 }
 

@@ -80,6 +80,7 @@ private struct HouseholdListView: View {
     @State private var working = false
     @State private var removing: SharedProgramme?
     @State private var moving: SharedProgramme?
+    @State private var checkedMissingList = false
     @Query(Show.withEpisodes) private var shows: [Show]
     @State private var catalogues: [Int: [RemoteEpisode]] = [:]
 
@@ -107,11 +108,17 @@ private struct HouseholdListView: View {
                         programmeRows(completed, in: list)
                     }
                 }
+            } else if store.sharedShows.loading || !checkedMissingList {
+                ProgressView("Loading shared list…")
+            } else if store.sharedShows.refreshMessage != nil {
+                ContentUnavailableView("Couldn’t load list", systemImage: "arrow.clockwise",
+                                       description: Text("Please pull to refresh to try again."))
             } else {
                 ContentUnavailableView("List unavailable", systemImage: "person.2.slash",
-                                       description: Text("Pull to refresh. The owner may have stopped sharing this list."))
+                                       description: Text("This list could not be found. It may have been deleted or stopped being shared. Pull to refresh to check again."))
             }
         }
+        .task(id: list == nil) { await recoverMissingList() }
         .task(id: list?.programmes.map(\.id)) { await loadCatalogues() }
         .navigationTitle(list?.name ?? "Shared Shows")
         .navigationBarTitleDisplayMode(.inline)
@@ -161,6 +168,31 @@ private struct HouseholdListView: View {
             }
         } message: {
             Text("This removes the programme and its shared progress from this list. Everyone’s personal Trakt history is kept.")
+        }
+    }
+
+    private func recoverMissingList() async {
+        checkedMissingList = false
+        guard list == nil else { return }
+        do {
+            // Wait for an existing refresh before retrying. A forced refresh bypasses
+            // the automatic-refresh cooldown; a second attempt allows iCloud to settle.
+            for attempt in 0..<2 {
+                while store.sharedShows.loading {
+                    try await Task.sleep(for: .milliseconds(100))
+                }
+                try Task.checkCancellation()
+                guard list == nil else { return }
+                if attempt > 0 { try await Task.sleep(for: .seconds(1)) }
+                try Task.checkCancellation()
+                await store.sharedShows.refresh(reportErrors: false)
+            }
+            try Task.checkCancellation()
+            checkedMissingList = true
+        } catch is CancellationError {
+            // Leaving the screen or restoring the list cancels recovery.
+        } catch {
+            checkedMissingList = true
         }
     }
 
@@ -422,16 +454,28 @@ struct SharedProgrammePicker: View {
         .interactiveDismissDisabled(working)
         .task { if let initialShow, !existingIDs.contains(initialShow.id) { selection = initialShow } }
         .task(id: query) {
+            let searchQuery = query
             results = []
-            guard query.count >= 2 else { return }
+            message = nil
+            searching = false
+            guard searchQuery.count >= 2 else { return }
+            defer {
+                // A superseded request must not hide the new request's spinner.
+                if !Task.isCancelled { searching = false }
+            }
             do {
                 try await Task.sleep(for: .milliseconds(350))
                 searching = true
-                defer { searching = false }
-                let found = try await TraktService(auth: store.auth).search(query)
+                let found = try await TraktService(auth: store.auth).search(searchQuery)
                 try Task.checkCancellation()
                 results = found
-            } catch is CancellationError {} catch { message = error.localizedDescription }
+            } catch {
+                // URLSession cancellation is a URLError, not necessarily CancellationError.
+                guard !Task.isCancelled,
+                      !(error is CancellationError),
+                      (error as? URLError)?.code != .cancelled else { return }
+                message = error.localizedDescription
+            }
         }
         .confirmationDialog("Share programme and viewing progress?", isPresented: Binding(
             get: { selection != nil }, set: { if !$0 { selection = nil } }

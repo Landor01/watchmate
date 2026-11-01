@@ -150,7 +150,22 @@ private struct UpNextEntry: Identifiable {
     var id: String { episode.key }
 }
 
+/// Keeps episode navigation inside the split view's detail column.
+struct MyShowsDetailView: View {
+    let show: Show
+
+    var body: some View {
+        NavigationStack {
+            ShowDetailView(show: show)
+        }
+        // Selecting another programme starts a fresh detail navigation stack.
+        .id(show.persistentModelID)
+    }
+}
+
 struct MyShowsView: View {
+    var leadingMargin: CGFloat = 16
+    var trailingMargin: CGFloat = 16
     @State private var showToRemove: Show?
     @State private var confirmRemoval = false
     @State private var showToShare: Show?
@@ -184,6 +199,9 @@ struct MyShowsView: View {
                 }
             }
         }.navigationTitle("My Shows").navigationBarTitleDisplayMode(.inline).refreshable { await store.refresh() }
+            .listStyle(.insetGrouped)
+            .contentMargins(.leading, leadingMargin, for: .scrollContent)
+            .contentMargins(.trailing, trailingMargin, for: .scrollContent)
             .sheet(item: $showToShare) { show in
                 NavigationStack { MoveToSharedListView(show: show) }
             }
@@ -198,7 +216,7 @@ struct MyShowsView: View {
 
     private func showRows(_ shows: [Show]) -> some View {
         ForEach(shows) { show in
-            NavigationLink { ShowDetailView(show: show) } label: { ShowRow(show: show) }
+            NavigationLink { MyShowsDetailView(show: show) } label: { ShowRow(show: show) }
                 .alignmentGuide(.listRowSeparatorLeading) { dimensions in
                     dimensions[.leading]
                 }

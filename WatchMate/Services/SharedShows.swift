@@ -210,10 +210,14 @@ final class SharedShows {
                         guard session == generation else { return }
                         guard revision == cacheRevision else { refreshRequested = true; continue }
                         if let cloudError = error as? CKError,
-                           [.zoneNotFound, .userDeletedZone, .permissionFailure, .unknownItem].contains(cloudError.code) {
+                           [.zoneNotFound, .userDeletedZone, .permissionFailure].contains(cloudError.code) {
                             cache?.zones.removeValue(forKey: zone.key)
                             publishCache(persist: false)
-                        } else { firstError = firstError ?? error }
+                        } else {
+                            // An individual record can return unknownItem without the zone
+                            // being revoked. Keep the saved list and retry on the next fetch.
+                            firstError = firstError ?? error
+                        }
                     }
                 }
             }

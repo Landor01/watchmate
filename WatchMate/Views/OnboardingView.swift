@@ -155,6 +155,8 @@ private struct OnboardingPreferencesView: View {
             Section("Viewing preferences") {
                 StreamingRegionPicker()
                 Toggle("Include specials", isOn: $settings.includeSpecials)
+                Toggle("Highlight available services", isOn: $settings.highlightAvailableServices)
+                    .disabled(settings.selectedProviders.isEmpty)
             }
             OnboardingServicesSection()
             Section {
@@ -232,8 +234,6 @@ private struct OnboardingServicesSection: View {
                     ))
                 }
             }
-            Toggle("Highlight available services", isOn: $settings.highlightAvailableServices)
-                .disabled(settings.selectedProviders.isEmpty)
         } header: {
             Text("My streaming services")
         } footer: {
@@ -261,6 +261,23 @@ private struct OnboardingServicesSection: View {
 
 #if DEBUG
 
+private struct OnboardingFlowPreview: View {
+    @State private var completed = false
+    var preferencesOnly = false
+
+    var body: some View {
+        if completed {
+            RootView()
+        } else if preferencesOnly {
+            NavigationStack {
+                OnboardingPreferencesView { completed = true }
+            }
+        } else {
+            OnboardingView { completed = true }
+        }
+    }
+}
+
 #Preview("App entry") {
     PreviewHost { data in
         AppEntryView()
@@ -269,7 +286,7 @@ private struct OnboardingServicesSection: View {
 
 #Preview("Onboarding") {
     PreviewHost { data in
-        OnboardingView(onComplete: {})
+        OnboardingFlowPreview()
     }
 }
 
@@ -281,7 +298,7 @@ private struct OnboardingServicesSection: View {
 
 #Preview("Preferences") {
     PreviewHost { data in
-        NavigationStack { OnboardingPreferencesView(onComplete: {}) }
+        OnboardingFlowPreview(preferencesOnly: true)
     }
 }
 

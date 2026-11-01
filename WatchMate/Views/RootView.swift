@@ -4,6 +4,8 @@ import SwiftData
 struct RootView: View {
     @Environment(AppStore.self) private var store
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var myShowsColumnVisibility: NavigationSplitViewVisibility = .all
     @State private var settingsOpen = false
     @State private var showingAirDateInfo = false
     @State private var showingSharingInfo = false
@@ -64,19 +66,77 @@ struct RootView: View {
                 }
                     .tabItem { Label("Coming Soon", systemImage: "calendar") }
                     .tag(1)
-                NavigationStack {
-                    MyShowsView()
-                        .navigationDestination(item: $screenshotShow) { show in
-                            ShowDetailView(show: show)
-                        }
-                        .modifier(ActivityToastModifier())
-                        .toolbar {
-                            ToolbarItem(placement: .topBarLeading) {
-                                Button("Add programme", systemImage: "plus") { searchOpen = true }
-                                    .labelStyle(.iconOnly)
+                GeometryReader { geometry in
+                    let isLandscape = geometry.size.width > geometry.size.height
+                    NavigationSplitView(columnVisibility: $myShowsColumnVisibility) {
+                        // Explicit list margins must include the outer safe area to avoid clipping the rounded background.
+                        MyShowsView(leadingMargin: geometry.safeAreaInsets.leading + 8,
+                                    trailingMargin: 8)
+                            .navigationSplitViewColumnWidth(geometry.size.width / 2)
+                            .navigationDestination(item: $screenshotShow) { show in
+                                MyShowsDetailView(show: show)
                             }
-                            settingsButton
+                            .modifier(ActivityToastModifier())
+                            .toolbar(removing: .sidebarToggle)
+                            .toolbar {
+                                ToolbarItem(placement: .topBarLeading) {
+                                    Button("Add programme", systemImage: "plus") { searchOpen = true }
+                                        .labelStyle(.iconOnly)
+                                }
+                                if isLandscape || horizontalSizeClass == .regular {
+                                    ToolbarItem(placement: .topBarTrailing) {
+                                        Button("Expand show details", systemImage: "sidebar.left") {
+                                            myShowsColumnVisibility = .detailOnly
+                                        }
+                                        .labelStyle(.iconOnly)
+                                    }
+                                    if #available(iOS 26.0, *) {
+                                        ToolbarSpacer(.fixed, placement: .topBarTrailing)
+                                    }
+                                }
+                                settingsButton
+                            }
+                    } detail: {
+                        NavigationStack {
+                            ContentUnavailableView("Select a show", systemImage: "tv",
+                                                   description: Text("Choose a programme from My Shows to see its details."))
+                                .toolbar(removing: .sidebarToggle)
+
                         }
+                    }
+                    .navigationSplitViewStyle(.balanced)
+                    .padding(.top, myShowsColumnVisibility == .detailOnly &&
+                             (isLandscape || horizontalSizeClass == .regular) ? 4 : 0)
+                    // Keep these controls outside the detail stack so every drill-down retains them.
+                    .safeAreaInset(edge: .top, spacing: 0) {
+                        if myShowsColumnVisibility == .detailOnly &&
+                            (isLandscape || horizontalSizeClass == .regular) {
+                            HStack(spacing: 12) {
+                                Spacer()
+                                Button("Show My Shows list", systemImage: "sidebar.left") {
+                                    myShowsColumnVisibility = .all
+                                }
+                                .labelStyle(.iconOnly)
+                                .frame(minWidth: 44, minHeight: 44)
+
+                                Button { settingsOpen = true } label: {
+                                    ProfilePhotoView(image: store.settings.profileImage,
+                                                     size: store.settings.profileImage == nil ? 28 : 36)
+                                        .frame(minWidth: 44, minHeight: 44)
+                                }
+                                .accessibilityLabel("Settings")
+                            }
+                            .padding(.horizontal)
+                            .background(.bar)
+                        }
+                    }
+                    // Landscape iPhones can report compact width despite having room for both columns.
+                    .environment(\.horizontalSizeClass, isLandscape ? .regular : horizontalSizeClass)
+                    .onChange(of: isLandscape) { _, landscape in
+                        if landscape {
+                            myShowsColumnVisibility = .all
+                        }
+                    }
                 }
                 .tabItem { Label("My Shows", systemImage: "tv") }
                 .tag(2)
