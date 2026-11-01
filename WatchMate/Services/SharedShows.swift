@@ -551,7 +551,13 @@ final class SharedShows {
             await refresh(reportErrors: false)
             throw error
         }
-        await refresh()
+        // Confirmed records have already been merged by remember. A full refresh
+        // here adds a round trip for every shared list to each progress update.
+        // Only recover synchronously if the local cache could not retain the saves.
+        let key = SharedZoneCache.key(zoneID: list.zoneID, shared: list.shared)
+        if cache?.zones[key] == nil {
+            await refresh()
+        }
     }
 
 }

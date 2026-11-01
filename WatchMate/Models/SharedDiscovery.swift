@@ -49,15 +49,19 @@ final class SharedDiscoveryCatalogue {
     private(set) var episodes: [Int: [RemoteEpisode]] = [:]
     private(set) var loading = false
     private(set) var message: String?
+    @ObservationIgnored private var loadRevision = 0
 
     func load(store: AppStore, shows: [Show], forceRefresh: Bool = false) async {
+        loadRevision += 1
+        let revision = loadRevision
         loading = true
         message = nil
-        defer { loading = false }
+        defer { if loadRevision == revision { loading = false } }
         let ids = store.sharedShows.showIDs
         episodes = episodes.filter { ids.contains($0.key) }
         for id in ids.sorted() {
-            let cached = EpisodeCatalogueCache.read(id)
+            let cached = await EpisodeCatalogueCache.read(id)
+            guard !Task.isCancelled, revision == loadRevision else { return }
             let localDate = shows.first { $0.traktID == id }?.catalogueUpdatedAt ?? .distantPast
             if !forceRefresh, let cached, cached.updatedAt > localDate {
                 episodes[id] = cached.episodes
@@ -71,7 +75,7 @@ final class SharedDiscoveryCatalogue {
                 }
                 continue
             }
-            if let cached = EpisodeCatalogueCache.read(id) {
+            if let cached {
                 episodes[id] = cached.episodes
                 if !forceRefresh { continue }
             }
@@ -83,9 +87,10 @@ final class SharedDiscoveryCatalogue {
                 let service = TraktService(auth: store.auth)
                 let fetched = forceRefresh ? try await service.refreshEpisodes(showID: id) : try await service.episodes(showID: id)
                 try Task.checkCancellation()
+                guard revision == loadRevision else { return }
                 episodes[id] = fetched
             } catch {
-                if Task.isCancelled { return }
+                if Task.isCancelled || revision != loadRevision { return }
                 message = "Some shared episode details could not load. Pull to refresh."
             }
         }

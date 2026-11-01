@@ -19,6 +19,7 @@ final class AppStore {
     private var cloudSyncInProgress = false
     private var lastCloudAttempt: Date?
     private var backgroundRefreshInProgress = false
+    @ObservationIgnored private var widgetPublicationPending = false
     private var lastProgressAttempt: Date?
     private var catalogueAttempts: [Int: Date] = [:]
     private var mutationRevision = 0
@@ -36,6 +37,7 @@ final class AppStore {
             }
         }
     }
+    var sharedUpdateInProgress = false
     var seasonUpdateInProgress = false
     var seasonUpdateCompleted = 0
     var seasonUpdateTotal = 0
@@ -63,15 +65,21 @@ final class AppStore {
     }
     func waiting(_ show: Show) -> [Episode] {
         let states = EpisodeRules.waiting(show.episodes.map(\.state), now: Date(), includeSpecials: settings.includeSpecials)
-        return states.compactMap { state in show.episodes.first { $0.season == state.season && $0.number == state.number } }
+        return episodes(matching: states, in: show)
     }
     func upcoming(_ show: Show) -> [Episode] {
         let states = EpisodeRules.upcoming(show.episodes.map(\.state), now: Date(), includeSpecials: settings.includeSpecials)
-        return states.compactMap { state in show.episodes.first { $0.season == state.season && $0.number == state.number } }
+        return episodes(matching: states, in: show)
     }
+    private func episodes(matching states: [EpisodeState], in show: Show) -> [Episode] {
+        // Index once instead of scanning the full relationship for every result.
+        let indexed = Dictionary(show.episodes.map { ("\($0.season):\($0.number)", $0) },
+                                 uniquingKeysWith: { first, _ in first })
+        return states.compactMap { indexed["\($0.season):\($0.number)"] }
+    }
+
     func start() async {
         guard !AppStoreScreenshotMode.isEnabled, !PreviewEnvironment.isRunning else { return }
-        defer { publishWidgetSnapshot() }
         guard !busy else { return }
         if settings.demoMode {
             do {
@@ -86,11 +94,13 @@ final class AppStore {
                     try context.save()
                     settings.hiddenShowIDs = []
                 }
-                if shows.isEmpty || isLegacyDemo { try seedDemo() }
+                if shows.isEmpty || isLegacyDemo {
+                    try seedDemo()
+                    publishWidgetSnapshot()
+                }
             } catch { errorMessage = error.localizedDescription }
         } else if connected {
             // Cached SwiftData is already visible. No library import on ordinary launches.
-            publishWidgetSnapshot()
             await refreshInBackground()
 
         }
@@ -100,7 +110,10 @@ final class AppStore {
     func refreshInBackground(now: Date = Date(), synchronizeCloud: Bool = true) async {
         guard !busy, !backgroundRefreshInProgress, connected, !settings.demoMode else { return }
         backgroundRefreshInProgress = true
-        defer { backgroundRefreshInProgress = false }
+        defer {
+            backgroundRefreshInProgress = false
+            if widgetPublicationPending { publishWidgetSnapshot() }
+        }
         let account = settings.traktAccountID
         let revision = mutationRevision
         func canApply() -> Bool {
@@ -152,7 +165,7 @@ final class AppStore {
         let shared = sharedShows.lists.flatMap(\.programmes).filter { seen.insert($0.id).inserted }
         var remaining = max(0, 5 - candidates.prefix(5).count)
         for programme in shared where remaining > 0 {
-            let cached = EpisodeCatalogueCache.read(programme.id)
+            let cached = await EpisodeCatalogueCache.read(programme.id)
             guard RefreshPolicy.refreshAutomatically(status: cached?.seriesStatus,
                 updatedAt: cached?.updatedAt, attemptedAt: catalogueAttempts[programme.id], now: now) else { continue }
             guard canApply() else { return }
@@ -166,7 +179,8 @@ final class AppStore {
                     seriesStatus = try await catalogue.details(tmdbID: tmdbID, region: settings.region).seriesStatus
                 }
                 guard canApply() else { return }
-                EpisodeCatalogueCache.save(episodes, showID: programme.id, now: now, seriesStatus: seriesStatus)
+                await EpisodeCatalogueCache.save(episodes, showID: programme.id, now: now, seriesStatus: seriesStatus)
+                guard canApply() else { return }
                 catalogueRevision += 1
             } catch { /* Keep the saved shared catalogue available offline. */ }
         }
@@ -234,7 +248,10 @@ final class AppStore {
             }
         }
         for episode in show.episodes {
-            episode.watchedAt = dates["\(episode.season):\(episode.number)"]
+            let watchedAt = dates["\(episode.season):\(episode.number)"]
+            if episode.watchedAt != watchedAt {
+                episode.watchedAt = watchedAt
+            }
         }
     }
 
@@ -379,15 +396,25 @@ final class AppStore {
         } catch { errorMessage = error.localizedDescription; status = "Refresh incomplete · showing cached data" }
     }
     private func merge(_ sources: [RemoteEpisode], into show: Show) {
+        var indexed = Dictionary(show.episodes.map { ("\($0.season):\($0.number)", $0) },
+                                 uniquingKeysWith: { first, _ in first })
         for source in sources {
-            if let episode = show.episodes.first(where: { $0.season == source.season && $0.number == source.number }) {
-                episode.traktID = source.ids.trakt; episode.title = source.title ?? "Episode \(source.number)"
-                episode.imdbID = source.ids.imdb
-                episode.overview = source.overview ?? ""; episode.firstAired = Dates.parse(source.firstAired); episode.runtime = source.runtime
+            if let episode = indexed["\(source.season):\(source.number)"] {
+                // Unchanged catalogue responses should not dirty every SwiftData model.
+                let title = source.title ?? "Episode \(source.number)"
+                let overview = source.overview ?? ""
+                let firstAired = Dates.parse(source.firstAired)
+                if episode.traktID != source.ids.trakt { episode.traktID = source.ids.trakt }
+                if episode.title != title { episode.title = title }
+                if episode.imdbID != source.ids.imdb { episode.imdbID = source.ids.imdb }
+                if episode.overview != overview { episode.overview = overview }
+                if episode.firstAired != firstAired { episode.firstAired = firstAired }
+                if episode.runtime != source.runtime { episode.runtime = source.runtime }
             } else {
                 let episode = Episode(showID: show.traktID, remote: source)
                 episode.isSkipped = cloudDecode(Bool.self, key: "skip:" + episode.key) ?? false
                 context.insert(episode); show.episodes.append(episode)
+                indexed["\(source.season):\(source.number)"] = episode
             }
         }
         let keys = Set(sources.map { "\(show.traktID):\($0.season):\($0.number)" })
@@ -396,6 +423,8 @@ final class AppStore {
     /// Called with the store's mutation lock held by the screen or widget.
     func updateSharedEpisodes(_ episodes: [RemoteEpisode], showID: Int, in list: HouseholdList,
                               action: SharedEpisodeAction, progress: (Int) -> Void = { _ in }) async throws {
+        sharedUpdateInProgress = true
+        defer { sharedUpdateInProgress = false }
         switch action {
         case .watched(let watched):
             status = watched ? String(localized: "Marking watched…") : String(localized: "Marking unwatched…")
@@ -775,6 +804,7 @@ final class AppStore {
             show.isFollowing = false
             show.notificationsEnabled = cloudDecode(Bool.self, key: "reminders:\(source.id)") ?? false
             show.reminderMinutes = cloudDecode(Int.self, key: "reminderTime:\(source.id)") ?? 540
+            show.notes = cloudDecode(String.self, key: "notes:\(source.id)") ?? ""
             context.insert(show)
         }
         merge(episodes, into: show)
@@ -795,7 +825,10 @@ final class AppStore {
         show.notes = notes
         do {
             try context.save()
-            queueCloudChanges()
+            guard !applyingCloudChanges, !settings.demoMode, connected,
+                  cloud.accountID == settings.traktAccountID, cloud.accountID != nil else { return }
+            try cloud.captureValue(JSONEncoder().encode(notes), for: "notes:\(show.traktID)")
+            scheduleCloudSync()
         } catch { errorMessage = error.localizedDescription }
     }
 
@@ -908,6 +941,10 @@ final class AppStore {
     func queueCloudChanges() {
         guard !applyingCloudChanges, !settings.demoMode, connected, cloud.accountID != nil else { return }
         do { try cloud.capture(cloudSnapshot()) } catch { cloud.report(error) }
+        scheduleCloudSync()
+    }
+
+    private func scheduleCloudSync() {
         guard cloud.pendingCount > 0, !cloudSyncInProgress else { return }
         cloudTask?.cancel()
         cloudTask = Task { [weak self] in
@@ -1025,6 +1062,12 @@ final class AppStore {
     }
 
     func publishWidgetSnapshot(errorShowID: Int? = nil, message: String? = nil, prefetchArtwork: Bool = false) {
+        // Batch automatic refresh publications, but keep user actions and errors immediate.
+        if backgroundRefreshInProgress && !busy && errorShowID == nil && !prefetchArtwork {
+            widgetPublicationPending = true
+            return
+        }
+        widgetPublicationPending = false
         publishWidgetSnapshot(library: nil, errorShowID: errorShowID, message: message, prefetchArtwork: prefetchArtwork)
     }
 

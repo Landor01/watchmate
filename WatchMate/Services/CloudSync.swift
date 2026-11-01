@@ -31,6 +31,14 @@ struct CloudSyncJournal: Codable {
         baseline = snapshot
     }
 
+    /// Capture one explicit edit without replacing the baseline for other preferences.
+    mutating func captureValue(_ data: Data, for key: String) {
+        guard baseline[key] != data else { return }
+        values[key] = CloudValue(data: data, modifiedAt: Date(), revision: UUID().uuidString)
+        baseline[key] = data
+        pending.insert(key)
+    }
+
     mutating func merge(_ key: String, value: CloudValue) {
         if let local = values[key], local.modifiedAt != .distantPast, local.isNewer(than: value) { return }
         values[key] = value
@@ -94,6 +102,12 @@ final class CloudSync {
     func capture(_ snapshot: [String: Data], initial: Bool = false) throws {
         guard accountID != nil, snapshot != journal.baseline else { return }
         journal.capture(snapshot, initial: initial)
+        try persist()
+    }
+
+    func captureValue(_ data: Data, for key: String) throws {
+        guard accountID != nil, journal.baseline[key] != data else { return }
+        journal.captureValue(data, for: key)
         try persist()
     }
 

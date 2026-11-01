@@ -1,9 +1,33 @@
 import XCTest
 import Testing
+import UserNotifications
 @testable import WatchMate
 
 @MainActor
 struct ReminderTimeTests {
+    @Test func notificationDiffKeepsUnchangedAndReplacesOnlyChangedReminders() {
+        func request(_ id: String, title: String = "Episode", hour: Int = 9) -> UNNotificationRequest {
+            let content = UNMutableNotificationContent()
+            content.title = title
+            content.body = "Reminder"
+            content.sound = .default
+            let trigger = UNCalendarNotificationTrigger(
+                dateMatching: DateComponents(year: 2030, month: 1, day: 1, hour: hour), repeats: false)
+            return UNNotificationRequest(identifier: id, content: content, trigger: trigger)
+        }
+        let pending = [request("watchmate.same"), request("watchmate.time"), request("watchmate.title"),
+                       request("watchmate.removed"), request("other")]
+        let desired = [request("watchmate.same"), request("watchmate.time", hour: 10),
+                       request("watchmate.title", title: "New title"), request("watchmate.new")]
+        let changes = Notifications.changes(pending: pending, desired: desired)
+        #expect(changes.removing == ["watchmate.removed"])
+        #expect(Set(changes.adding.map(\.identifier)) == ["watchmate.time", "watchmate.title", "watchmate.new"])
+        let cleared = Notifications.changes(pending: pending, desired: [])
+        #expect(cleared.removing.count == 4)
+        #expect(!cleared.removing.contains("other"))
+        #expect(cleared.adding.isEmpty)
+    }
+
     private func calendar(_ zone: String) throws -> Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = try #require(TimeZone(identifier: zone))
@@ -40,6 +64,19 @@ struct ReminderTimeTests {
         first.notificationsEnabled = false
         #expect(first.reminderMinutes == 1200)
         #expect(second.reminderMinutes == 540)
+    }
+}
+
+struct DateParsingTests {
+    @Test func timestampsPreserveOffsetsAndFractionalSeconds() throws {
+        let whole = try #require(Dates.parse("2026-10-22T12:00:00Z"))
+        let fractional = try #require(Dates.parse("2026-10-22T12:00:00.123Z"))
+        #expect(abs(fractional.timeIntervalSince(whole) - 0.123) < 0.000001)
+        #expect(Dates.parse("2026-10-22T13:00:00+01:00") == whole)
+        #expect(Dates.parse("2026-10-22T13:00:00.123+01:00") == fractional)
+        #expect(Dates.string(whole) == "2026-10-22T12:00:00Z")
+        #expect(Dates.parse(nil) == nil)
+        #expect(Dates.parse("invalid") == nil)
     }
 }
 

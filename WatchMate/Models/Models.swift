@@ -139,14 +139,14 @@ extension Episode {
 enum Dates {
     static func parse(_ value: String?) -> Date? {
         guard let value else { return nil }
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter.date(from: value) ?? ISO8601DateFormatter().date(from: value)
+        // Value-type format styles avoid constructing expensive formatters per episode.
+        return (try? Date.ISO8601FormatStyle(includingFractionalSeconds: true).parse(value))
+            ?? (try? Date.ISO8601FormatStyle().parse(value))
     }
-    static func string(_ date: Date) -> String { ISO8601DateFormatter().string(from: date) }
+    static func string(_ date: Date) -> String { Date.ISO8601FormatStyle().format(date) }
 }
 
-struct IDs: Codable {
+struct IDs: Codable, Sendable {
     let trakt: Int
     let tmdb: Int?
     var imdb: String? = nil
@@ -164,7 +164,7 @@ struct RemoteShow: Codable, Identifiable {
     let ids: IDs
     var id: Int { ids.trakt }
 }
-struct RemoteEpisode: Codable {
+struct RemoteEpisode: Codable, Sendable {
     let season: Int
     let number: Int
     let title: String?

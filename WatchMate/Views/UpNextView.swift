@@ -10,33 +10,38 @@ struct UpNextView: View {
     @State private var sharedCatalogue = SharedDiscoveryCatalogue()
 
     private var personalShows: [Show] {
-        shows.filter { $0.isFollowing && (!store.sharedShows.showIDs.contains($0.traktID) || store.sharedShows.personalShowIDs.contains($0.traktID)) }
-    }
-
-    private var waitingEntries: [UpNextEntry] {
-        personalShows.compactMap { show in
-            guard show.isFollowing else { return nil }
-            let episodes = store.waiting(show)
-            guard let episode = episodes.first else { return nil }
-            return UpNextEntry(show: show, episode: episode, waitingCount: episodes.count)
-        }
+        let sharedIDs = store.sharedShows.showIDs
+        let personalIDs = store.sharedShows.personalShowIDs
+        return shows.filter { $0.isFollowing && (!sharedIDs.contains($0.traktID) || personalIDs.contains($0.traktID)) }
     }
 
     var body: some View {
-        let entries = waitingEntries
+        let followedShows = personalShows
+        let waitingByShow = followedShows.map { (show: $0, episodes: store.waiting($0)) }
+        let entries = waitingByShow.compactMap { item -> UpNextEntry? in
+            guard let episode = item.episodes.first else { return nil }
+            return UpNextEntry(show: item.show, episode: episode, waitingCount: item.episodes.count)
+        }.sorted {
+            $0.show.title.localizedStandardCompare($1.show.title) == .orderedAscending
+        }
         let shared = SharedDiscoveryEntry.entries(lists: store.sharedShows.lists, catalogues: sharedCatalogue.episodes,
                                                   includeSpecials: store.settings.includeSpecials)
         let sharedWaiting = SharedDiscoveryEntry.waiting(shared)
         let sharedNext = SharedDiscoveryEntry.next(sharedWaiting)
+        let sharedByList = Dictionary(grouping: sharedNext, by: \.listID)
+        let sharedCounts = sharedWaiting.reduce(into: [String: [Int: Int]]()) { counts, entry in
+            counts[entry.listID, default: [:]][entry.showID, default: 0] += 1
+        }
         let sharedGroups = store.sharedShows.lists.compactMap { list -> SharedDiscoverySection? in
-            let entries = sharedNext.filter { $0.listID == list.id }
+            let entries = (sharedByList[list.id] ?? []).sorted {
+                $0.title.localizedStandardCompare($1.title) == .orderedAscending
+            }
             return entries.isEmpty ? nil : SharedDiscoverySection(id: list.id, name: list.name, entries: entries)
         }
-        let followedShows = personalShows
         let watchedEpisodes = followedShows.flatMap(\.episodes).filter {
             $0.watchedAt != nil && (store.settings.includeSpecials || $0.season > 0)
         }
-        let remainingEpisodes = followedShows.flatMap { store.waiting($0) }
+        let remainingEpisodes = waitingByShow.flatMap(\.episodes)
         ThemedList {
             Section {
                 let summaryLayout = dynamicTypeSize.isAccessibilitySize
@@ -109,7 +114,7 @@ struct UpNextView: View {
                 Section {
                     ForEach(group.entries) { entry in
                         SharedDiscoveryRow(entry: entry, showsActions: true, showsListName: false,
-                                           waitingCount: sharedWaiting.filter { $0.listID == entry.listID && $0.showID == entry.showID }.count)
+                                           waitingCount: sharedCounts[entry.listID]?[entry.showID] ?? 0)
                     }
                 } header: {
                     Label(group.name, systemImage: "person.2")

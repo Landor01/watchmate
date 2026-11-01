@@ -6,7 +6,7 @@ struct SharedProgrammeView: View {
     let listID: String
     let showID: Int
     @State private var episodes: [RemoteEpisode] = []
-    @State private var reminderShow: Show?
+    @State private var localShow: Show?
     @State private var posterPath: String?
     @State private var resolvedIMDbURL: URL?
     @State private var seasonPosters: [Int: String] = [:]
@@ -30,10 +30,11 @@ struct SharedProgrammeView: View {
         ThemedList {
             if let programme, let progress {
                 SharedProgrammeSummary(title: programme.show.title, posterPath: posterPath, progress: progress, imdbURL: programme.show.ids.imdbURL ?? resolvedIMDbURL)
-                if let reminderShow {
+                if let localShow {
                     Section {
-                        SharedShowReminderControls(show: reminderShow)
+                        SharedShowReminderControls(show: localShow)
                     }
+                    ShowNotesSection(show: localShow)
                 }
                 if loading { ProgressView("Loading episodes…") }
                 if let message { Text(message).foregroundStyle(.secondary) }
@@ -143,6 +144,7 @@ struct SharedProgrammeView: View {
         guard let programme else { return }
         if PreviewEnvironment.isRunning {
             if let show = try? store.allShows().first(where: { $0.traktID == showID }) {
+                localShow = show
                 posterPath = show.posterPath
                 episodes = show.episodes.map {
                     RemoteEpisode(season: $0.season, number: $0.number, title: $0.title,
@@ -152,13 +154,18 @@ struct SharedProgrammeView: View {
             }
             return
         }
-        reminderShow = try? store.allShows().first { $0.traktID == showID }
-        let cached = EpisodeCatalogueCache.read(showID)
+        localShow = try? store.allShows().first { $0.traktID == showID }
+        let cached = await EpisodeCatalogueCache.read(showID)
+        guard !Task.isCancelled else { return }
         if let cached { episodes = cached.episodes }
         loading = episodes.isEmpty
         message = nil
         defer { loading = false }
         do {
+            // Notes need a local show even when reminders are off or episode loading fails.
+            if localShow == nil {
+                localShow = try store.prepareSharedReminderShow(programme.show, episodes: [])
+            }
             let service = TraktService(auth: store.auth)
             let found: [RemoteEpisode]
             if forceRefresh {
@@ -170,7 +177,7 @@ struct SharedProgrammeView: View {
             }
             try Task.checkCancellation()
             episodes = found
-            reminderShow = try store.prepareSharedReminderShow(programme.show, episodes: found)
+            localShow = try store.prepareSharedReminderShow(programme.show, episodes: found)
             await store.reschedule()
         } catch is CancellationError { return }
         catch { message = error.localizedDescription }

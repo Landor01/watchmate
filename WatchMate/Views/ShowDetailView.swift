@@ -177,7 +177,7 @@ struct ShowDetailView: View {
     }
 }
 
-private struct ShowNotesSection: View {
+struct ShowNotesSection: View {
     @Environment(AppStore.self) private var store
     let show: Show
 

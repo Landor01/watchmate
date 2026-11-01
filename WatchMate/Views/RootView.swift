@@ -264,7 +264,7 @@ private struct ActivityToastModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .overlay(alignment: .bottom) {
-                if showToast && store.busy && !store.seasonUpdateInProgress {
+                if (showToast || store.sharedUpdateInProgress) && store.busy && !store.seasonUpdateInProgress {
                     HStack(spacing: 10) {
                         ProgressView()
                         Text(store.status)

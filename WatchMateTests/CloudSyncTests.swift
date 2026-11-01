@@ -4,6 +4,25 @@ import UIKit
 @testable import WatchMate
 
 struct CloudSyncTests {
+    @Test func singleNoteEditPreservesOtherBaselinesAndSurvivesRelaunch() throws {
+        var journal = CloudSyncJournal()
+        let region = Data("GB".utf8)
+        let note = Data("Updated note".utf8)
+        journal.capture(["region": region, "notes:7": Data()])
+        journal.pending = []
+        let regionRevision = journal.values["region"]
+        journal.captureValue(note, for: "notes:7")
+        let restored = try JSONDecoder().decode(CloudSyncJournal.self, from: JSONEncoder().encode(journal))
+        #expect(restored.baseline["region"] == region)
+        #expect(restored.values["region"] == regionRevision)
+        #expect(restored.values["notes:7"]?.data == note)
+        #expect(restored.pending == ["notes:7"])
+        let edited = journal.values
+        journal.captureValue(note, for: "notes:7")
+        journal.capture(["region": region, "notes:7": note])
+        #expect(journal.values == edited)
+    }
+
     @Test func unchangedSnapshotDoesNotCreateAnotherRevision() {
         var journal = CloudSyncJournal()
         let snapshot = ["region": Data("GB".utf8)]

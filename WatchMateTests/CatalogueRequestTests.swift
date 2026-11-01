@@ -4,6 +4,26 @@ import Testing
 
 @MainActor
 struct CatalogueRequestTests {
+    @Test func diskCataloguePreservesStatusAndEvictsMemoryWithoutLosingSavedData() async throws {
+        let directory = URL.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let cache = EpisodeCatalogueCache(directory: directory, capacity: 1)
+        let episode = RemoteEpisode(season: 1, number: 1, title: "Pilot",
+                                    ids: IDs(trakt: 101, tmdb: nil), overview: nil, firstAired: nil, runtime: 42)
+        await cache.saveSnapshot([episode], showID: 1, seriesStatus: "Ended")
+        await cache.saveSnapshot([episode, episode], showID: 1)
+        let updated = await cache.readSnapshot(1)
+        #expect(updated?.episodes.count == 2)
+        #expect(updated?.seriesStatus == "Ended")
+        // The warm read succeeds without a file; eviction then exposes the missing file.
+        try FileManager.default.removeItem(at: directory.appending(path: "1.json"))
+        #expect(await cache.readSnapshot(1) != nil)
+        await cache.saveSnapshot([], showID: 2)
+        #expect(await cache.readSnapshot(1) == nil)
+        let reopened = EpisodeCatalogueCache(directory: directory)
+        #expect(await reopened.readSnapshot(2)?.episodes.isEmpty == true)
+    }
+
     @Test func concurrentReadsShareRequestAndCacheExpires() async throws {
         var date = Date(timeIntervalSince1970: 100)
         let cache = CatalogueReadCache<Int, Int>(lifetime: 60, now: { date })

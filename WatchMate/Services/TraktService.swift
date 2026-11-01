@@ -139,8 +139,10 @@ final class TraktService: ViewingService {
     }
 
     func episodes(showID: Int) async throws -> [RemoteEpisode] {
-        if let cached = EpisodeCatalogueCache.read(showID),
+        try Task.checkCancellation()
+        if let cached = await EpisodeCatalogueCache.read(showID),
            !RefreshPolicy.isStale(cached.updatedAt, interval: 21_600, now: Date()) {
+            try Task.checkCancellation()
             return cached.episodes
         }
         return try await fetchEpisodes(showID: showID)
@@ -151,7 +153,7 @@ final class TraktService: ViewingService {
             let request = try await self.request("shows/\(showID)/seasons", query: [URLQueryItem(name: "extended", value: "full,episodes")], authenticated: false)
             let seasons = try await HTTP.decode([RemoteSeason].self, request: request)
             let episodes = seasons.flatMap { $0.episodes ?? [] }
-            EpisodeCatalogueCache.save(episodes, showID: showID)
+            await EpisodeCatalogueCache.save(episodes, showID: showID)
             return episodes
         }
     }

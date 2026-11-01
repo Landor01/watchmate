@@ -245,7 +245,8 @@ private struct HouseholdListView: View {
         guard let list else { return }
         for programme in list.programmes {
             if !forceRefresh, let show = shows.first(where: { $0.traktID == programme.id }), show.catalogueUpdatedAt != nil { continue }
-            if !forceRefresh, let cached = EpisodeCatalogueCache.read(programme.id) {
+            if !forceRefresh, let cached = await EpisodeCatalogueCache.read(programme.id) {
+                guard !Task.isCancelled else { return }
                 catalogues[programme.id] = cached.episodes
                 continue
             }
