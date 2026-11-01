@@ -6,6 +6,7 @@ struct SharedProgrammeView: View {
     let listID: String
     let showID: Int
     @State private var episodes: [RemoteEpisode] = []
+    @State private var reminderShow: Show?
     @State private var posterPath: String?
     @State private var resolvedIMDbURL: URL?
     @State private var seasonPosters: [Int: String] = [:]
@@ -29,6 +30,11 @@ struct SharedProgrammeView: View {
         ThemedList {
             if let programme, let progress {
                 SharedProgrammeSummary(title: programme.show.title, posterPath: posterPath, progress: progress, imdbURL: programme.show.ids.imdbURL ?? resolvedIMDbURL)
+                if let reminderShow {
+                    Section {
+                        SharedShowReminderControls(show: reminderShow)
+                    }
+                }
                 if loading { ProgressView("Loading episodes…") }
                 if let message { Text(message).foregroundStyle(.secondary) }
                 if !loading && episodes.isEmpty {
@@ -146,6 +152,7 @@ struct SharedProgrammeView: View {
             }
             return
         }
+        reminderShow = try? store.allShows().first { $0.traktID == showID }
         let cached = EpisodeCatalogueCache.read(showID)
         if let cached { episodes = cached.episodes }
         loading = episodes.isEmpty
@@ -163,6 +170,8 @@ struct SharedProgrammeView: View {
             }
             try Task.checkCancellation()
             episodes = found
+            reminderShow = try store.prepareSharedReminderShow(programme.show, episodes: found)
+            await store.reschedule()
         } catch is CancellationError { return }
         catch { message = error.localizedDescription }
         guard let tmdbID = programme.show.ids.tmdb, store.catalogue.configured else { return }
@@ -186,6 +195,31 @@ struct SharedProgrammeView: View {
             } catch {
                 message = "Updated \(completed) of \(total) episodes. \(error.localizedDescription) Completed changes are kept; try again to finish."
             }
+        }
+    }
+}
+
+private struct SharedShowReminderControls: View {
+    @Environment(AppStore.self) private var store
+    let show: Show
+
+    var body: some View {
+        Toggle("Remind me on scheduled air dates", isOn: Binding(
+            get: { show.notificationsEnabled },
+            set: { enabled in Task { await store.enableNotifications(show, enabled: enabled) } }
+        ))
+        .disabled(store.busy || store.settings.demoMode)
+        if show.notificationsEnabled {
+            DatePicker("Reminder time", selection: Binding(
+                get: {
+                    Calendar.current.date(bySettingHour: show.reminderMinutes / 60,
+                                          minute: show.reminderMinutes % 60, second: 0, of: Date()) ?? Date()
+                },
+                set: { store.setReminderTime(show, date: $0) }
+            ), displayedComponents: .hourAndMinute)
+            .disabled(store.busy || store.settings.demoMode)
+            Text("Remind me at this local time on each scheduled air date (note that shared show reminders are personal to you).")
+                .font(.caption).foregroundStyle(.secondary)
         }
     }
 }

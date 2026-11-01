@@ -27,7 +27,7 @@ enum Notifications {
 
     private static var rebuildGeneration = 0
 
-    static func rebuild(shows: [Show], includeSpecials: Bool, demo: Bool) async {
+    static func rebuild(shows: [Show], sharedProgrammes: [SharedProgramme] = [], includeSpecials: Bool, demo: Bool) async {
         rebuildGeneration += 1
         let generation = rebuildGeneration
         let center = UNUserNotificationCenter.current()
@@ -39,9 +39,19 @@ enum Notifications {
         guard generation == rebuildGeneration,
               settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else { return }
         let now = Date()
-        let candidates = shows.filter { $0.isFollowing && $0.notificationsEnabled }.flatMap { show in
+        let sharedByID = Dictionary(grouping: sharedProgrammes, by: \.id)
+        let candidates = shows.filter { ($0.isFollowing || sharedByID[$0.traktID] != nil) && $0.notificationsEnabled }.flatMap { show in
             show.episodes.compactMap { episode -> (String, Episode, Date)? in
-                guard episode.watchedAt == nil, !episode.isSkipped,
+                let needsReminder: Bool
+                if let programmes = sharedByID[show.traktID] {
+                    needsReminder = programmes.contains { programme in
+                        !programme.episodes.contains { $0.season == episode.season && $0.number == episode.number }
+                            && !(programme.skippedEpisodeIDs?.contains(episode.traktID) ?? false)
+                    }
+                } else {
+                    needsReminder = episode.watchedAt == nil && !episode.isSkipped
+                }
+                guard needsReminder,
                       includeSpecials || episode.season > 0,
                       let firstAired = episode.firstAired,
                       let date = reminderDate(firstAired: firstAired, minutes: show.reminderMinutes, now: now)

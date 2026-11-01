@@ -65,6 +65,8 @@ struct ShowDetailView: View {
                         Label("View show on IMDb", systemImage: "arrow.up.right.square")
                     }
                 }
+            }
+            Section {
                 Toggle("Remind me on scheduled air dates", isOn: Binding(get: { show.notificationsEnabled }, set: { enabled in
                     Task { await store.enableNotifications(show, enabled: enabled) }
                 })).disabled(store.busy || store.settings.demoMode)
@@ -82,6 +84,7 @@ struct ShowDetailView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
+            ShowNotesSection(show: show)
             if groups.ready.isEmpty && groups.upcoming.isEmpty && groups.completed.isEmpty {
                 Text("Episode details haven't loaded. Pull to refresh to try again.").foregroundStyle(.secondary)
             }
@@ -171,6 +174,22 @@ struct ShowDetailView: View {
                     }
                 }
             }
+    }
+}
+
+private struct ShowNotesSection: View {
+    @Environment(AppStore.self) private var store
+    let show: Show
+
+    var body: some View {
+        Section("Notes") {
+            TextField("Add notes about this show", text: Binding(
+                get: { show.notes },
+                set: { store.setNotes(show, notes: $0) }
+            ), axis: .vertical)
+            .lineLimit(3...8)
+            .accessibilityLabel("Notes")
+        }
     }
 }
 

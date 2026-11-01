@@ -8,6 +8,7 @@ final class Show {
     var imdbID: String?
     var title: String
     var overview: String = ""
+    var notes: String = ""
     var posterPath: String?
     var providerData: Data = Data()
     var watchURL: String?

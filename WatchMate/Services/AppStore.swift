@@ -334,6 +334,7 @@ final class AppStore {
                     context.insert(show); local[source.id] = show
                     show.notificationsEnabled = cloudDecode(Bool.self, key: "reminders:\(source.id)") ?? false
                     show.reminderMinutes = cloudDecode(Int.self, key: "reminderTime:\(source.id)") ?? 540
+                    show.notes = cloudDecode(String.self, key: "notes:\(source.id)") ?? ""
                 }
                 show.title = source.title; show.tmdbID = source.ids.tmdb; show.isFollowing = true
                 if let imdbID = source.ids.imdb { show.imdbID = imdbID }
@@ -523,6 +524,17 @@ final class AppStore {
         defer { busy = false }
         await sharedShows.refresh()
         await retryPendingSharedProgress()
+        do {
+            let enabledIDs = Set(try allShows().filter(\.notificationsEnabled).map(\.traktID))
+            let programmes = sharedShows.lists.flatMap(\.programmes)
+            var refreshedIDs: Set<Int> = []
+            for programme in programmes where enabledIDs.contains(programme.id) {
+                guard refreshedIDs.insert(programme.id).inserted else { continue }
+                let episodes = try await TraktService(auth: auth).episodes(showID: programme.id)
+                _ = try prepareSharedReminderShow(programme.show, episodes: episodes)
+            }
+        } catch { errorMessage = error.localizedDescription }
+        await reschedule()
     }
 
     private struct PendingSharedProgress: Codable {
@@ -754,8 +766,39 @@ final class AppStore {
         guard !AppStoreScreenshotMode.isEnabled, !PreviewEnvironment.isRunning else { return }
         publishWidgetSnapshot(prefetchArtwork: prefetchArtwork)
         queueCloudChanges()
-        if let shows = try? allShows() { await Notifications.rebuild(shows: shows, includeSpecials: settings.includeSpecials, demo: settings.demoMode) }
+        if let shows = try? allShows() { await Notifications.rebuild(shows: shows, sharedProgrammes: sharedShows.lists.flatMap(\.programmes), includeSpecials: settings.includeSpecials, demo: settings.demoMode) }
     }
+    func prepareSharedReminderShow(_ source: RemoteShow, episodes: [RemoteEpisode]) throws -> Show {
+        let existing = try allShows().first { $0.traktID == source.id }
+        let show = existing ?? Show(traktID: source.id, tmdbID: source.ids.tmdb, title: source.title, imdbID: source.ids.imdb)
+        if existing == nil {
+            show.isFollowing = false
+            show.notificationsEnabled = cloudDecode(Bool.self, key: "reminders:\(source.id)") ?? false
+            show.reminderMinutes = cloudDecode(Int.self, key: "reminderTime:\(source.id)") ?? 540
+            context.insert(show)
+        }
+        merge(episodes, into: show)
+        try context.save()
+        return show
+    }
+
+    func saveSharedReminders(_ show: Show, enabled: Bool, date: Date) throws {
+        show.notificationsEnabled = enabled
+        let components = Calendar.current.dateComponents([.hour, .minute], from: date)
+        show.reminderMinutes = (components.hour ?? 9) * 60 + (components.minute ?? 0)
+        try context.save()
+        queueCloudChanges()
+    }
+
+    func setNotes(_ show: Show, notes: String) {
+        guard show.notes != notes else { return }
+        show.notes = notes
+        do {
+            try context.save()
+            queueCloudChanges()
+        } catch { errorMessage = error.localizedDescription }
+    }
+
     func setReminderTime(_ show: Show, date: Date) {
         let components = Calendar.current.dateComponents([.hour, .minute], from: date)
         show.reminderMinutes = (components.hour ?? 9) * 60 + (components.minute ?? 0)
@@ -795,6 +838,7 @@ final class AppStore {
             snapshot["following:\(show.traktID)"] = try encoder.encode(show.isFollowing && !settings.hiddenShowIDs.contains(show.traktID))
             snapshot["reminders:\(show.traktID)"] = try encoder.encode(show.notificationsEnabled)
             snapshot["reminderTime:\(show.traktID)"] = try encoder.encode(show.reminderMinutes)
+            snapshot["notes:\(show.traktID)"] = try encoder.encode(show.notes)
             for episode in show.episodes where episode.isSkipped || cloud.data(for: "skip:" + episode.key) != nil {
                 snapshot["skip:" + episode.key] = try encoder.encode(episode.isSkipped)
             }
@@ -842,6 +886,9 @@ final class AppStore {
             shows[id]?.isFollowing = following
         }
         for show in shows.values {
+            if let notes = cloudDecode(String.self, key: "notes:\(show.traktID)") {
+                show.notes = notes
+            }
             if let enabled = cloudDecode(Bool.self, key: "reminders:\(show.traktID)") {
                 show.notificationsEnabled = enabled
             }
@@ -905,7 +952,7 @@ final class AppStore {
                 publishWidgetSnapshot()
                 lastAppliedCloudValues = cloud.values
                 if let shows = try? allShows() {
-                    await Notifications.rebuild(shows: shows, includeSpecials: settings.includeSpecials, demo: false)
+                    await Notifications.rebuild(shows: shows, sharedProgrammes: sharedShows.lists.flatMap(\.programmes), includeSpecials: settings.includeSpecials, demo: false)
                 }
             }
         } catch { cloud.report(error) }

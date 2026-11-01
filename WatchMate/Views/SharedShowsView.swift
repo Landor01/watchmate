@@ -396,6 +396,8 @@ struct SharedProgrammePicker: View {
     @State private var searching = false
     @State private var message: String?
     @State private var selection: RemoteShow?
+    @State private var remindersEnabled = false
+    @State private var reminderTime = Date()
 
     private var existingIDs: Set<Int> {
         Set(store.sharedShows.lists.first(where: { $0.id == list.id })?.programmes.map(\.id) ?? [])
@@ -477,16 +479,44 @@ struct SharedProgrammePicker: View {
                 message = error.localizedDescription
             }
         }
-        .confirmationDialog("Share programme and viewing progress?", isPresented: Binding(
-            get: { selection != nil }, set: { if !$0 { selection = nil } }
-        ), titleVisibility: .visible) {
-            Button("Move to Shared Shows") {
-                guard let selection else { return }
-                Task { await add(selection) }
+        .sheet(item: $selection) { show in
+            NavigationStack {
+                ThemedList {
+                    Section {
+                        Text(show.title).font(.headline)
+                        Text("The programme will appear in this shared list instead of My Shows. Its current Trakt watched progress will be visible to everyone invited to the list.")
+                    }
+                    Section {
+                        Toggle("Remind me on scheduled air dates", isOn: $remindersEnabled)
+                        if remindersEnabled {
+                            DatePicker("Reminder time", selection: $reminderTime, displayedComponents: .hourAndMinute)
+                            Text("Remind me at this local time on each scheduled air date (note that reminders are personal to you).")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    if working { ProgressView("Sharing programme…") }
+                }
+                .disabled(working)
+                .navigationTitle("Add shared programme")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { selection = nil }.disabled(working)
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Move to Shared Shows") { Task { await add(show) } }
+                            .disabled(working)
+                    }
+                }
+                .interactiveDismissDisabled(working)
+                .onAppear {
+                    let local = shows.first { $0.traktID == show.id }
+                    remindersEnabled = local?.notificationsEnabled ?? false
+                    let minutes = local?.reminderMinutes ?? 540
+                    reminderTime = Calendar.current.date(bySettingHour: minutes / 60, minute: minutes % 60,
+                                                         second: 0, of: Date()) ?? Date()
+                }
             }
-            Button("Cancel", role: .cancel) { selection = nil }
-        } message: {
-            Text("The programme will appear in this shared list instead of My Shows. Its current Trakt watched progress will be visible to everyone invited to the list.")
         }
     }
 
@@ -510,9 +540,17 @@ struct SharedProgrammePicker: View {
                                                   watchedAt: Dates.parse(episode.lastWatchedAt) ?? .distantPast))
                 }
             }
+            if remindersEnabled {
+                guard try await Notifications.requestPermission() else {
+                    throw APIError.message("Notifications are disabled. Enable them in iPhone Settings.")
+                }
+            }
             try await store.sharedShows.add(SharedProgramme(show: show, addedBy: account, episodes: episodes), to: list)
             guard store.settings.traktAccountID == account else { throw CancellationError() }
             store.sharedShows.showInMyShows(show.id, visible: false)
+            let local = try store.prepareSharedReminderShow(show, episodes: catalogue)
+            try store.saveSharedReminders(local, enabled: remindersEnabled, date: reminderTime)
+            await store.reschedule()
             message = "\(show.title) added."
         } catch { message = error.localizedDescription }
     }
