@@ -61,7 +61,7 @@ struct SharedZoneCache: Codable {
                 else { skipped.remove(id) }
             }
             return SharedProgramme(show: programme.show, addedBy: programme.addedBy,
-                                   episodes: episodes.values.sorted { ($0.season, $0.number) < ($1.season, $1.number) }, skippedEpisodeIDs: skipped, revision: programme.revision)
+                                   episodes: episodes.values.sorted { ($0.season, $0.number) < ($1.season, $1.number) }, skippedEpisodeIDs: skipped, notes: programme.notes, revision: programme.revision)
         }
         return HouseholdList(zoneID: zoneID, name: name, shared: shared,
                                  programmes: programmes.sorted { $0.show.title < $1.show.title },

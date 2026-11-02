@@ -39,6 +39,36 @@ struct SharedShowsCacheTests {
         #expect(list.programmes.first?.episodes.first?.id == 10)
     }
 
+    @Test func sharedNotesSurviveUpdatesAndDiskReload() throws {
+        var cache = zone(shared: true)
+        let record = try show(cache)
+        var programme = try JSONDecoder().decode(SharedProgramme.self, from: #require(record["payload"] as? Data))
+        programme.notes = "Watch together on Friday"
+        record["payload"] = try JSONEncoder().encode(programme) as CKRecordValue
+        try cache.apply(records: [header(cache), record], deleted: [], token: nil)
+        let restored = try JSONDecoder().decode(SharedZoneCache.self, from: JSONEncoder().encode(cache))
+        #expect(try restored.list()?.programmes.first?.notes == "Watch together on Friday")
+        #expect(try restored.list()?.programmes.first?.revision == "revision")
+
+        programme.notes = ""
+        record["payload"] = try JSONEncoder().encode(programme) as CKRecordValue
+        try cache.apply(records: [record], deleted: [], token: nil)
+        #expect(try cache.list()?.programmes.first?.notes == "")
+    }
+
+    @Test func olderSharedPayloadWithoutNotesStillLoads() throws {
+        var cache = zone()
+        let record = try show(cache)
+        let data = try #require(record["payload"] as? Data)
+        var payload = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        payload.removeValue(forKey: "notes")
+        record["payload"] = try JSONSerialization.data(withJSONObject: payload) as CKRecordValue
+        try cache.apply(records: [header(cache), record], deleted: [], token: nil)
+        let programme = try #require(try cache.list()?.programmes.first)
+        #expect(programme.notes == nil)
+        #expect(programme.id == 1)
+    }
+
     @Test func deletionsRemoveCachedShowsAndHeaders() throws {
         var cache = zone()
         let record = try show(cache)

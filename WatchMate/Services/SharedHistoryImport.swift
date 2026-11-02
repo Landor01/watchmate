@@ -4,6 +4,8 @@ import Observation
 struct SharedHistoryChange: Identifiable {
     let episode: SharedEpisode
     let watched: Bool
+    var showTitle: String? = nil
+    var episodeTitle: String? = nil
     var id: Int { episode.id }
 }
 
@@ -61,7 +63,14 @@ final class SharedHistoryImport {
                 let watched = Set(history.first { $0.show.id == programme.id }?.seasons.flatMap { season in
                     season.episodes.map { "\(season.number):\($0.number)" }
                 } ?? [])
-                let planned = try SharedHistoryPlan.changes(shared: programme.episodes, watched: watched, catalogue: catalogue)
+                let episodeTitles = Dictionary(catalogue.map { ($0.ids.trakt, $0.title) },
+                                               uniquingKeysWith: { first, _ in first })
+                let planned = try SharedHistoryPlan.changes(shared: programme.episodes, watched: watched, catalogue: catalogue).map { change in
+                    var change = change
+                    change.showTitle = programme.show.title
+                    change.episodeTitle = episodeTitles[change.id] ?? nil
+                    return change
+                }
                 changes += planned
                 batches += SharedHistoryBatchPlan.batches(planned)
                 existingCount += watched.count

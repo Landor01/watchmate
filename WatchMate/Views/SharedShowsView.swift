@@ -23,10 +23,12 @@ struct SharedShowsView: View {
                                            description: Text("Create a list, then invite someone to share it."))
                 }
                 if store.sharedShows.lists.contains(where: { !$0.programmes.isEmpty }) {
-                    NavigationLink("Sync Progress to Trakt") {
-                        SharedHistoryImportView(programmes: store.sharedShows.lists.flatMap(\.programmes))
+                    Section {
+                        NavigationLink("Sync all viewing progress to Trakt") {
+                            SharedHistoryImportView(programmes: store.sharedShows.lists.flatMap(\.programmes))
+                        }
+                        .disabled(store.busy)
                     }
-                    .disabled(store.busy)
                 }
                 if !store.sharedShows.historyOffers.isEmpty {
                     NavigationLink("New shared programmes: review viewing history") { SharedHistoryInboxView() }
@@ -91,10 +93,12 @@ private struct HouseholdListView: View {
             if let list {
                 SharedListPhotoSection(list: list)
                 if !list.programmes.isEmpty {
-                    NavigationLink("Sync Progress to Trakt") {
-                        SharedHistoryImportView(programmes: list.programmes)
+                    Section {
+                        NavigationLink("Sync all viewing progress to Trakt") {
+                            SharedHistoryImportView(programmes: list.programmes)
+                        }
+                        .disabled(store.busy)
                     }
-                    .disabled(store.busy)
                 }
                 if list.programmes.isEmpty {
                     Text("Add programmes from My Shows or search for something new.")
@@ -102,7 +106,11 @@ private struct HouseholdListView: View {
                 let completedIDs = completedProgrammeIDs(in: list)
                 let active = list.programmes.filter { !completedIDs.contains($0.id) }
                 let completed = list.programmes.filter { completedIDs.contains($0.id) }
-                programmeRows(active, in: list)
+                if !active.isEmpty {
+                    Section {
+                        programmeRows(active, in: list)
+                    }
+                }
                 if !completed.isEmpty {
                     Section("Completed") {
                         programmeRows(completed, in: list)
@@ -603,10 +611,15 @@ struct SharedHistoryImportView: View {
                             Text("Large libraries can take several minutes. Keep WatchMate open and connected. Network delays and Trakt limits may add time.")
                                 .font(.caption).foregroundStyle(.secondary)
                             Button(role: .destructive) { confirming = true } label: {
-                                Label("Replace progress & sync", systemImage: "arrow.triangle.2.circlepath")
-                                    .font(.headline)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 6)
+                                HStack(spacing: 8) {
+                                    Image(systemName: "arrow.triangle.2.circlepath")
+                                        .accessibilityHidden(true)
+                                    Text("Replace progress & sync")
+                                        .multilineTextAlignment(.center)
+                                }
+                                .font(.headline)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding(.vertical, 6)
                             }
                             .buttonStyle(.borderedProminent)
                         }
@@ -722,8 +735,10 @@ private struct SharedHistoryChangeSummary: View {
             } else {
                 Text("Here's what will change")
                     .font(.headline)
-                SharedHistoryCountRow(count: preview.watchCount, title: "Mark watched", symbol: "checkmark.circle.fill", color: .green)
-                SharedHistoryCountRow(count: preview.unwatchCount, title: "Mark unwatched", symbol: "arrow.uturn.backward.circle.fill", color: .orange)
+                SharedHistoryChangesDisclosure(changes: preview.changes, watched: true,
+                                               title: "Mark watched", symbol: "checkmark.circle.fill", color: .green)
+                SharedHistoryChangesDisclosure(changes: preview.changes, watched: false,
+                                               title: "Mark unwatched", symbol: "arrow.uturn.backward.circle.fill", color: .orange)
             }
             Label("\(preview.existingCount) currently watched on Trakt", systemImage: "clock.arrow.circlepath")
                 .font(.subheadline).foregroundStyle(.secondary)
@@ -731,6 +746,48 @@ private struct SharedHistoryChangeSummary: View {
                 .font(.caption).foregroundStyle(.secondary)
         }
         .padding(.vertical, 8)
+    }
+}
+
+private struct SharedHistoryChangesDisclosure: View {
+    let changes: [SharedHistoryChange]
+    let title: LocalizedStringKey
+    let symbol: String
+    let color: Color
+
+    init(changes: [SharedHistoryChange], watched: Bool, title: LocalizedStringKey, symbol: String, color: Color) {
+        self.changes = changes.filter { $0.watched == watched }
+        self.title = title
+        self.symbol = symbol
+        self.color = color
+    }
+
+    var body: some View {
+        if changes.isEmpty {
+            SharedHistoryCountRow(count: 0, title: title, symbol: symbol, color: color)
+        } else {
+            DisclosureGroup {
+                LazyVStack(alignment: .leading, spacing: 12) {
+                    ForEach(changes) { change in
+                        VStack(alignment: .leading, spacing: 4) {
+                            if let showTitle = change.showTitle {
+                                Text(showTitle).font(.subheadline.weight(.semibold))
+                            }
+                            Text("S\(change.episode.season) E\(change.episode.number)")
+                                .font(.subheadline).monospacedDigit()
+                            if let episodeTitle = change.episodeTitle, !episodeTitle.isEmpty {
+                                Text(episodeTitle).font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityElement(children: .combine)
+                    }
+                }
+                .padding(.vertical, 8)
+            } label: {
+                SharedHistoryCountRow(count: changes.count, title: title, symbol: symbol, color: color)
+            }
+        }
     }
 }
 

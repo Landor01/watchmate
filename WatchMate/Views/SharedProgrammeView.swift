@@ -12,13 +12,25 @@ struct SharedProgrammeView: View {
     @State private var seasonPosters: [Int: String] = [:]
     @State private var loading = false
     @State private var working = false
-    @State private var importing = false
+    @State private var presentedSheet: ProgrammeSheet?
     @State private var showingHistoryInfo = false
     @State private var message: String?
     @State private var offered = false
     @State private var completedSeasonsExpanded = false
     @State private var completed = 0
     @State private var total = 0
+
+    private enum ProgrammeSheet: Identifiable {
+        case notes(SharedProgramme, HouseholdList)
+        case history(SharedProgramme)
+
+        var id: String {
+            switch self {
+            case .notes: "notes"
+            case .history: "history"
+            }
+        }
+    }
 
     private var list: HouseholdList? { store.sharedShows.lists.first { $0.id == listID } }
     private var programme: SharedProgramme? { list?.programmes.first { $0.id == showID } }
@@ -34,7 +46,11 @@ struct SharedProgrammeView: View {
                     Section {
                         SharedShowReminderControls(show: localShow)
                     }
-                    ShowNotesSection(show: localShow)
+                }
+                if let list {
+                    SharedProgrammeNotesSection(notes: programme.notes) {
+                        presentedSheet = .notes(programme, list)
+                    }
                 }
                 if loading { ProgressView("Loading episodes…") }
                 if let message { Text(message).foregroundStyle(.secondary) }
@@ -78,7 +94,9 @@ struct SharedProgrammeView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
-                    Button("Sync my Trakt history", systemImage: "arrow.triangle.2.circlepath") { importing = true }
+                    Button("Sync my Trakt history", systemImage: "arrow.triangle.2.circlepath") {
+                        if let programme { presentedSheet = .history(programme) }
+                    }
                     Button("About shared progress", systemImage: "info.circle") { showingHistoryInfo = true }
                 } label: { Image(systemName: "ellipsis.circle") }
                 .accessibilityLabel("Programme actions")
@@ -99,9 +117,9 @@ struct SharedProgrammeView: View {
         .animation(reduceMotion ? nil : .easeInOut, value: progress?.completed.map(\.id))
         .task {
             await loadEpisodes()
-            if !offered, let offer = store.sharedShows.historyOffers.first(where: { $0.listID == listID && $0.programme.id == showID }) {
+            if !offered, presentedSheet == nil, let offer = store.sharedShows.historyOffers.first(where: { $0.listID == listID && $0.programme.id == showID }) {
                 offered = true
-                importing = true
+                presentedSheet = .history(offer.programme)
                 store.sharedShows.review(offer)
             }
         }
@@ -113,8 +131,13 @@ struct SharedProgrammeView: View {
             await store.refreshSharedShows()
             await loadEpisodes(forceRefresh: true)
         }
-        .sheet(isPresented: $importing) {
-            if let programme { NavigationStack { SharedHistoryImportView(programme: programme) } }
+        .sheet(item: $presentedSheet) { sheet in
+            switch sheet {
+            case .notes(let programme, let list):
+                SharedProgrammeNotesEditor(programme: programme, list: list)
+            case .history(let programme):
+                NavigationStack { SharedHistoryImportView(programme: programme) }
+            }
         }
     }
 
@@ -162,7 +185,7 @@ struct SharedProgrammeView: View {
         message = nil
         defer { loading = false }
         do {
-            // Notes need a local show even when reminders are off or episode loading fails.
+            // Prepare reminder settings even if episode loading fails.
             if localShow == nil {
                 localShow = try store.prepareSharedReminderShow(programme.show, episodes: [])
             }
@@ -285,6 +308,84 @@ private struct SharedProgrammeSummary: View {
         formatter.allowedUnits = [.hour, .minute]
         formatter.unitsStyle = .abbreviated
         return formatter.string(from: TimeInterval(minutes * 60)) ?? "\(minutes) min"
+    }
+}
+
+private struct SharedProgrammeNotesSection: View {
+    let notes: String?
+    let edit: () -> Void
+
+    var body: some View {
+        Section {
+            if let notes, !notes.isEmpty {
+                Text(notes).textSelection(.enabled)
+            }
+            Button(notes?.isEmpty == false ? "Edit notes" : "Add notes", action: edit)
+        } header: {
+            Text("Shared notes")
+        } footer: {
+            Text("Visible to everyone in this shared list.")
+        }
+    }
+}
+
+private struct SharedProgrammeNotesEditor: View {
+    @Environment(AppStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    let programme: SharedProgramme
+    let list: HouseholdList
+    @State private var draft = ""
+    @State private var original: SharedProgramme?
+    @State private var saving = false
+    @State private var errorMessage: String?
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Add notes about this show", text: $draft, axis: .vertical)
+                        .lineLimit(3...12)
+                        .accessibilityLabel("Shared notes")
+                } footer: {
+                    Text("Visible to everyone in this shared list.")
+                }
+                if let errorMessage {
+                    Section { Text(errorMessage).foregroundStyle(.red) }
+                }
+            }
+            .disabled(saving)
+            .navigationTitle("Shared notes")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }.disabled(saving)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(saving ? "Saving…" : "Save") {
+                        Task { await save() }
+                    }
+                    .disabled(saving || original == nil)
+                }
+            }
+            .interactiveDismissDisabled(saving || draft != (original?.notes ?? ""))
+            .onAppear {
+                guard original == nil else { return }
+                original = programme
+                draft = programme.notes ?? ""
+            }
+        }
+    }
+
+    private func save() async {
+        guard let original, !saving else { return }
+        saving = true
+        errorMessage = nil
+        defer { saving = false }
+        do {
+            try await store.sharedShows.setNotes(draft, for: original, in: list)
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 }
 

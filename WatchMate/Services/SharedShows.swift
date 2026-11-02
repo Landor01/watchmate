@@ -15,6 +15,7 @@ struct SharedProgramme: Codable, Identifiable {
     let addedBy: String
     let episodes: [SharedEpisode]
     var skippedEpisodeIDs: Set<Int>? = nil
+    var notes: String? = nil
     var revision: String = UUID().uuidString
     var id: Int { show.id }
 }
@@ -431,6 +432,35 @@ final class SharedShows {
         let saved = try await database.save(record)
         remember(saved, shared: list.shared, session: session)
         await refresh()
+    }
+
+    func setNotes(_ notes: String, for programme: SharedProgramme, in list: HouseholdList) async throws {
+        let session = generation
+        let database = database(for: list)
+        let id = CKRecord.ID(recordName: "show-\(programme.id)", zoneID: list.zoneID)
+        let record = try await database.record(for: id)
+        guard session == generation else { throw CancellationError() }
+        guard (record["removed"] as? Int ?? 0) == 0,
+              let data = record["payload"] as? Data else {
+            throw APIError.message("This programme is no longer shared.")
+        }
+        var current = try JSONDecoder().decode(SharedProgramme.self, from: data)
+        guard current.revision == programme.revision,
+              (current.notes ?? "") == (programme.notes ?? "") else {
+            remember(record, shared: list.shared, session: session)
+            throw APIError.message("The shared notes have changed. Your draft has been kept. Close the editor and reopen it to review the latest notes before trying again.")
+        }
+        // Preserve the latest programme payload and leave episode event records untouched.
+        current.notes = notes
+        record["payload"] = try JSONEncoder().encode(current) as CKRecordValue
+        let result = try await database.modifyRecords(saving: [record], deleting: [],
+                                                      savePolicy: .ifServerRecordUnchanged, atomically: true)
+        guard let outcome = result.saveResults[id] else {
+            throw APIError.message("iCloud did not confirm that the notes were saved.")
+        }
+        let saved = try outcome.get()
+        guard session == generation else { throw CancellationError() }
+        remember(saved, shared: list.shared, session: session)
     }
 
     func remove(_ programme: SharedProgramme, from list: HouseholdList) async throws {
