@@ -26,6 +26,7 @@ final class SharedHistoryImport {
     private(set) var completed = 0
     private(set) var total = 0
     private(set) var status = ""
+    private(set) var currentShowTitle = ""
     private(set) var currentEpisode = ""
     var preview: SharedHistoryPreview?
     private var task: Task<Void, Never>?
@@ -112,6 +113,7 @@ final class SharedHistoryImport {
                         throw APIError.message("Your Trakt account changed. Sync stopped.")
                     }
                     guard let change = batch.first else { continue }
+                    currentShowTitle = change.showTitle ?? ""
                     currentEpisode = "Season \(change.episode.season) · \(batch.count) episodes"
                     if change.watched {
                         let confirmed = try await service.recordSharedWatches(batch.map(\.episode))
@@ -134,6 +136,7 @@ final class SharedHistoryImport {
             } catch {
                 status = "Stopped after \(completed) of \(total) episodes. \(error.localizedDescription) Changes already made are kept. Review and sync again to finish."
             }
+            currentShowTitle = ""
             currentEpisode = ""
             store.busy = false
             await store.refresh(showIDs: Set(preview.programmes.map(\.id)))

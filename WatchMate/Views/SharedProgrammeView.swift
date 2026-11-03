@@ -541,7 +541,7 @@ private struct SharedEpisodeArtwork: View {
     }
 }
 
-private struct SharedEpisodeDetails: View {
+struct SharedEpisodeDetails: View {
     @Environment(AppStore.self) private var store
     let listID: String
     let showID: Int

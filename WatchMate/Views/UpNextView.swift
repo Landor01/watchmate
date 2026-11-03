@@ -2,6 +2,22 @@ import SwiftUI
 import SwiftData
 
 struct UpNextView: View {
+    var isPreparing = false
+    @State private var initialCatalogueLoaded = false
+
+    private var showingInitialRefresh: Bool { isPreparing || !initialCatalogueLoaded }
+    private var initialRefreshStage: Int { isPreparing ? store.completedRefreshStages : 5 }
+
+    private var initialRefreshMessage: LocalizedStringKey {
+        switch initialRefreshStage {
+        case 0: "Checking watched episodes…"
+        case 1: "Syncing shared lists…"
+        case 2: "Syncing preferences…"
+        case 3: "Updating episode details…"
+        case 4: "Syncing shared progress…"
+        default: "Preparing Up Next…"
+        }
+    }
     @State private var showingAirDateInfo = false
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(AppStore.self) private var store
@@ -114,14 +130,28 @@ struct UpNextView: View {
                 Section {
                     ForEach(group.entries) { entry in
                         SharedDiscoveryRow(entry: entry, showsActions: true, showsListName: false,
-                                           waitingCount: sharedCounts[entry.listID]?[entry.showID] ?? 0)
+                                           waitingCount: sharedCounts[entry.listID]?[entry.showID] ?? 0, opensEpisode: true)
                     }
                 } header: {
                     Label(group.name, systemImage: "person.2")
                 }
             }
         }
-        .task(id: "\(store.sharedShows.showIDs.sorted()):\(store.catalogueRevision)") { await sharedCatalogue.load(store: store, shows: shows) }
+        // Keep the list mounted so its data can settle without exposing intermediate rows.
+        .opacity(showingInitialRefresh ? 0 : 1)
+        .allowsHitTesting(!showingInitialRefresh)
+        .accessibilityHidden(showingInitialRefresh)
+        .overlay {
+            if showingInitialRefresh {
+                UpNextSyncView(stage: initialRefreshStage, message: initialRefreshMessage)
+            }
+        }
+        .task(id: "\(isPreparing):\(store.sharedShows.showIDs.sorted()):\(store.catalogueRevision)") {
+            guard !isPreparing else { return }
+            await sharedCatalogue.load(store: store, shows: shows)
+            guard !Task.isCancelled else { return }
+            initialCatalogueLoaded = true
+        }
         .navigationTitle("Up Next").navigationBarTitleDisplayMode(.inline)
         .alert("Air dates and streaming", isPresented: $showingAirDateInfo) {
             Button("OK", role: .cancel) { }
@@ -145,6 +175,73 @@ struct UpNextView: View {
         formatter.allowedUnits = [.hour, .minute]
         formatter.unitsStyle = .abbreviated
         return formatter.string(from: TimeInterval(minutes * 60)) ?? "\(minutes) min"
+    }
+}
+
+private struct UpNextSyncView: View {
+    @AppStorage("appTheme") private var themeValue = AppTheme.system.rawValue
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.themeAccent) private var accent
+    let stage: Int
+    let message: LocalizedStringKey
+
+    var body: some View {
+        let theme = AppTheme(rawValue: themeValue) ?? .system
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(spacing: 24) {
+                    Image(systemName: "play.tv.fill")
+                        .font(.largeTitle)
+                        .foregroundStyle(accent)
+                        .frame(width: 88, height: 88)
+                        .background(
+                            LinearGradient(colors: [accent.opacity(0.22), accent.opacity(0.06)],
+                                           startPoint: .topLeading, endPoint: .bottomTrailing),
+                            in: RoundedRectangle(cornerRadius: 26)
+                        )
+                        .accessibilityHidden(true)
+
+                    VStack(spacing: 8) {
+                        Text("Setting the scene")
+                            .font(.title2.bold())
+                        Text("Getting your next watch ready.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .multilineTextAlignment(.center)
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(message)
+                            .font(.subheadline.weight(.medium))
+                        ProgressView(value: Double(stage), total: 6)
+                            .progressViewStyle(.linear)
+                            .tint(accent)
+                            .accessibilityLabel("Syncing your shows")
+                            .accessibilityValue("Step \(stage + 1) of 6")
+                        Text("Step \(stage + 1) of 6")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                            .accessibilityHidden(true)
+                    }
+                    .padding(20)
+                    .background(theme.chartSurfaceColor(for: colorScheme),
+                                in: RoundedRectangle(cornerRadius: 20))
+                }
+                .padding(24)
+                .background(theme.tileColor(for: colorScheme),
+                            in: RoundedRectangle(cornerRadius: 30))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 30)
+                        .strokeBorder(accent.opacity(0.12), lineWidth: 1)
+                }
+                .frame(maxWidth: 380)
+                .padding(24)
+                .frame(maxWidth: .infinity, minHeight: geometry.size.height)
+            }
+            .scrollIndicators(.hidden)
+            .background(theme.backgroundColor(for: colorScheme))
+        }
     }
 }
 
@@ -190,7 +287,13 @@ struct MyShowsView: View {
         let completedShows = personalShows.filter { completedIDs.contains($0.traktID) }
         ThemedList {
             if personalShows.isEmpty {
-                ContentUnavailableView("Your shows live here", systemImage: "tv", description: Text("Tap + to find and add programmes, or connect Trakt in Settings to import your history and watchlist."))
+                ContentUnavailableView(
+                    "Your shows live here",
+                    systemImage: "tv",
+                    description: store.connected
+                        ? Text("Tap + to find and add programmes.")
+                        : Text("Tap + to find and add programmes, or connect Trakt in Settings to import your history and watchlist.")
+                )
             }
             showRows(activeShows)
             if !upToDateShows.isEmpty {
@@ -268,13 +371,21 @@ struct SharedDiscoveryRow: View {
     var showsActions = false
     var showsListName = true
     var waitingCount = 0
+    var opensEpisode = false
     @State private var artwork: [String] = []
     @State private var providers: [Provider] = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             NavigationLink {
-                SharedProgrammeView(listID: entry.listID, showID: entry.showID)
+                if opensEpisode {
+                    SharedEpisodeDetails(listID: entry.listID, showID: entry.showID, episode: entry.episode,
+                                         tmdbID: entry.tmdbID, posterPath: artwork.last) { _, action in
+                        update(action)
+                    }
+                } else {
+                    SharedProgrammeView(listID: entry.listID, showID: entry.showID)
+                }
             } label: {
                 let layout = dynamicTypeSize.isAccessibilitySize
                     ? AnyLayout(VStackLayout(alignment: .leading, spacing: 14))
@@ -364,7 +475,7 @@ struct SharedDiscoveryRow: View {
         NavigationStack {
             ThemedList {
                 Section {
-                    SharedDiscoveryRow(entry: entry, showsActions: true, showsListName: false, waitingCount: 3)
+                    SharedDiscoveryRow(entry: entry, showsActions: true, showsListName: false, waitingCount: 3, opensEpisode: true)
                 } header: {
                     Label(data.list.name, systemImage: "person.2")
                 }

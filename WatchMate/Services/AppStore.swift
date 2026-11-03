@@ -19,6 +19,7 @@ final class AppStore {
     private var cloudSyncInProgress = false
     private var lastCloudAttempt: Date?
     private var backgroundRefreshInProgress = false
+    private(set) var completedRefreshStages = 0
     @ObservationIgnored private var widgetPublicationPending = false
     private var lastProgressAttempt: Date?
     private var catalogueAttempts: [Int: Date] = [:]
@@ -110,6 +111,7 @@ final class AppStore {
     func refreshInBackground(now: Date = Date(), synchronizeCloud: Bool = true) async {
         guard !busy, !backgroundRefreshInProgress, connected, !settings.demoMode else { return }
         backgroundRefreshInProgress = true
+        completedRefreshStages = 0
         defer {
             backgroundRefreshInProgress = false
             if widgetPublicationPending { publishWidgetSnapshot() }
@@ -135,14 +137,17 @@ final class AppStore {
             } catch { /* Keep saved progress when offline; manual refresh reports errors. */ }
         }
         guard canApply() else { return }
+        completedRefreshStages = 1
         if synchronizeCloud {
             sharedShows.activate(accountID: account)
             await sharedShows.refresh(reportErrors: false, automatic: true)
             guard canApply() else { return }
+            completedRefreshStages = 2
             await syncCloud(automatic: true)
             guard canApply() else { return }
         }
 
+        completedRefreshStages = 3
         // One request at a time, with a small work budget per foreground check.
         // Persist successful timestamps; failed requests are throttled in this session.
         let candidates = ((try? allShows()) ?? []).filter {
@@ -184,6 +189,7 @@ final class AppStore {
                 catalogueRevision += 1
             } catch { /* Keep the saved shared catalogue available offline. */ }
         }
+        completedRefreshStages = 4
         // Acknowledge queued shared writes only while holding the mutation lock.
         if synchronizeCloud, canApply(), let account,
            let pending = try? pendingSharedProgress(accountID: account), !pending.isEmpty {
@@ -192,6 +198,7 @@ final class AppStore {
             await retryPendingSharedProgress(history: snapshot)
             busy = false
         }
+        completedRefreshStages = 5
     }
 
     func refreshShow(_ show: Show, now: Date = Date(), history: [WatchedShow]? = nil) async {

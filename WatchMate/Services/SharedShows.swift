@@ -421,17 +421,48 @@ final class SharedShows {
         } catch let error as CKError where error.code == .unknownItem {
             record = CKRecord(recordType: "HouseholdShow", recordID: id)
         }
+        guard session == generation else { throw CancellationError() }
         if record["payload"] != nil && (record["removed"] as? Int ?? 0) == 0 {
             if failIfExists {
                 throw APIError.message("This programme is already in the destination list. Its progress has not been overwritten.")
             }
+            // A previous attempt may have saved successfully without updating this device.
+            try publishAddedProgramme(record, in: list)
             return
         }
         record["payload"] = try JSONEncoder().encode(programme) as CKRecordValue
         record["removed"] = 0 as CKRecordValue
         let saved = try await database.save(record)
-        remember(saved, shared: list.shared, session: session)
-        await refresh()
+        guard session == generation else { throw CancellationError() }
+        try publishAddedProgramme(saved, in: list)
+    }
+
+    /// A confirmed add must be visible even when the disk cache needs recovery.
+    func publishAddedProgramme(_ record: CKRecord, in list: HouseholdList) throws {
+        guard let data = record["payload"] as? Data else {
+            throw APIError.message("The shared programme could not be read.")
+        }
+        let programme = try JSONDecoder().decode(SharedProgramme.self, from: data)
+        remember(record, shared: list.shared, session: generation)
+        if lists.first(where: { $0.id == list.id })?.programmes.contains(where: { $0.id == programme.id }) == true {
+            return
+        }
+
+        // Keep the confirmed server payload visible if remember could not retain it.
+        // The next refresh will recover the cache; adding must not depend on that fetch.
+        let current = lists.first(where: { $0.id == list.id }) ?? list
+        var programmes = current.programmes.filter { $0.id != programme.id }
+        programmes.append(programme)
+        let updated = HouseholdList(zoneID: current.zoneID, name: current.name, shared: current.shared,
+                                    programmes: programmes.sorted { $0.show.title < $1.show.title },
+                                    photoData: current.photoData)
+        if let index = lists.firstIndex(where: { $0.id == list.id }) {
+            lists[index] = updated
+        } else {
+            lists.append(updated)
+            lists.sort { $0.name < $1.name }
+        }
+        lastSuccessfulRefresh = nil
     }
 
     func setNotes(_ notes: String, for programme: SharedProgramme, in list: HouseholdList) async throws {

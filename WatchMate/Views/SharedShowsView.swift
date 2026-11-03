@@ -286,7 +286,7 @@ private struct SharedProgrammeRow: View {
                     .font(.caption).foregroundStyle(.secondary)
                 SharedListSummaryView(list: list, programme: programme)
                 if programme.addedBy != store.settings.traktAccountID {
-                    Text("Review or sync viewing history").font(.caption).foregroundStyle(.tint)
+                    Text("View viewing history").font(.caption).foregroundStyle(.tint)
                 }
             }
             Spacer(minLength: 0)
@@ -635,6 +635,10 @@ struct SharedHistoryImportView: View {
                         Text("\(importer.completed) of \(importer.total)")
                             .font(.largeTitle.bold()).monospacedDigit()
                         ProgressView("Episodes updated", value: Double(importer.completed), total: Double(max(1, importer.total)))
+                        if !importer.currentShowTitle.isEmpty {
+                            Text(importer.currentShowTitle)
+                                .font(.headline)
+                        }
                         Text(importer.currentEpisode).font(.caption).foregroundStyle(.secondary)
                         Text("Keep WatchMate open and connected to the internet.")
                             .font(.subheadline).foregroundStyle(.secondary)
@@ -943,10 +947,19 @@ private struct SharedHistoryInboxHeader: View {
             }
             .multilineTextAlignment(.center)
             Button(action: syncAll) {
-                Label("Sync all", systemImage: "arrow.triangle.2.circlepath")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .accessibilityHidden(true)
+                    Text("Sync all")
+                        .multilineTextAlignment(.center)
+                    // Balance the icon so the title stays centered in the button.
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .hidden()
+                        .accessibilityHidden(true)
+                }
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
             }
             .buttonStyle(.borderedProminent)
             .accessibilityHint("Review changes for all shared programmes.")

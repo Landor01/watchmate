@@ -22,6 +22,40 @@ struct SharedShowsCacheTests {
         return record
     }
 
+    @Test @MainActor func confirmedAddAppearsWithoutAnInitializedCache() throws {
+        let service = SharedShows()
+        let cache = zone()
+        let list = HouseholdList(zoneID: cache.zoneID, name: "Together", shared: false,
+                                 programmes: [], photoData: Data([1, 2, 3]))
+        service.preparePreview(lists: [list])
+
+        try service.publishAddedProgramme(show(cache), in: list)
+
+        let displayed = try #require(service.lists.first)
+        #expect(displayed.programmes.map(\.id) == [1])
+        #expect(displayed.photoData == list.photoData)
+        #expect(service.widgetListNames[1] == ["Together"])
+    }
+
+    @Test @MainActor func repeatedConfirmedAddDoesNotDuplicateProgramme() throws {
+        let service = SharedShows()
+        let cache = zone(shared: true)
+        let list = HouseholdList(zoneID: cache.zoneID, name: "Together", shared: true, programmes: [])
+        let record = try show(cache)
+        var programme = try JSONDecoder().decode(SharedProgramme.self, from: #require(record["payload"] as? Data))
+        programme.notes = "Existing shared notes"
+        record["payload"] = try JSONEncoder().encode(programme) as CKRecordValue
+
+        try service.publishAddedProgramme(record, in: list)
+        try service.publishAddedProgramme(record, in: list)
+
+        #expect(service.lists.count == 1)
+        let displayed = try #require(service.lists.first?.programmes.first)
+        #expect(service.lists.first?.programmes.count == 1)
+        #expect(displayed.revision == programme.revision)
+        #expect(displayed.notes == "Existing shared notes")
+    }
+
     @Test func incrementalEpisodeChangesPreserveUnchangedListAndShow() throws {
         var cache = zone()
         try cache.apply(records: [header(cache), show(cache)], deleted: [], token: nil)
