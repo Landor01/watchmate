@@ -58,7 +58,13 @@ final class AppStore {
             self?.publishWidgetSnapshot()
         }
     }
-    func allShows() throws -> [Show] { try context.fetch(Show.withEpisodes) }
+    func allShows() throws -> [Show] { try context.fetch(Show.all) }
+
+    func show(id: Int) throws -> Show? {
+        var descriptor = FetchDescriptor<Show>(predicate: #Predicate { $0.traktID == id })
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first
+    }
     func hasShows() throws -> Bool {
         var descriptor = FetchDescriptor<Show>()
         descriptor.fetchLimit = 1
@@ -509,7 +515,7 @@ final class AppStore {
             let accepted = try await viewing.markUnwatched(episodeIDs: removals.sorted())
             confirmed.formUnion(accepted.intersection(removals))
         }
-        let local = try allShows().first { $0.traktID == showID }
+        let local = try show(id: showID)
         for episode in episodes where confirmed.contains(episode.ids.trakt) {
             local?.episodes.first { $0.season == episode.season && $0.number == episode.number }?.watchedAt = nil
         }
@@ -519,7 +525,7 @@ final class AppStore {
     }
 
     private func saveConfirmedWatches(_ episodes: [RemoteEpisode], showID: Int, confirmed: [Int: Date]) throws {
-        let local = try allShows().first { $0.traktID == showID }
+        let local = try show(id: showID)
         for episode in episodes {
             guard let date = confirmed[episode.ids.trakt],
                   let saved = local?.episodes.first(where: { $0.season == episode.season && $0.number == episode.number }) else { continue }
@@ -544,7 +550,7 @@ final class AppStore {
         if (existing != nil) != watched {
             try await viewing.setWatched(episodeID: episode.ids.trakt, watched: watched)
         }
-        if let local = try allShows().first(where: { $0.traktID == showID })?.episodes
+        if let local = try show(id: showID)?.episodes
             .first(where: { $0.season == episode.season && $0.number == episode.number }) {
             local.watchedAt = watched ? (Dates.parse(existing?.lastWatchedAt) ?? Date()) : nil
             if watched { local.isSkipped = false }
@@ -762,7 +768,7 @@ final class AppStore {
         do {
             try await viewing.follow(source)
             settings.hiddenShowIDs.remove(source.id)
-            if let show = try allShows().first(where: { $0.traktID == source.id }) { show.isFollowing = true }
+            if let show = try show(id: source.id) { show.isFollowing = true }
             else { context.insert(Show(traktID: source.id, tmdbID: source.ids.tmdb, title: source.title, imdbID: source.ids.imdb)) }
             try context.save()
         } catch { errorMessage = error.localizedDescription }
@@ -776,7 +782,7 @@ final class AppStore {
         // Establish the personal entry before removing the shared copy.
         try await viewing.follow(programme.show)
         guard settings.traktAccountID == account else { throw CancellationError() }
-        if let show = try allShows().first(where: { $0.traktID == programme.id }) {
+        if let show = try show(id: programme.id) {
             show.isFollowing = true
         } else {
             context.insert(Show(traktID: programme.id, tmdbID: programme.show.ids.tmdb, title: programme.show.title, imdbID: programme.show.ids.imdb))
@@ -805,7 +811,7 @@ final class AppStore {
         if let shows = try? allShows() { await Notifications.rebuild(shows: shows, sharedProgrammes: sharedShows.lists.flatMap(\.programmes), includeSpecials: settings.includeSpecials, demo: settings.demoMode) }
     }
     func prepareSharedReminderShow(_ source: RemoteShow, episodes: [RemoteEpisode]) throws -> Show {
-        let existing = try allShows().first { $0.traktID == source.id }
+        let existing = try show(id: source.id)
         let show = existing ?? Show(traktID: source.id, tmdbID: source.ids.tmdb, title: source.title, imdbID: source.ids.imdb)
         if existing == nil {
             show.isFollowing = false
@@ -1003,11 +1009,13 @@ final class AppStore {
     }
 
     func episode(forWidgetLink link: WidgetEpisodeLink) -> Episode? {
-        guard link.accountScope == widgetAccountScope,
-              let shows = try? allShows() else { return nil }
-        return shows.filter { $0.isFollowing && !settings.hiddenShowIDs.contains($0.traktID) }
-            .flatMap(\.episodes)
-            .first { $0.key == link.episodeKey }
+        guard link.accountScope == widgetAccountScope else { return nil }
+        let key = link.episodeKey
+        var descriptor = FetchDescriptor<Episode>(predicate: #Predicate { $0.key == key })
+        descriptor.fetchLimit = 1
+        guard let episode = try? context.fetch(descriptor).first, let show = episode.show,
+              show.isFollowing, !settings.hiddenShowIDs.contains(show.traktID) else { return nil }
+        return episode
     }
 
     var widgetAccountScope: String {
@@ -1020,16 +1028,34 @@ final class AppStore {
                                       hiddenShowIDs: settings.hiddenShowIDs, includeSpecials: settings.includeSpecials)
     }
 
-    nonisolated private static func widgetLibrary(context: ModelContext, accountScope: String,
-                                                 hiddenShowIDs: Set<Int>, includeSpecials: Bool) throws -> WidgetLibrary {
-        let shows = try context.fetch(Show.withEpisodes)
-            .filter { $0.isFollowing && !hiddenShowIDs.contains($0.traktID) }
+    nonisolated static func widgetLibrary(context: ModelContext, accountScope: String,
+                                         hiddenShowIDs: Set<Int>, includeSpecials: Bool,
+                                         now: Date = Date()) throws -> WidgetLibrary {
+        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: AirDates.day(now))
+            ?? AirDates.day(now).addingTimeInterval(86_400)
+        let shows = try context.fetch(Show.followed)
+            .filter { !hiddenShowIDs.contains($0.traktID) }
             .sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
             .map { show in
-                let episodes = show.episodes.compactMap { episode -> WidgetEpisode? in
-                    guard episode.watchedAt == nil, !episode.isSkipped,
-                          includeSpecials || episode.season > 0,
-                          let firstAired = episode.firstAired else { return nil }
+                let showID = show.traktID
+                let minimumSeason = includeSpecials ? 0 : 1
+                let unknownDate = Date.distantPast
+                let order = [SortDescriptor(\Episode.season), SortDescriptor(\Episode.number)]
+                var aired = FetchDescriptor<Episode>(predicate: #Predicate {
+                    $0.show?.traktID == showID && $0.watchedAt == nil && !$0.isSkipped
+                        && $0.season >= minimumSeason && $0.firstAired != nil
+                        && ($0.firstAired ?? unknownDate) < tomorrow
+                }, sortBy: order)
+                aired.fetchLimit = 1
+                let future = FetchDescriptor<Episode>(predicate: #Predicate {
+                    $0.show?.traktID == showID && $0.watchedAt == nil && !$0.isSkipped
+                        && $0.season >= minimumSeason && ($0.firstAired ?? unknownDate) >= tomorrow
+                }, sortBy: order)
+                // Actions publish a fresh snapshot, so only the next aired episode is needed.
+                // Keep future episodes for correct timeline transitions, including out-of-order air dates.
+                let candidates = try context.fetch(aired) + context.fetch(future)
+                let episodes = candidates.compactMap { episode -> WidgetEpisode? in
+                    guard let firstAired = episode.firstAired else { return nil }
                     return WidgetEpisode(
                         id: episode.key, season: episode.season, number: episode.number,
                         title: episode.title, overview: episode.overview,
@@ -1142,7 +1168,7 @@ final class AppStore {
         }
         guard !accountScope.isEmpty, accountScope == widgetAccountScope,
               settings.demoMode || connected,
-              let show = try allShows().first(where: { $0.traktID == showID && $0.isFollowing }),
+              let show = try show(id: showID), show.isFollowing,
               !settings.hiddenShowIDs.contains(showID),
               let episode = show.episodes.first(where: { $0.key == episodeKey }) else {
             publishWidgetSnapshot()

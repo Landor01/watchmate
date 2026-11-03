@@ -83,7 +83,7 @@ private struct HouseholdListView: View {
     @State private var removing: SharedProgramme?
     @State private var moving: SharedProgramme?
     @State private var checkedMissingList = false
-    @Query(Show.withEpisodes) private var shows: [Show]
+    @Query(Show.all) private var shows: [Show]
     @State private var catalogues: [Int: [RemoteEpisode]] = [:]
 
     private var list: HouseholdList? { store.sharedShows.lists.first { $0.id == listID } }
@@ -294,7 +294,7 @@ private struct SharedProgrammeRow: View {
         .padding(.vertical, 6)
         .task(id: programme.show.ids.tmdb) {
             if PreviewEnvironment.isRunning {
-                posterPath = try? store.allShows().first(where: { $0.traktID == programme.id })?.posterPath
+                posterPath = try? store.show(id: programme.id)?.posterPath
                 return
             }
             posterPath = nil

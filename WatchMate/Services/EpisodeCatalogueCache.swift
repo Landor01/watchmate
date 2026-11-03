@@ -25,6 +25,13 @@ actor EpisodeCatalogueCache {
         await shared.readSnapshot(showID)
     }
 
+    static func releaseMemory() async { await shared.removeAllFromMemory() }
+
+    func removeAllFromMemory() {
+        snapshots.removeAll()
+        recentlyUsed.removeAll()
+    }
+
     static func save(_ episodes: [RemoteEpisode], showID: Int, now: Date = Date(), seriesStatus: String? = nil) async {
         await shared.saveSnapshot(episodes, showID: showID, now: now, seriesStatus: seriesStatus)
     }

@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import UIKit
 
 /// One store per app process, shared by the UI and background widget actions.
 @MainActor
@@ -7,6 +8,9 @@ final class AppServices {
     private static var instance: AppServices?
     let container: ModelContainer
     let store: AppStore
+    private var memoryWarningTask: Task<Void, Never>?
+
+    deinit { memoryWarningTask?.cancel() }
 
     static func shared() throws -> AppServices {
         if let instance { return instance }
@@ -32,5 +36,13 @@ final class AppServices {
         let configuration = ModelConfiguration(url: url, cloudKitDatabase: .none)
         container = try ModelContainer(for: Show.self, Episode.self, configurations: configuration)
         store = AppStore(context: container.mainContext, settings: Settings())
+        memoryWarningTask = Task { [weak store] in
+            for await _ in NotificationCenter.default.notifications(named: UIApplication.didReceiveMemoryWarningNotification) {
+                guard !Task.isCancelled else { return }
+                store?.catalogue.releaseCachedMetadata()
+                TraktService.releaseCachedEpisodes()
+                await EpisodeCatalogueCache.releaseMemory()
+            }
+        }
     }
 }

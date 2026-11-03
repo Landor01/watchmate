@@ -87,25 +87,21 @@ final class TMDBService: CatalogueService {
         let posterPath: String?
         let episodes: [EpisodeArtwork]
     }
-    private var seasonArtworkCache: [String: (date: Date, details: SeasonDetails)] = [:]
-    private var seasonArtworkRequests: [String: Task<SeasonDetails, Error>] = [:]
+    private let seasonArtworkCache = CatalogueReadCache<String, SeasonDetails>(
+        lifetime: 3600, maximumCost: 1_000_000,
+        cost: { $0.episodes.reduce(128) { $0 + 64 + ($1.stillPath?.utf8.count ?? 0) } })
+
+    func releaseCachedMetadata() {
+        seasonArtworkCache.removeAll()
+        showCache.removeAll()
+        regionCache.removeAll()
+        providerCache.removeAll()
+    }
 
     func episodeArtwork(tmdbID: Int, season: Int, episode: Int) async throws -> [String] {
         let key = "\(tmdbID):\(season)"
-        let details: SeasonDetails
-        if let cached = seasonArtworkCache[key], Date().timeIntervalSince(cached.date) < 3600 {
-            details = cached.details
-        } else if let request = seasonArtworkRequests[key] {
-            details = try await request.value
-        } else {
-            // Share one season request across all episode rows, including concurrent appearances.
-            let request = Task {
-                try await self.get("tv/\(tmdbID)/season/\(season)", type: SeasonDetails.self)
-            }
-            seasonArtworkRequests[key] = request
-            defer { seasonArtworkRequests[key] = nil }
-            details = try await request.value
-            seasonArtworkCache[key] = (Date(), details)
+        let details = try await seasonArtworkCache.value(for: key) {
+            try await self.get("tv/\(tmdbID)/season/\(season)", type: SeasonDetails.self)
         }
         return [details.episodes.first { $0.episodeNumber == episode }?.stillPath, details.posterPath]
             .compactMap { $0 }

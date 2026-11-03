@@ -31,7 +31,16 @@ final class Show {
     var imdbURL: URL? {
         IDs(trakt: traktID, tmdb: tmdbID, imdb: imdbID).imdbURL
     }
-    // Load episodes with their shows so UI access does not fault the relationship per row.
+    // Metadata-only reads must not materialize the entire episode library.
+    static var all: FetchDescriptor<Show> {
+        FetchDescriptor<Show>(sortBy: [SortDescriptor(\Show.title)])
+    }
+
+    static var followed: FetchDescriptor<Show> {
+        FetchDescriptor<Show>(predicate: #Predicate { $0.isFollowing }, sortBy: [SortDescriptor(\Show.title)])
+    }
+
+    // Retained for callers that explicitly need every episode (for example fixtures).
     static var withEpisodes: FetchDescriptor<Show> {
         var descriptor = FetchDescriptor<Show>(sortBy: [SortDescriptor(\Show.title)])
         descriptor.relationshipKeyPathsForPrefetching = [\Show.episodes]

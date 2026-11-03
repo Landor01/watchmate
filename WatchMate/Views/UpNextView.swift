@@ -21,7 +21,7 @@ struct UpNextView: View {
     @State private var showingAirDateInfo = false
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(AppStore.self) private var store
-    @Query(Show.withEpisodes) private var shows: [Show]
+    @Query(Show.followed) private var shows: [Show]
 
     @State private var sharedCatalogue = SharedDiscoveryCatalogue()
 
@@ -271,7 +271,7 @@ struct MyShowsView: View {
     @State private var showToRemove: Show?
     @State private var confirmRemoval = false
     @State private var showToShare: Show?
-    @Query(Show.withEpisodes) private var shows: [Show]
+    @Query(Show.followed) private var shows: [Show]
     @Environment(AppStore.self) private var store
     var body: some View {
         let personalShows = shows.filter { $0.isFollowing && (!store.sharedShows.showIDs.contains($0.traktID) || store.sharedShows.personalShowIDs.contains($0.traktID)) }
@@ -436,7 +436,7 @@ struct SharedDiscoveryRow: View {
         .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
         .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
         .task(id: "\(entry.id):\(entry.tmdbID ?? 0):\(store.settings.region)") {
-            let local = try? store.allShows().first { $0.traktID == entry.showID }
+            let local = try? store.show(id: entry.showID)
             let demo = DemoLibrary.artwork(for: "\(entry.showID):\(entry.episode.season):\(entry.episode.number)")
             artwork = [demo, local?.posterPath].compactMap { $0 }
             providers = local?.providerRegion == store.settings.region ? local?.providers ?? [] : []

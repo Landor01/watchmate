@@ -1,12 +1,14 @@
 import Foundation
 import Observation
 import UIKit
+import ImageIO
 
 @MainActor @Observable
 final class Settings {
     private(set) var profileImage: UIImage? = {
         guard let url = profileImageURL else { return nil }
-        return UIImage(contentsOfFile: url.path)
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, [kCGImageSourceShouldCache: false] as CFDictionary) else { return nil }
+        return thumbnail(source: source, maximumPixels: 512)
     }()
 
     private static var profileImageURL: URL? {
@@ -49,6 +51,37 @@ final class Settings {
         return data
     }
 
+    /// Decode only the pixels needed by the cropper, never the full camera original.
+    static func photoForCropping(_ data: Data, maximumPixels: Int = 2048) -> UIImage? {
+        guard let source = CGImageSourceCreateWithData(data as CFData,
+            [kCGImageSourceShouldCache: false] as CFDictionary) else { return nil }
+        return thumbnail(source: source, maximumPixels: maximumPixels)
+    }
+
+    private static func thumbnail(source: CGImageSource, maximumPixels: Int) -> UIImage? {
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: maximumPixels,
+            kCGImageSourceShouldCacheImmediately: true
+        ]
+        guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+        return UIImage(cgImage: image)
+    }
+
+    /// Camera capture already supplies a UIImage; release that original before presenting the cropper.
+    static func photoForCropping(_ image: UIImage) -> UIImage {
+        let longest = max(image.size.width, image.size.height)
+        guard longest > 0, longest * image.scale > 2048 else { return image }
+        let scale = 2048 / longest
+        let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        return UIGraphicsImageRenderer(size: size, format: format).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: size))
+        }
+    }
+
     func applyProfilePhotoData(_ data: Data) throws {
         guard data != profilePhotoData else { return }
         guard let url = Self.profileImageURL else {
@@ -60,7 +93,7 @@ final class Settings {
             profileImage = nil
             return
         }
-        guard let image = UIImage(data: data) else {
+        guard let image = Self.photoForCropping(data, maximumPixels: 512) else {
             throw APIError.message("Your profile photo could not be opened.")
         }
         try data.write(to: url, options: .atomic)

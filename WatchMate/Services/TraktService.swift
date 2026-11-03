@@ -131,7 +131,12 @@ final class TraktService: ViewingService {
         return try await HTTP.decode(RemoteShow.self, request: request)
     }
 
-    private static let episodeCache = CatalogueReadCache<Int, [RemoteEpisode]>(lifetime: 900)
+    private static let episodeCache = CatalogueReadCache<Int, [RemoteEpisode]>(
+        lifetime: 900, maximumCost: 4_000_000, cost: { episodes in
+            episodes.reduce(0) { $0 + 256 + ($1.title?.utf8.count ?? 0) + ($1.overview?.utf8.count ?? 0) }
+        })
+
+    static func releaseCachedEpisodes() { episodeCache.removeAll() }
 
     func refreshEpisodes(showID: Int) async throws -> [RemoteEpisode] {
         Self.episodeCache.invalidate(showID)

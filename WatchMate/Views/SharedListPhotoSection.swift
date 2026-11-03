@@ -145,7 +145,7 @@ struct SharedListPhotoSection: View {
             guard let selectedPhotoItem else { return }
             do {
                 guard let data = try await selectedPhotoItem.loadTransferable(type: Data.self),
-                      let image = UIImage(data: data) else {
+                      let image = Settings.photoForCropping(data) else {
                     throw APIError.message("This photo could not be opened. Please choose another photo.")
                 }
                 try Task.checkCancellation()
@@ -205,7 +205,7 @@ struct SharedListPhotoSection: View {
 
 struct SharedListSummaryView: View {
     @Environment(AppStore.self) private var store
-    @Query(Show.withEpisodes) private var shows: [Show]
+    @Query(Show.all) private var shows: [Show]
     let list: HouseholdList
     var programme: SharedProgramme? = nil
     private var programmes: [SharedProgramme] { programme.map { [$0] } ?? list.programmes }

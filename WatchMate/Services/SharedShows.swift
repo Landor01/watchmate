@@ -204,16 +204,18 @@ final class SharedShows {
                         }
                         guard session == generation else { return }
                         guard revision == cacheRevision else { refreshRequested = true; continue }
-                        _ = try updated.list()
+                        let updatedList = try updated.list()
                         cache?.zones[zone.key] = updated
-                        if updated.recordData != zone.recordData { publishCache(persist: false) }
+                        if updated.recordData != zone.recordData {
+                            publishList(updatedList, zoneID: zone.zoneID)
+                        }
                     } catch {
                         guard session == generation else { return }
                         guard revision == cacheRevision else { refreshRequested = true; continue }
                         if let cloudError = error as? CKError,
                            [.zoneNotFound, .userDeletedZone, .permissionFailure].contains(cloudError.code) {
                             cache?.zones.removeValue(forKey: zone.key)
-                            publishCache(persist: false)
+                            publishList(nil, zoneID: zone.zoneID)
                         } else {
                             // An individual record can return unknownItem without the zone
                             // being revoked. Keep the saved list and retry on the next fetch.
@@ -265,6 +267,12 @@ final class SharedShows {
         }
     }
 
+    private func publishList(_ list: HouseholdList?, zoneID: CKRecordZone.ID) {
+        var updated = lists.filter { $0.zoneID != zoneID }
+        if let list { updated.append(list) }
+        lists = updated.sorted { $0.name < $1.name }
+    }
+
     private func clearCachedLists() {
         cache = nil
         lists = []
@@ -286,8 +294,13 @@ final class SharedShows {
         do {
             let token = try zone.changeToken()
             try zone.apply(records: records, deleted: [], token: token)
+            let list = try zone.list()
             cache?.zones[key] = zone
-            publishCache()
+            publishList(list, zoneID: zone.zoneID)
+            if let accountID {
+                do { try cache?.save(accountID: accountID) }
+                catch { refreshMessage = "Shared lists are available, but could not be saved on this device." }
+            }
         } catch {
             // Recover with a full fetch of this zone if its saved token or record is damaged.
             cache?.zones.removeValue(forKey: key)

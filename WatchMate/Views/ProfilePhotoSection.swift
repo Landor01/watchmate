@@ -101,7 +101,7 @@ struct ProfilePhotoSection: View {
                 guard let item = selectedPhotoItem else { return }
                 do {
                     guard let data = try await item.loadTransferable(type: Data.self),
-                          let image = UIImage(data: data) else {
+                          let image = Settings.photoForCropping(data) else {
                         throw APIError.message("This photo could not be opened. Please choose another photo.")
                     }
                     try Task.checkCancellation()
@@ -229,7 +229,7 @@ struct CameraCaptureView: UIViewControllerRepresentable {
 
         func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
             if let image = info[.originalImage] as? UIImage {
-                onImage(image)
+                onImage(Settings.photoForCropping(image))
             } else {
                 onCancel()
             }

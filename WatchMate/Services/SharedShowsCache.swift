@@ -9,6 +9,8 @@ struct SharedZoneCache: Codable {
     let shared: Bool
     var recordData: [String: Data] = [:]
     var tokenData: Data?
+    // Only revisions explicitly replaced or removed are safe to discard across incremental pages.
+    var obsoleteEpisodeRevisions: Set<String>?
 
     init(zoneID: CKRecordZone.ID, shared: Bool) {
         zoneName = zoneID.zoneName
@@ -29,44 +31,107 @@ struct SharedZoneCache: Codable {
     }
 
     mutating func apply(records: [CKRecord], deleted: [CKRecord.ID], token: CKServerChangeToken?) throws {
+        var obsolete = obsoleteEpisodeRevisions ?? []
+        // Inspect programme changes before events; CloudKit may deliver them in either order.
+        for record in records where record.recordType == "HouseholdShow" {
+            let name = record.recordID.recordName
+            let replacement = try programme(in: record)
+            if let data = recordData[name], let old = try programme(in: decode(data)),
+               old.revision != replacement?.revision {
+                obsolete.insert(old.revision)
+            }
+            if (record["removed"] as? Int ?? 0) != 0, let replacement {
+                obsolete.insert(replacement.revision)
+            }
+        }
         for id in deleted { recordData.removeValue(forKey: id.recordName) }
         for record in records where record.recordType.hasPrefix("Household") {
             recordData[record.recordID.recordName] = try NSKeyedArchiver.archivedData(withRootObject: record, requiringSecureCoding: true)
         }
+        if !obsolete.isEmpty {
+            for (key, data) in recordData {
+                let discard = try autoreleasepool {
+                    let record = try decode(data)
+                    return record.recordType == "HouseholdEpisode"
+                        && (record["revision"] as? String).map { obsolete.contains($0) } == true
+                }
+                if discard { recordData.removeValue(forKey: key) }
+            }
+        }
+        obsoleteEpisodeRevisions = obsolete.isEmpty ? nil : obsolete
         tokenData = try token.map { try NSKeyedArchiver.archivedData(withRootObject: $0, requiringSecureCoding: true) }
     }
 
-    func list() throws -> HouseholdList? {
-        var records: [String: CKRecord] = [:]
-        for (key, data) in recordData {
-            guard let record = try NSKeyedUnarchiver.unarchivedObject(ofClass: CKRecord.self, from: data) else {
-                throw APIError.message("The saved shared list could not be read.")
-            }
-            records[key] = record
+    private func decode(_ data: Data) throws -> CKRecord {
+        guard let record = try NSKeyedUnarchiver.unarchivedObject(ofClass: CKRecord.self, from: data) else {
+            throw APIError.message("The saved shared list could not be read.")
         }
-        guard let header = records.values.first(where: { $0.recordType == "HouseholdList" }),
-              let name = header["name"] as? String else { return nil }
-        let programmes = try records.values.filter { $0.recordType == "HouseholdShow" && ($0["removed"] as? Int ?? 0) == 0 }.map { record -> SharedProgramme in
-            guard let data = record["payload"] as? Data else { throw APIError.message("A shared programme could not be read.") }
-            let programme = try JSONDecoder().decode(SharedProgramme.self, from: data)
+        return record
+    }
+
+    private func programme(in record: CKRecord) throws -> SharedProgramme? {
+        guard let data = record["payload"] as? Data else { return nil }
+        return try JSONDecoder().decode(SharedProgramme.self, from: data)
+    }
+
+    func list() throws -> HouseholdList? {
+        struct Event {
+            let revision: String
+            let id: Int
+            let season: Int?
+            let number: Int?
+            let watchedAt: Date?
+            let skipped: Bool
+        }
+        var name: String?
+        var photo: Data?
+        var programmes: [SharedProgramme] = []
+        var events: [Int: [Event]] = [:]
+        // Release each unarchived CloudKit object immediately; retain only display fields.
+        for data in recordData.values {
+            try autoreleasepool {
+                let record = try decode(data)
+                switch record.recordType {
+                case "HouseholdList":
+                    name = record["name"] as? String
+                    photo = record["photoData"] as? Data
+                case "HouseholdShow":
+                    if (record["removed"] as? Int ?? 0) == 0 {
+                        guard let programme = try programme(in: record) else {
+                            throw APIError.message("A shared programme could not be read.")
+                        }
+                        programmes.append(programme)
+                    }
+                case "HouseholdEpisode":
+                    if let showID = record["showID"] as? Int, let id = record["episodeID"] as? Int,
+                       let revision = record["revision"] as? String {
+                        events[showID, default: []].append(Event(revision: revision, id: id,
+                            season: record["season"] as? Int, number: record["number"] as? Int,
+                            watchedAt: record["watchedAt"] as? Date, skipped: (record["skipped"] as? Int) == 1))
+                    }
+                default: break
+                }
+            }
+        }
+        guard let name else { return nil }
+        let merged = programmes.map { programme in
             var episodes = Dictionary(programme.episodes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
             var skipped = programme.skippedEpisodeIDs ?? []
-            for event in records.values where event.recordType == "HouseholdEpisode" && event["showID"] as? Int == programme.id && event["revision"] as? String == programme.revision {
-                guard let id = event["episodeID"] as? Int else { continue }
-                if let date = event["watchedAt"] as? Date,
-                   let season = event["season"] as? Int, let number = event["number"] as? Int {
-                    episodes[id] = SharedEpisode(id: id, season: season, number: number, watchedAt: date)
-                } else { episodes.removeValue(forKey: id) }
-                if episodes[id] == nil && (event["skipped"] as? Int) == 1 { skipped.insert(id) }
-                else { skipped.remove(id) }
+            for event in events[programme.id] ?? [] where event.revision == programme.revision {
+                if let date = event.watchedAt, let season = event.season, let number = event.number {
+                    episodes[event.id] = SharedEpisode(id: event.id, season: season, number: number, watchedAt: date)
+                } else { episodes.removeValue(forKey: event.id) }
+                if episodes[event.id] == nil && event.skipped { skipped.insert(event.id) }
+                else { skipped.remove(event.id) }
             }
             return SharedProgramme(show: programme.show, addedBy: programme.addedBy,
-                                   episodes: episodes.values.sorted { ($0.season, $0.number) < ($1.season, $1.number) }, skippedEpisodeIDs: skipped, notes: programme.notes, revision: programme.revision)
+                episodes: episodes.values.sorted { ($0.season, $0.number) < ($1.season, $1.number) },
+                skippedEpisodeIDs: skipped, notes: programme.notes, revision: programme.revision)
         }
         return HouseholdList(zoneID: zoneID, name: name, shared: shared,
-                                 programmes: programmes.sorted { $0.show.title < $1.show.title },
-                                 photoData: header["photoData"] as? Data)
+                             programmes: merged.sorted { $0.show.title < $1.show.title }, photoData: photo)
     }
+
 }
 
 struct SharedShowsCache: Codable {

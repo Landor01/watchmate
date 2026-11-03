@@ -22,6 +22,41 @@ struct SharedShowsCacheTests {
         return record
     }
 
+    @Test func replacedRevisionDropsOnlyObsoleteEventsAndSurvivesReload() throws {
+        var cache = zone()
+        let programme = try show(cache)
+        func event(_ name: String, revision: String, id: Int) -> CKRecord {
+            let record = CKRecord(recordType: "HouseholdEpisode", recordID: .init(recordName: name, zoneID: cache.zoneID))
+            record["showID"] = 1 as CKRecordValue
+            record["episodeID"] = id as CKRecordValue
+            record["season"] = 1 as CKRecordValue
+            record["number"] = id as CKRecordValue
+            record["revision"] = revision as CKRecordValue
+            record["watchedAt"] = Date(timeIntervalSince1970: 100) as CKRecordValue
+            return record
+        }
+        let old = event("old-event", revision: "revision", id: 10)
+        let new = event("new-event", revision: "replacement", id: 20)
+        try cache.apply(records: [header(cache), programme, old], deleted: [], token: nil)
+        // A new revision's events can arrive before its header. Do not discard them.
+        try cache.apply(records: [new], deleted: [], token: nil)
+        #expect(cache.recordData["new-event"] != nil)
+        var replacement = try JSONDecoder().decode(SharedProgramme.self, from: #require(programme["payload"] as? Data))
+        replacement.revision = "replacement"
+        programme["payload"] = try JSONEncoder().encode(replacement) as CKRecordValue
+        try cache.apply(records: [programme], deleted: [], token: nil)
+        #expect(cache.recordData["old-event"] == nil)
+        #expect(try cache.list()?.programmes.first?.episodes.map(\.id) == [20])
+        cache = try JSONDecoder().decode(SharedZoneCache.self, from: JSONEncoder().encode(cache))
+        try cache.apply(records: [old], deleted: [], token: nil)
+        #expect(cache.recordData["old-event"] == nil)
+        #expect(try cache.list()?.programmes.first?.episodes.map(\.id) == [20])
+        programme["removed"] = 1 as CKRecordValue
+        try cache.apply(records: [programme], deleted: [], token: nil)
+        #expect(cache.recordData["new-event"] == nil)
+        #expect(try cache.list()?.programmes.isEmpty == true)
+    }
+
     @Test @MainActor func confirmedAddAppearsWithoutAnInitializedCache() throws {
         let service = SharedShows()
         let cache = zone()

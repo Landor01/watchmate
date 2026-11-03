@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import SwiftData
 @testable import WatchMate
 
 struct WidgetTests {
@@ -9,6 +10,47 @@ struct WidgetTests {
         WidgetEpisode(id: "12:\(season):\(number)", season: season, number: number,
                       title: "Episode \(number)", overview: "Synopsis", firstAired: now.addingTimeInterval(offset),
                       runtime: 45)
+    }
+
+    @Test @MainActor func snapshotFetchesOnlyNextAiredAndFutureEpisodes() throws {
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none)
+        let container = try ModelContainer(for: Show.self, Episode.self, configurations: configuration)
+        let context = container.mainContext
+        let today = AirDates.day(now)
+        let tomorrow = try #require(Calendar.current.date(byAdding: .day, value: 1, to: today))
+        for showID in 1...3 {
+            let show = Show(traktID: showID, tmdbID: nil, title: "Show \(showID)")
+            show.isFollowing = showID != 3
+            context.insert(show)
+            for number in 1...100 {
+                let episode = Episode(showID: showID, remote: RemoteEpisode(season: 1, number: number,
+                    title: "Episode", ids: IDs(trakt: showID * 1000 + number, tmdb: nil), overview: "Synopsis",
+                    firstAired: nil, runtime: 30))
+                episode.firstAired = number == 100 ? tomorrow : today
+                episode.watchedAt = number == 1 ? now : nil
+                episode.isSkipped = number == 2
+                episode.show = show
+                context.insert(episode)
+            }
+            let special = Episode(showID: showID, remote: RemoteEpisode(season: 0, number: 1,
+                title: "Special", ids: IDs(trakt: showID * 1000, tmdb: nil), overview: nil,
+                firstAired: nil, runtime: nil))
+            special.firstAired = today
+            special.show = show
+            context.insert(special)
+        }
+        try context.save()
+        let readContext = ModelContext(container)
+        let library = try AppStore.widgetLibrary(context: readContext, accountScope: "test",
+            hiddenShowIDs: [2], includeSpecials: false, now: now)
+        #expect(library.shows.map(\.id) == [1])
+        let show = try #require(library.shows.first)
+        #expect(show.episodes.map(\.number) == [3, 100])
+        #expect(show.nextEpisode(at: now)?.number == 3)
+        #expect(show.nextAirDate(after: now) == tomorrow)
+        let specials = try AppStore.widgetLibrary(context: readContext, accountScope: "test",
+            hiddenShowIDs: [2], includeSpecials: true, now: now)
+        #expect(specials.shows.first?.nextEpisode(at: now)?.season == 0)
     }
 
     @Test func oldSnapshotsDecodeWithoutSharedMembership() throws {

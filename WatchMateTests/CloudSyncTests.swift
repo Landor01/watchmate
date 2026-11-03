@@ -4,6 +4,22 @@ import UIKit
 @testable import WatchMate
 
 struct CloudSyncTests {
+    @Test @MainActor func photoIsDownsampledBeforeCropping() throws {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let original = UIGraphicsImageRenderer(size: CGSize(width: 3000, height: 2000), format: format).image { context in
+            UIColor.blue.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 3000, height: 2000))
+        }
+        let data = try #require(original.jpegData(compressionQuality: 0.8))
+        let decoded = try #require(Settings.photoForCropping(data))
+        #expect(decoded.cgImage?.width == 2048)
+        #expect((decoded.cgImage?.height ?? 0) <= 1366)
+        let camera = Settings.photoForCropping(original)
+        #expect(camera.size.width * camera.scale == 2048)
+        #expect(Settings.photoForCropping(Data("invalid".utf8)) == nil)
+    }
+
     @Test func singleNoteEditPreservesOtherBaselinesAndSurvivesRelaunch() throws {
         var journal = CloudSyncJournal()
         let region = Data("GB".utf8)

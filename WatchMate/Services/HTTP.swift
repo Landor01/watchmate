@@ -47,17 +47,28 @@ enum HTTP {
 /// cancel a request still needed by another screen.
 @MainActor
 final class CatalogueReadCache<Key: Hashable, Value: Sendable> {
-    private var values: [Key: (date: Date, value: Value)] = [:]
+    private var values: [Key: (date: Date, value: Value, cost: Int)] = [:]
     private var requests: [Key: Task<Value, Error>] = [:]
     private let lifetime: TimeInterval
     private let now: () -> Date
+    private let maximumCost: Int
+    private let cost: (Value) -> Int
+    private var generation = 0
 
-    init(lifetime: TimeInterval, now: @escaping () -> Date = Date.init) {
+    init(lifetime: TimeInterval, maximumCost: Int = 128,
+         cost: @escaping (Value) -> Int = { _ in 1 }, now: @escaping () -> Date = Date.init) {
         self.lifetime = lifetime
+        self.maximumCost = maximumCost
+        self.cost = cost
         self.now = now
     }
 
     func invalidate(_ key: Key) { values[key] = nil }
+
+    func removeAll() {
+        values.removeAll()
+        generation += 1
+    }
 
     func value(for key: Key, load: @escaping @MainActor () async throws -> Value) async throws -> Value {
         try Task.checkCancellation()
@@ -69,15 +80,21 @@ final class CatalogueReadCache<Key: Hashable, Value: Sendable> {
             try Task.checkCancellation()
             return value
         }
+        let generation = generation
         let request = Task { try await load() }
         requests[key] = request
         defer { requests[key] = nil }
         let value = try await request.value
-        // Bound retained catalogue data even when browsing a large library.
-        if values.count >= 128, let oldest = values.min(by: { $0.value.date < $1.value.date })?.key {
-            values[oldest] = nil
+        let valueCost = max(1, cost(value))
+        // A memory warning must not be undone by a request already in flight.
+        if generation == self.generation, valueCost <= maximumCost {
+            var total = values.values.reduce(0) { $0 + $1.cost }
+            while total + valueCost > maximumCost || values.count >= 128 {
+                guard let oldest = values.min(by: { $0.value.date < $1.value.date })?.key else { break }
+                total -= values.removeValue(forKey: oldest)?.cost ?? 0
+            }
+            values[key] = (now(), value, valueCost)
         }
-        values[key] = (now(), value)
         try Task.checkCancellation()
         return value
     }

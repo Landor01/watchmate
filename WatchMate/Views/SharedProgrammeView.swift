@@ -151,7 +151,7 @@ struct SharedProgrammeView: View {
         resolvedIMDbURL = nil
         guard let programme, programme.show.ids.imdbURL == nil else { return }
         // Older shared payloads may predate IMDb IDs. Prefer an offline local match.
-        if let show = try? store.allShows().first(where: { $0.traktID == showID }),
+        if let show = try? store.show(id: showID),
            let url = show.imdbURL {
             resolvedIMDbURL = url
             return
@@ -166,7 +166,7 @@ struct SharedProgrammeView: View {
     private func loadEpisodes(forceRefresh: Bool = false) async {
         guard let programme else { return }
         if PreviewEnvironment.isRunning {
-            if let show = try? store.allShows().first(where: { $0.traktID == showID }) {
+            if let show = try? store.show(id: showID) {
                 localShow = show
                 posterPath = show.posterPath
                 episodes = show.episodes.map {
@@ -177,7 +177,7 @@ struct SharedProgrammeView: View {
             }
             return
         }
-        localShow = try? store.allShows().first { $0.traktID == showID }
+        localShow = try? store.show(id: showID)
         let cached = await EpisodeCatalogueCache.read(showID)
         guard !Task.isCancelled else { return }
         if let cached { episodes = cached.episodes }

@@ -4,6 +4,32 @@ import Testing
 
 @MainActor
 struct CatalogueRequestTests {
+    @Test func cacheEvictsByCostAndDoesNotRetainOversizedValues() async throws {
+        let cache = CatalogueReadCache<Int, String>(lifetime: 60, maximumCost: 10, cost: { $0.utf8.count })
+        _ = try await cache.value(for: 1) { "123456" }
+        _ = try await cache.value(for: 2) { "abcdef" }
+        #expect(try await cache.value(for: 1) { "reloaded" } == "reloaded")
+        _ = try await cache.value(for: 3) { "too large to cache" }
+        #expect(try await cache.value(for: 3) { "new" } == "new")
+        cache.removeAll()
+        #expect(try await cache.value(for: 3) { "cleared" } == "cleared")
+    }
+
+    @Test func memoryWarningDoesNotLetInFlightRequestRepopulateCache() async throws {
+        let cache = CatalogueReadCache<Int, Int>(lifetime: 60)
+        var release: CheckedContinuation<Int, Never>?
+        let request = Task {
+            try await cache.value(for: 1) {
+                await withCheckedContinuation { release = $0 }
+            }
+        }
+        while release == nil { await Task.yield() }
+        cache.removeAll()
+        release?.resume(returning: 42)
+        #expect(try await request.value == 42)
+        #expect(try await cache.value(for: 1) { 99 } == 99)
+    }
+
     @Test func diskCataloguePreservesStatusAndEvictsMemoryWithoutLosingSavedData() async throws {
         let directory = URL.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
