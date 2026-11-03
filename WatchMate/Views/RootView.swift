@@ -14,7 +14,6 @@ struct RootView: View {
     @State private var screenshotShow: Show?
     @State private var historyOffersOpen = false
     @State private var widgetEpisodePath: [WidgetEpisodeLink] = []
-    @State private var initialRefreshComplete = false
     var body: some View {
         @Bindable var store = store
         // Reserve a separate row so the banner cannot overlap navigation controls.
@@ -30,8 +29,7 @@ struct RootView: View {
 
             TabView(selection: $selectedTab) {
                 NavigationStack(path: $widgetEpisodePath) {
-                    UpNextView(isPreparing: !initialRefreshComplete && store.connected && !store.settings.demoMode
-                               && !PreviewEnvironment.isRunning && !AppStoreScreenshotMode.isEnabled)
+                    UpNextView()
                         .modifier(ActivityToastModifier())
                         .toolbar { settingsButton }
                         .navigationDestination(for: WidgetEpisodeLink.self) { link in
@@ -243,7 +241,6 @@ struct RootView: View {
             }
             await store.start()
             guard !Task.isCancelled else { return }
-            initialRefreshComplete = true
             while !Task.isCancelled {
                 do { try await Task.sleep(for: .seconds(60)) } catch { return }
                 await store.start()
@@ -268,7 +265,7 @@ private struct ActivityToastModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .overlay(alignment: .bottom) {
-                if (showToast || store.sharedUpdateInProgress) && store.busy && !store.seasonUpdateInProgress {
+                if (showToast || store.sharedUpdateInProgress) && store.busy && !store.seasonUpdateInProgress && !store.retryingSharedProgressInBackground {
                     HStack(spacing: 10) {
                         ProgressView()
                         Text(store.status)

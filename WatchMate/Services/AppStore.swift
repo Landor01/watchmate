@@ -19,13 +19,18 @@ final class AppStore {
     private var cloudSyncInProgress = false
     private var lastCloudAttempt: Date?
     private var backgroundRefreshInProgress = false
-    private(set) var completedRefreshStages = 0
+    private(set) var retryingSharedProgressInBackground = false
+    private(set) var upNext: UpNextSnapshot?
+    @ObservationIgnored private var upNextTask: Task<Void, Never>?
+    @ObservationIgnored private var upNextRevision = 0
     @ObservationIgnored private var widgetPublicationPending = false
     private var lastProgressAttempt: Date?
     private var catalogueAttempts: [Int: Date] = [:]
     private var mutationRevision = 0
     private var refreshingShowIDs: Set<Int> = []
     private var lastAppliedCloudValues: [String: Data] = [:]
+    // Snapshot tasks can outlive their caller; keep the backing store alive with the context.
+    private let modelContainer: ModelContainer
     private let context: ModelContext
     private let viewing: any ViewingService
     var widgetEpisodeLink: WidgetEpisodeLink?
@@ -36,6 +41,7 @@ final class AppStore {
                 mutationRevision += 1
                 status = String(localized: "Working…")
             }
+            if !busy && oldValue { queueUpNextSnapshot(force: true) }
         }
     }
     var sharedUpdateInProgress = false
@@ -51,7 +57,18 @@ final class AppStore {
     init(context: ModelContext, settings: Settings, viewing: (any ViewingService)? = nil) {
         let auth = TraktAuth()
         self.auth = auth; self.viewing = viewing ?? TraktService(auth: auth)
+        self.modelContainer = context.container
         self.context = context; self.settings = settings; connected = auth.connected
+        if connected, !settings.demoMode, let account = settings.traktAccountID {
+            upNext = UpNextSnapshotCache.read(scope: account, settings: settings)
+        }
+        sharedShows.onAccountInvalidated = { [weak self] in
+            guard let self else { return }
+            UpNextSnapshotCache.remove(scope: self.widgetAccountScope)
+            self.upNext = nil
+            self.queueUpNextSnapshot(force: true)
+        }
+        sharedShows.onProgressChanged = { [weak self] in self?.queueUpNextSnapshot() }
         sharedShows.onMembershipChanged = { [weak self] in self?.publishWidgetSnapshot() }
         settings.onPreferencesChanged = { [weak self] in
             self?.queueCloudChanges()
@@ -85,9 +102,33 @@ final class AppStore {
         return states.compactMap { indexed["\($0.season):\($0.number)"] }
     }
 
+    func prepareUpNext() async {
+        guard !Task.isCancelled else { return }
+        let scope = widgetAccountScope
+        let revision = upNextRevision
+        let catalogue = SharedDiscoveryCatalogue()
+        let shows = (try? allShows()) ?? []
+        await catalogue.load(store: self, shows: shows)
+        guard !Task.isCancelled, scope == widgetAccountScope, revision == upNextRevision else { return }
+        let snapshot = UpNextSnapshot(store: self, shows: shows, catalogues: catalogue.episodes, message: catalogue.message)
+        upNext = snapshot
+        if connected, !settings.demoMode, settings.traktAccountID != nil {
+            UpNextSnapshotCache.save(snapshot, settings: settings)
+        }
+    }
+
+    private func queueUpNextSnapshot(force: Bool = false) {
+        guard force || !backgroundRefreshInProgress else { return }
+        upNextRevision += 1
+        upNextTask?.cancel()
+        upNextTask = Task { [weak self] in await self?.prepareUpNext() }
+    }
+
     func start() async {
         guard !AppStoreScreenshotMode.isEnabled, !PreviewEnvironment.isRunning else { return }
         guard !busy else { return }
+        if !settings.demoMode { sharedShows.activate(accountID: settings.traktAccountID) }
+        if upNext?.accountScope != widgetAccountScope { await prepareUpNext() }
         if settings.demoMode {
             do {
                 let shows = try allShows()
@@ -116,10 +157,12 @@ final class AppStore {
     /// invalidates the response before it can overwrite local progress.
     func refreshInBackground(now: Date = Date(), synchronizeCloud: Bool = true) async {
         guard !busy, !backgroundRefreshInProgress, connected, !settings.demoMode else { return }
+        upNextRevision += 1
+        upNextTask?.cancel()
         backgroundRefreshInProgress = true
-        completedRefreshStages = 0
         defer {
             backgroundRefreshInProgress = false
+            queueUpNextSnapshot()
             if widgetPublicationPending { publishWidgetSnapshot() }
         }
         let account = settings.traktAccountID
@@ -143,17 +186,14 @@ final class AppStore {
             } catch { /* Keep saved progress when offline; manual refresh reports errors. */ }
         }
         guard canApply() else { return }
-        completedRefreshStages = 1
         if synchronizeCloud {
             sharedShows.activate(accountID: account)
             await sharedShows.refresh(reportErrors: false, automatic: true)
             guard canApply() else { return }
-            completedRefreshStages = 2
             await syncCloud(automatic: true)
             guard canApply() else { return }
         }
 
-        completedRefreshStages = 3
         // One request at a time, with a small work budget per foreground check.
         // Persist successful timestamps; failed requests are throttled in this session.
         let candidates = ((try? allShows()) ?? []).filter {
@@ -195,16 +235,17 @@ final class AppStore {
                 catalogueRevision += 1
             } catch { /* Keep the saved shared catalogue available offline. */ }
         }
-        completedRefreshStages = 4
+
         // Acknowledge queued shared writes only while holding the mutation lock.
         if synchronizeCloud, canApply(), let account,
            let pending = try? pendingSharedProgress(accountID: account), !pending.isEmpty {
+            retryingSharedProgressInBackground = true
             busy = true
             status = String(localized: "Syncing shared progress…")
             await retryPendingSharedProgress(history: snapshot)
             busy = false
+            retryingSharedProgressInBackground = false
         }
-        completedRefreshStages = 5
     }
 
     func refreshShow(_ show: Show, now: Date = Date(), history: [WatchedShow]? = nil) async {
@@ -1095,6 +1136,7 @@ final class AppStore {
     }
 
     func publishWidgetSnapshot(errorShowID: Int? = nil, message: String? = nil, prefetchArtwork: Bool = false) {
+        queueUpNextSnapshot()
         // Batch automatic refresh publications, but keep user actions and errors immediate.
         if backgroundRefreshInProgress && !busy && errorShowID == nil && !prefetchArtwork {
             widgetPublicationPending = true

@@ -1,4 +1,5 @@
 import Foundation
+import CloudKit
 import SwiftData
 import Testing
 @testable import WatchMate
@@ -7,6 +8,89 @@ extension SharedTraktProgressTests {
 @Suite(.serialized)
 @MainActor
 struct RefreshPolicyTests {
+    @Test func presentationStaysStableUntilReplacementAndRoundTrips() async throws {
+        try await withStore { store, container, _ in
+            let show = try addShow(7, to: container, date: Date())
+            let episode = try #require(show.episodes.first)
+            episode.firstAired = Date().addingTimeInterval(-86_400)
+            episode.runtime = 42
+            await store.prepareUpNext()
+            let saved = try #require(store.upNext)
+            #expect(saved.entries.count == 1)
+            #expect(saved.waitingRuntimes == [42])
+            episode.watchedAt = Date()
+            show.title = "Changed title"
+            #expect(saved.entries.first?.show.title == "Show 7")
+            #expect(saved.entries.first?.waitingCount == 1)
+            #expect(saved.entries.first?.episode.modelContext == nil)
+            let restored = try JSONDecoder().decode(UpNextSnapshot.self, from: JSONEncoder().encode(saved))
+            #expect(restored.entries.first?.id == episode.key)
+            #expect(restored.entries.first?.show.title == "Show 7")
+            #expect(restored.waitingRuntimes == [42])
+            await store.prepareUpNext()
+            #expect(store.upNext?.entries.isEmpty == true)
+            #expect(store.upNext?.watchedRuntimes == [42])
+        }
+    }
+
+    @Test func automaticRefreshKeepsPublishedRowsWhileFetching() async throws {
+        try await withStore { store, container, service in
+            let show = try addShow(7, to: container, date: nil)
+            show.episodes.first?.firstAired = Date().addingTimeInterval(-86_400)
+            await store.prepareUpNext()
+            service.onCatalogue = {
+                // History has already updated the live model, but the visible row stays put.
+                #expect(show.episodes.first?.watchedAt != nil)
+                #expect(store.upNext?.entries.count == 1)
+                #expect(!store.busy)
+            }
+            await store.refreshInBackground(synchronizeCloud: false)
+            await store.prepareUpNext()
+            #expect(store.upNext?.entries.isEmpty == true)
+        }
+    }
+
+    @Test func savedPresentationIsScopedAndRejectsChangedPreferencesOrCorruption() async throws {
+        try await withStore { store, container, _ in
+            let scope = "up-next-test-" + UUID().uuidString
+            store.settings.traktAccountID = scope
+            defer { UpNextSnapshotCache.remove(scope: scope) }
+            let show = try addShow(7, to: container, date: Date())
+            show.episodes.first?.firstAired = Date().addingTimeInterval(-86_400)
+            await store.prepareUpNext()
+            #expect(UpNextSnapshotCache.read(scope: scope, settings: store.settings)?.entries.count == 1)
+            #expect(UpNextSnapshotCache.read(scope: scope + "-other", settings: store.settings) == nil)
+            store.settings.hiddenShowIDs = [7]
+            #expect(UpNextSnapshotCache.read(scope: scope, settings: store.settings) == nil)
+            store.settings.hiddenShowIDs = []
+            try Data("damaged".utf8).write(to: UpNextSnapshotCache.url(scope: scope))
+            #expect(UpNextSnapshotCache.read(scope: scope, settings: store.settings) == nil)
+        }
+    }
+
+    @Test func sharedMembershipAndTotalsAreCapturedTogether() async throws {
+        try await withStore { store, container, _ in
+            let show = try addShow(7, to: container, date: Date())
+            show.episodes.first?.firstAired = Date().addingTimeInterval(-86_400)
+            let remote = RemoteEpisode(season: 1, number: 1, title: "Shared episode",
+                ids: IDs(trakt: 42, tmdb: nil), overview: nil, firstAired: "2020-01-01T00:00:00Z", runtime: 30)
+            let programme = SharedProgramme(show: RemoteShow(title: show.title, year: nil,
+                ids: IDs(trakt: 7, tmdb: nil)), addedBy: "test", episodes: [])
+            store.sharedShows.preparePreview(lists: [HouseholdList(
+                zoneID: CKRecordZone.ID(zoneName: "Household-test", ownerName: "owner"),
+                name: "Together", shared: true, programmes: [programme])])
+            let snapshot = UpNextSnapshot(store: store, shows: [show], catalogues: [7: [remote]], message: nil)
+            #expect(snapshot.entries.isEmpty)
+            #expect(snapshot.shared.first?.listName == "Together")
+            #expect(snapshot.waitingRuntimes == [30])
+            store.sharedShows.preparePreview(lists: [])
+            #expect(snapshot.shared.count == 1)
+            let restored = try JSONDecoder().decode(UpNextSnapshot.self, from: JSONEncoder().encode(snapshot))
+            #expect(restored.shared.first?.id == snapshot.shared.first?.id)
+            #expect(restored.waitingRuntimes == [30])
+        }
+    }
+
     @Test func dailyPolicyDistinguishesReturningAndEndedSeries() {
         let now = Date(timeIntervalSince1970: 200_000)
         let old = now.addingTimeInterval(-90_000)

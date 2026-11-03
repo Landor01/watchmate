@@ -1,7 +1,8 @@
 import Foundation
+import CryptoKit
 import Observation
 
-struct SharedDiscoveryEntry: Identifiable {
+struct SharedDiscoveryEntry: Identifiable, Codable {
     let listID: String
     let listName: String
     let showID: Int
@@ -94,5 +95,132 @@ final class SharedDiscoveryCatalogue {
                 message = "Some shared episode details could not load. Pull to refresh."
             }
         }
+    }
+}
+
+/// A complete presentation, independent of the live records being refreshed.
+/// Display copies are never inserted into SwiftData or used for mutations.
+@MainActor
+struct UpNextSnapshot: Codable {
+    struct PersonalEntry: Identifiable, Codable {
+        let show: Show
+        let episode: Episode
+        let waitingCount: Int
+        var id: String { episode.key }
+
+        private struct Saved: Codable {
+            let show: RemoteShow
+            let episode: RemoteEpisode
+            let posterPath: String?
+            let providers: [Provider]
+            let providerRegion: String
+            let waitingCount: Int
+        }
+
+        init(show: Show, episode: Episode, waitingCount: Int) {
+            self.show = show
+            self.episode = episode
+            self.waitingCount = waitingCount
+        }
+
+        init(from decoder: any Decoder) throws {
+            let saved = try Saved(from: decoder)
+            show = Show(traktID: saved.show.id, tmdbID: saved.show.ids.tmdb,
+                        title: saved.show.title, imdbID: saved.show.ids.imdb)
+            show.posterPath = saved.posterPath
+            show.providers = saved.providers
+            show.providerRegion = saved.providerRegion
+            episode = Episode(showID: saved.show.id, remote: saved.episode)
+            waitingCount = saved.waitingCount
+        }
+
+        func encode(to encoder: any Encoder) throws {
+            try Saved(show: RemoteShow(title: show.title, year: nil,
+                ids: IDs(trakt: show.traktID, tmdb: show.tmdbID, imdb: show.imdbID)),
+                episode: RemoteEpisode(season: episode.season, number: episode.number, title: episode.title,
+                    ids: IDs(trakt: episode.traktID, tmdb: nil, imdb: episode.imdbID), overview: episode.overview,
+                    firstAired: episode.firstAired.map { Dates.string($0) }, runtime: episode.runtime),
+                posterPath: show.posterPath, providers: show.providers,
+                providerRegion: show.providerRegion, waitingCount: waitingCount).encode(to: encoder)
+        }
+    }
+
+    let accountScope: String
+    let entries: [PersonalEntry]
+    let shared: [SharedDiscoveryEntry]
+    let watchedRuntimes: [Int?]
+    let waitingRuntimes: [Int?]
+    let message: String?
+
+    init(store: AppStore, shows: [Show], catalogues: [Int: [RemoteEpisode]], message: String?) {
+        accountScope = store.widgetAccountScope
+        let sharedIDs = store.sharedShows.showIDs
+        let personalIDs = store.sharedShows.personalShowIDs
+        let personal = shows.filter {
+            $0.isFollowing && !store.settings.hiddenShowIDs.contains($0.traktID)
+                && (!sharedIDs.contains($0.traktID) || personalIDs.contains($0.traktID))
+        }
+        let waiting = personal.map { (show: $0, episodes: store.waiting($0)) }
+        entries = waiting.compactMap { item in
+            guard let episode = item.episodes.first else { return nil }
+            let show = Show(traktID: item.show.traktID, tmdbID: item.show.tmdbID,
+                            title: item.show.title, imdbID: item.show.imdbID)
+            show.posterPath = item.show.posterPath
+            show.providers = item.show.providers
+            show.providerRegion = item.show.providerRegion
+            let remote = RemoteEpisode(season: episode.season, number: episode.number, title: episode.title,
+                ids: IDs(trakt: episode.traktID, tmdb: nil, imdb: episode.imdbID), overview: episode.overview,
+                firstAired: episode.firstAired.map { Dates.string($0) }, runtime: episode.runtime)
+            let copy = Episode(showID: show.traktID, remote: remote)
+            return PersonalEntry(show: show, episode: copy, waitingCount: item.episodes.count)
+        }.sorted { $0.show.title.localizedStandardCompare($1.show.title) == .orderedAscending }
+        shared = SharedDiscoveryEntry.entries(lists: store.sharedShows.lists, catalogues: catalogues,
+                                              includeSpecials: store.settings.includeSpecials)
+        watchedRuntimes = personal.flatMap(\.episodes).filter {
+            $0.watchedAt != nil && (store.settings.includeSpecials || $0.season > 0)
+        }.map(\.runtime) + shared.filter(\.watched).map { $0.episode.runtime }
+        waitingRuntimes = waiting.flatMap(\.episodes).map(\.runtime)
+            + SharedDiscoveryEntry.waiting(shared).map { $0.episode.runtime }
+        self.message = message
+    }
+}
+
+/// Persist the whole presentation atomically so termination midway through a refresh
+/// cannot leave the next launch showing a mixture of old and new sections.
+@MainActor
+enum UpNextSnapshotCache {
+    private struct Saved: Codable {
+        let snapshot: UpNextSnapshot
+        let includeSpecials: Bool
+        let hiddenIDs: Set<Int>
+        let region: String
+    }
+
+    static func url(scope: String) -> URL {
+        let key = SHA256.hash(data: Data(scope.utf8)).map { String(format: "%02x", $0) }.joined()
+        return URL.applicationSupportDirectory.appending(path: "UpNext", directoryHint: .isDirectory)
+            .appending(path: key + ".json")
+    }
+
+    static func read(scope: String, settings: Settings) -> UpNextSnapshot? {
+        guard let data = try? Data(contentsOf: url(scope: scope)),
+              let saved = try? JSONDecoder().decode(Saved.self, from: data),
+              saved.snapshot.accountScope == scope, saved.includeSpecials == settings.includeSpecials,
+              saved.hiddenIDs == settings.hiddenShowIDs, saved.region == settings.region else { return nil }
+        return saved.snapshot
+    }
+
+    static func save(_ snapshot: UpNextSnapshot, settings: Settings) {
+        let file = url(scope: snapshot.accountScope)
+        do {
+            try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+            let saved = Saved(snapshot: snapshot, includeSpecials: settings.includeSpecials,
+                              hiddenIDs: settings.hiddenShowIDs, region: settings.region)
+            try JSONEncoder().encode(saved).write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        } catch { /* Retain the in-memory presentation if the cache cannot be written. */ }
+    }
+
+    static func remove(scope: String) {
+        try? FileManager.default.removeItem(at: url(scope: scope))
     }
 }

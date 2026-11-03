@@ -152,6 +152,11 @@ struct SharedShowsCache: Codable {
             .appending(path: key + ".json")
     }
 
+    static func readForLaunch(accountID: String) -> SharedShowsCache? {
+        guard let data = try? Data(contentsOf: url(accountID: accountID)) else { return nil }
+        return try? JSONDecoder().decode(Self.self, from: data)
+    }
+
     static func read(accountID: String, ownerID: String) throws -> SharedShowsCache {
         let url = url(accountID: accountID)
         guard FileManager.default.fileExists(atPath: url.path) else { return SharedShowsCache(ownerID: ownerID) }

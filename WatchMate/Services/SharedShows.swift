@@ -43,9 +43,13 @@ final class SharedShows {
     private(set) var lists: [HouseholdList] = [] {
         didSet {
             if Self.listNames(in: oldValue) != widgetListNames { onMembershipChanged?() }
+            onProgressChanged?()
         }
     }
     @ObservationIgnored var onMembershipChanged: (() -> Void)?
+    @ObservationIgnored var onProgressChanged: (() -> Void)?
+    @ObservationIgnored var onAccountInvalidated: (() -> Void)?
+    private var cachedOwnerVerified = false
     var widgetListNames: [Int: [String]] { Self.listNames(in: lists) }
 
     private static func listNames(in lists: [HouseholdList]) -> [Int: [String]] {
@@ -90,10 +94,12 @@ final class SharedShows {
     private func invalidateCloudAccount() {
         generation = UUID()
         cache = nil
+        cachedOwnerVerified = false
         lists = []
         lastSuccessfulRefresh = nil
         refreshMessage = nil
         if let accountID { try? FileManager.default.removeItem(at: SharedShowsCache.url(accountID: accountID)) }
+        onAccountInvalidated?()
         Task { [weak self] in await self?.refresh(reportErrors: false) }
     }
 
@@ -123,8 +129,15 @@ final class SharedShows {
         generation = UUID()
         lists = []
         cache = nil
+        cachedOwnerVerified = false
         lastSuccessfulRefresh = nil
         refreshMessage = nil
+        // Restore the last local state without requiring a network round trip. Account
+        // notifications clear it, and the next refresh verifies its iCloud owner.
+        if let accountID, let saved = SharedShowsCache.readForLaunch(accountID: accountID) {
+            cache = saved
+            lists = (try? saved.lists()) ?? []
+        }
         if loading { refreshRequested = true }
     }
 
@@ -157,13 +170,16 @@ final class SharedShows {
                 if status == .noAccount || status == .restricted { clearCachedLists() }
                 throw APIError.message("Sign in to iCloud in device Settings to use Shared Shows.")
             }
-            if cache == nil {
-                // Verify the Apple account once per process/account change before exposing saved data.
+            if !cachedOwnerVerified {
+                // Revalidate the saved owner before merging any server changes.
                 let owner = try await container.userRecordID().recordName
                 guard session == generation else { return }
+                let ownerChanged = cache.map { $0.ownerID != owner } ?? false
                 cache = (try? SharedShowsCache.read(accountID: accountID, ownerID: owner)) ?? SharedShowsCache(ownerID: owner)
+                cachedOwnerVerified = true
                 do { lists = try cache?.lists() ?? [] }
                 catch { cache = SharedShowsCache(ownerID: owner); lists = [] }
+                if ownerChanged { onAccountInvalidated?() }
             }
 
             // Enumerate the two databases concurrently; removed zones also remove revoked invitations.
@@ -275,9 +291,11 @@ final class SharedShows {
 
     private func clearCachedLists() {
         cache = nil
+        cachedOwnerVerified = false
         lists = []
         lastSuccessfulRefresh = nil
         if let accountID { try? FileManager.default.removeItem(at: SharedShowsCache.url(accountID: accountID)) }
+        onAccountInvalidated?()
     }
 
     /// Merge acknowledged writes immediately, without advancing the server's change token.
