@@ -101,7 +101,7 @@ final class SharedDiscoveryCatalogue {
 /// A complete presentation, independent of the live records being refreshed.
 /// Display copies are never inserted into SwiftData or used for mutations.
 @MainActor
-struct UpNextSnapshot: Codable {
+struct UpNextSnapshot: @MainActor Codable {
     struct PersonalEntry: Identifiable, Codable {
         let show: Show
         let episode: Episode
@@ -189,7 +189,7 @@ struct UpNextSnapshot: Codable {
 /// cannot leave the next launch showing a mixture of old and new sections.
 @MainActor
 enum UpNextSnapshotCache {
-    private struct Saved: Codable {
+    private struct Saved: @MainActor Codable {
         let snapshot: UpNextSnapshot
         let includeSpecials: Bool
         let hiddenIDs: Set<Int>

@@ -503,7 +503,11 @@ struct SharedProgrammePicker: View {
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                     }
-                    if working { ProgressView("Sharing programme…") }
+                    if working {
+                        ProgressView("Sharing programme…")
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .multilineTextAlignment(.center)
+                    }
                 }
                 .disabled(working)
                 .navigationTitle("Add shared programme")
