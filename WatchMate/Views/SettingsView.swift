@@ -24,7 +24,7 @@ struct SettingsView: View {
                         Text("What’s New")
                         Spacer()
                         Text(WhatsNewView.currentVersionDisplay)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.readableSecondary)
                         Image(systemName: "chevron.right")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.tertiary)
@@ -58,13 +58,13 @@ struct SettingsView: View {
                 } label: {
                     LabeledContent("Choose streaming services") {
                         Text("\(settings.selectedProviders.count) selected")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.readableSecondary)
                     }
                 }
                 Toggle("Highlight available services", isOn: $settings.highlightAvailableServices)
                     .disabled(settings.selectedProviders.isEmpty && !settings.highlightAvailableServices)
                 Text("Shows all streaming services in your region, with your selected services in the highlight colour. Applies to programme lists, Search and detail views.")
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(Color.readableSecondary)
             }
             Section("Trakt account") {
                 Label(store.settings.demoMode ? "Exploring demo data" : store.connected ? "Trakt connected" : "Trakt disconnected",
@@ -75,13 +75,13 @@ struct SettingsView: View {
                     Button("Connect Trakt") { Task { await store.connect() } }
                         .disabled(store.busy || store.auth.clientID.isEmpty || !Configuration.callbackConfigured)
                     if store.auth.clientID.isEmpty || !Configuration.callbackConfigured {
-                        Text("Trakt sign-in is unavailable in this version of WatchMate. Please contact support.").font(.caption).foregroundStyle(.secondary)
+                        Text("Trakt sign-in is unavailable in this version of WatchMate. Please contact support.").font(.caption).foregroundStyle(Color.readableSecondary)
                     }
                 }
                 Toggle("Shared shows update Trakt history", isOn: $settings.sharedShowsUpdateTraktHistory)
                     .disabled(store.busy)
                 Text("Keep watched progress in sync between your shared lists and your Trakt account when you mark episodes watched or unwatched. Turning this off keeps shared progress separate.")
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(Color.readableSecondary)
                 Button("Switch to demo data") { confirmDemo = true }.disabled(store.busy)
             }
             Section("Credits & privacy") {
@@ -91,14 +91,14 @@ struct SettingsView: View {
                 Text("Streaming availability powered by JustWatch.").font(.caption)
                 Link("JustWatch", destination: URL(string: "https://www.justwatch.com")!)
                 Link("Trakt", destination: URL(string: "https://trakt.tv")!)
-                Text("Viewing data is cached on your device and syncs with Trakt. WatchMate preferences also sync through your private iCloud storage. WatchMate has no analytics, advertising or app backend. Requests to Apple, Trakt and TMDB are subject to their privacy policies.").font(.caption).foregroundStyle(.secondary)
+                Text("Viewing data is cached on your device and syncs with Trakt. WatchMate preferences also sync through your private iCloud storage. WatchMate has no analytics, advertising or app backend. Requests to Apple, Trakt and TMDB are subject to their privacy policies.").font(.caption).foregroundStyle(Color.readableSecondary)
             }
             #if DEBUG
             Section {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Trakt client ID").font(.headline)
                     if Configuration.traktClientID.isEmpty {
-                        Text("Not configured").foregroundStyle(.secondary)
+                        Text("Not configured").foregroundStyle(Color.readableSecondary)
                     } else {
                         Text(verbatim: Configuration.traktClientID)
                             .font(.caption.monospaced())
@@ -116,7 +116,7 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("TMDB Read Access Token").font(.headline)
                     if Configuration.tmdbReadAccessToken.isEmpty {
-                        Text("Not configured").foregroundStyle(.secondary)
+                        Text("Not configured").foregroundStyle(Color.readableSecondary)
                     } else {
                         Text(verbatim: Configuration.tmdbReadAccessToken)
                             .font(.caption.monospaced())
@@ -136,7 +136,7 @@ struct SettingsView: View {
                         Text("Tip purchase diagnostics").font(.headline)
                         Text(verbatim: tips.productDiagnostics)
                             .font(.caption.monospaced())
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.readableSecondary)
                             .textSelection(.enabled)
                     }
                 }
@@ -201,7 +201,7 @@ private struct DeviceRemindersControl: View {
             }
             Text("Controls reminders on this device for shows you have enabled. Your per-show reminder choices are kept when reminders are disabled.")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondary)
         }
         .task(id: scenePhase) {
             guard scenePhase == .active else { return }

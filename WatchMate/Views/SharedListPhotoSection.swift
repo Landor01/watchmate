@@ -56,6 +56,7 @@ struct SharedListAvatarView: View {
 }
 
 struct SharedListPhotoSection: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(AppStore.self) private var store
     @Environment(\.scenePhase) private var scenePhase
     let list: HouseholdList
@@ -93,9 +94,11 @@ struct SharedListPhotoSection: View {
                                     Text("Remove list photo?").font(.headline)
                                     Text("The photo will be replaced with the list’s initials for everyone on this list.")
                                         .font(.subheadline)
-                                    HStack {
+                                    (dynamicTypeSize.isAccessibilitySize
+                                     ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+                                     : AnyLayout(HStackLayout())) {
                                         Button("Cancel", role: .cancel) { confirmingPhotoRemoval = false }
-                                        Spacer()
+                                        if !dynamicTypeSize.isAccessibilitySize { Spacer() }
                                         Button("Remove photo", role: .destructive) {
                                             confirmingPhotoRemoval = false
                                             save(nil)
@@ -109,7 +112,9 @@ struct SharedListPhotoSection: View {
                             }
                         }
                     }
-                HStack {
+                (dynamicTypeSize.isAccessibilitySize
+                 ? AnyLayout(VStackLayout(alignment: .leading, spacing: 16))
+                 : AnyLayout(HStackLayout())) {
                     photoControls
                 }
                 .buttonStyle(.borderless)
@@ -184,11 +189,19 @@ struct SharedListPhotoSection: View {
 
     @ViewBuilder private var photoControls: some View {
         PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-            Label("Choose Photo", systemImage: "photo")
+            if dynamicTypeSize.isAccessibilitySize {
+                Text("Choose Photo")
+            } else {
+                Label("Choose Photo", systemImage: "photo")
+            }
         }
-        Spacer(minLength: 16)
+        if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 16) }
         Button { requestingCamera = true } label: {
-            Label("Take Photo", systemImage: "camera")
+            if dynamicTypeSize.isAccessibilitySize {
+                Text("Take Photo")
+            } else {
+                Label("Take Photo", systemImage: "camera")
+            }
         }
         .disabled(requestingCamera || cameraPresentationPending || showCamera || !UIImagePickerController.isSourceTypeAvailable(.camera))
     }
@@ -247,25 +260,25 @@ struct SharedListSummaryView: View {
                             Text("^[\(remaining) episode](inflect: true) left to watch")
                         }
                     }
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(Color.readableSecondary)
                 } else {
                     Text(loading ? "Loading remaining episodes…" : "Remaining episodes unavailable")
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(.caption).foregroundStyle(Color.readableSecondary)
                 }
             } else if complete {
                 Text("^[\(remaining) episode](inflect: true) left to watch")
-                    .font(.headline).foregroundStyle(.secondary)
+                    .font(.headline).foregroundStyle(Color.readableSecondary)
                 Label("Watched: \(duration(watchedMinutes, unknown: unknownWatched))", systemImage: "clock")
                 Label("Left to watch: \(duration(remainingMinutes, unknown: unknownRemaining))", systemImage: "hourglass")
                 if unknownWatched + unknownRemaining > 0 {
                     Text("Some runtimes are unavailable; times include known runtimes only.")
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(.caption).foregroundStyle(Color.readableSecondary)
                 }
             } else if loading {
                 ProgressView("Loading summary…")
             } else {
                 Text("Summary unavailable until episode details load.")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondary)
                 if failed {
                     Button("Retry summary") { Task { await loadMissingEpisodes() } }
                         .buttonStyle(.borderless)

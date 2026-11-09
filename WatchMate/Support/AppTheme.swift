@@ -1,6 +1,16 @@
 import SwiftUI
 import UIKit
 
+extension Color {
+    /// Opaque secondary text retains contrast on every themed surface.
+    static let readableSecondary = Color(uiColor: UIColor { traits in
+        if traits.accessibilityContrast == .high { return .label }
+        return traits.userInterfaceStyle == .dark
+            ? UIColor(white: 0.75, alpha: 1)
+            : UIColor(white: 0.32, alpha: 1)
+    })
+}
+
 enum AppTheme: String, CaseIterable, Identifiable {
     case system
     case ocean
@@ -224,6 +234,27 @@ struct ThemedForm<Content: View>: View {
         }
         .scrollContentBackground(.hidden)
         .background(theme.backgroundColor(for: colorScheme))
+    }
+}
+
+/// Keeps episode actions easy to tap even when their labels use a caption style.
+struct WatchActionButtonStyle: ButtonStyle {
+    @Environment(\.themeAccent) private var themeAccent
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: ButtonStyleConfiguration) -> some View {
+        configuration.label
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .frame(minWidth: 44, minHeight: 44)
+            .foregroundStyle(themeAccent)
+            .background(themeAccent.opacity(configuration.isPressed ? 0.03 : 0.06), in: RoundedRectangle(cornerRadius: 10))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(themeAccent, lineWidth: 1)
+            }
+            .contentShape(Rectangle())
+            .opacity(isEnabled ? 1 : 0.45)
     }
 }
 

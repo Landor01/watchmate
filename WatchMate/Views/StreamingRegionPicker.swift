@@ -39,10 +39,10 @@ struct StreamingRegionPicker: View {
             if let loadError {
                 Text("Could not update regions. You can use your saved selection or retry.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondary)
                 Text(loadError)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondary)
                 Button("Retry loading regions") { retryCount += 1 }
                     .font(.caption)
             }

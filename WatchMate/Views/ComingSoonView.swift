@@ -72,7 +72,7 @@ struct ComingSoonView: View {
 
                     ThemedList {
                         if sharedCatalogue.loading { ProgressView("Loading shared programmes…") }
-                        if let message = sharedCatalogue.message { Text(message).foregroundStyle(.secondary) }
+                        if let message = sharedCatalogue.message { Text(message).foregroundStyle(Color.readableSecondary) }
                         ScheduledDateSection(entries: visibleEntries, selectedDate: selectedDate)
                     }
                     .listStyle(.insetGrouped)
@@ -90,7 +90,7 @@ struct ComingSoonView: View {
             } else {
                 ThemedList {
                     if sharedCatalogue.loading { ProgressView("Loading shared programmes…") }
-                    if let message = sharedCatalogue.message { Text(message).foregroundStyle(.secondary) }
+                    if let message = sharedCatalogue.message { Text(message).foregroundStyle(Color.readableSecondary) }
                     if calendarMode {
                         Section {
                             ProgrammeCalendar(selectedDate: $selectedDate, scheduledDates: dates)
@@ -225,6 +225,7 @@ private struct ScheduledProgrammeRows: View {
 }
 
 private struct ProgrammeCalendar: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.calendar) private var calendar
     @Binding var selectedDate: Date
     let scheduledDates: Set<Date>
@@ -259,30 +260,13 @@ private struct ProgrammeCalendar: View {
                 }
                 .accessibilityLabel("Next month")
             }
-            Grid(horizontalSpacing: 0, verticalSpacing: 4) {
-                GridRow {
-                    ForEach(Array(dates.prefix(7)), id: \.self) { date in
-                        Text(date, format: .dateTime.weekday(.narrow))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity)
-                            .accessibilityHidden(true)
-                    }
+            if dynamicTypeSize.isAccessibilitySize {
+                ScrollView(.horizontal) {
+                    ProgrammeCalendarGrid(dates: dates, selectedDate: $selectedDate, scheduledDates: scheduledDates)
+                        .fixedSize(horizontal: true, vertical: false)
                 }
-                ForEach(dates.filter { calendar.component(.weekday, from: $0) == calendar.firstWeekday }, id: \.self) { weekStart in
-                    GridRow {
-                        ForEach(dates.filter { $0 >= weekStart && $0 < (calendar.date(byAdding: .day, value: 7, to: weekStart) ?? weekStart) }, id: \.self) { date in
-                            CalendarDateButton(
-                                date: date,
-                                selected: calendar.isDate(date, inSameDayAs: selectedDate),
-                                inMonth: calendar.isDate(date, equalTo: selectedDate, toGranularity: .month),
-                                scheduled: scheduledDates.contains(calendar.startOfDay(for: date))
-                            ) {
-                                selectedDate = date
-                            }
-                        }
-                    }
-                }
+            } else {
+                ProgrammeCalendarGrid(dates: dates, selectedDate: $selectedDate, scheduledDates: scheduledDates)
             }
             Button("Today") { selectedDate = Date() }
                 .frame(minHeight: 44)
@@ -294,6 +278,42 @@ private struct ProgrammeCalendar: View {
         guard let start = calendar.dateInterval(of: .month, for: selectedDate)?.start,
               let next = calendar.date(byAdding: .month, value: offset, to: start) else { return }
         selectedDate = next
+    }
+}
+
+private struct ProgrammeCalendarGrid: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.calendar) private var calendar
+    let dates: [Date]
+    @Binding var selectedDate: Date
+    let scheduledDates: Set<Date>
+
+    var body: some View {
+        Grid(horizontalSpacing: dynamicTypeSize.isAccessibilitySize ? 8 : 0, verticalSpacing: 4) {
+            GridRow {
+                ForEach(Array(dates.prefix(7)), id: \.self) { date in
+                    Text(date, format: .dateTime.weekday(.narrow))
+                        .font(.caption)
+                        .foregroundStyle(Color.readableSecondary)
+                        .frame(maxWidth: .infinity)
+                        .accessibilityHidden(true)
+                }
+            }
+            ForEach(dates.filter { calendar.component(.weekday, from: $0) == calendar.firstWeekday }, id: \.self) { weekStart in
+                GridRow {
+                    ForEach(dates.filter { $0 >= weekStart && $0 < (calendar.date(byAdding: .day, value: 7, to: weekStart) ?? weekStart) }, id: \.self) { date in
+                        CalendarDateButton(
+                            date: date,
+                            selected: calendar.isDate(date, inSameDayAs: selectedDate),
+                            inMonth: calendar.isDate(date, equalTo: selectedDate, toGranularity: .month),
+                            scheduled: scheduledDates.contains(calendar.startOfDay(for: date))
+                        ) {
+                            selectedDate = date
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -321,7 +341,7 @@ private struct CalendarDateButton: View {
             }
             .frame(maxWidth: .infinity)
             .frame(minWidth: 44, minHeight: 44)
-            .foregroundStyle(selected ? selectedForeground : (inMonth ? Color.primary : Color.secondary))
+            .foregroundStyle(selected ? selectedForeground : (inMonth ? Color.primary : Color.readableSecondary))
             .background(selected ? themeAccent : Color.clear, in: RoundedRectangle(cornerRadius: 10))
             .contentShape(Rectangle())
         }

@@ -53,10 +53,10 @@ struct SharedProgrammeView: View {
                     }
                 }
                 if loading { ProgressView("Loading episodes…") }
-                if let message { Text(message).foregroundStyle(.secondary) }
+                if let message { Text(message).foregroundStyle(Color.readableSecondary) }
                 if !loading && episodes.isEmpty {
                     Text("Episode details haven't loaded. Pull to refresh to try again.")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondary)
                 }
                 ForEach(progress.ready + progress.upcoming) { season in
                     seasonSection(season, programme: programme)
@@ -249,12 +249,13 @@ private struct SharedShowReminderControls: View {
             ), displayedComponents: .hourAndMinute)
             .disabled(store.busy || store.settings.demoMode)
             Text("Remind me at this local time on each scheduled air date (note that shared show reminders are personal to you).")
-                .font(.caption).foregroundStyle(.secondary)
+                .font(.caption).foregroundStyle(Color.readableSecondary)
         }
     }
 }
 
 private struct SharedProgrammeSummary: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let title: String
     let posterPath: String?
     let progress: SharedProgrammeProgress
@@ -263,7 +264,10 @@ private struct SharedProgrammeSummary: View {
 
     var body: some View {
         Section {
-            HStack(alignment: .top, spacing: 16) {
+            let layout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 16))
+                : AnyLayout(HStackLayout(alignment: .top, spacing: 16))
+            layout {
                 PosterImageView(posterPath: posterPath, width: 96)
                 VStack(alignment: .leading, spacing: 8) {
                     Text(title).font(.title2.bold()).accessibilityAddTraits(.isHeader)
@@ -390,6 +394,7 @@ private struct SharedProgrammeNotesEditor: View {
 }
 
 private struct SharedSeasonSection: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let season: SharedSeasonProgress
     let listID: String
@@ -401,16 +406,19 @@ private struct SharedSeasonSection: View {
 
     var body: some View {
         Section {
-            HStack(alignment: .center, spacing: 12) {
+            let layout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+                : AnyLayout(HStackLayout(alignment: .center, spacing: 12))
+            layout {
                 Button { toggle() } label: {
                     HStack(spacing: 12) {
                         FallbackArtworkView(paths: [posterPath].compactMap { $0 }, width: 44, height: 66)
                         VStack(alignment: .leading, spacing: 4) {
                             Text(season.id == 0 ? "Specials" : "Season \(season.id)").font(.headline)
                             Text("\(season.watchedCount) of \(season.episodes.count) watched")
-                                .font(.caption).foregroundStyle(.secondary)
+                                .font(.caption).foregroundStyle(Color.readableSecondary)
                             if season.skippedCount > 0 {
-                                Text("\(season.skippedCount) skipped").font(.caption).foregroundStyle(.secondary)
+                                Text("\(season.skippedCount) skipped").font(.caption).foregroundStyle(Color.readableSecondary)
                             }
                         }
                         Spacer()
@@ -429,15 +437,16 @@ private struct SharedSeasonSection: View {
                     }
                     .disabled(season.episodes.allSatisfy { $0.watchedAt != nil || $0.skipped })
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(WatchActionButtonStyle())
                 .font(.caption)
                 Button { toggle() } label: {
                     Image(systemName: expanded ? "chevron.down" : "chevron.right")
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(.caption).foregroundStyle(Color.readableSecondary)
                         .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(expanded ? "Collapse season" : "Expand season")
+                .accessibilityValue(expanded ? "Expanded" : "Collapsed")
             }
             .padding(.vertical, 4)
             .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
@@ -457,6 +466,7 @@ private struct SharedSeasonSection: View {
 }
 
 private struct SharedSeasonEpisodeRow: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let row: SharedEpisodeProgress
     let listID: String
     let showID: Int
@@ -465,7 +475,10 @@ private struct SharedSeasonEpisodeRow: View {
     let update: ([RemoteEpisode], SharedEpisodeAction) -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+            : AnyLayout(HStackLayout(alignment: .top, spacing: 12))
+        layout {
             SharedEpisodeArtwork(tmdbID: tmdbID, episode: row.episode, posterPath: posterPath, width: 72)
             VStack(alignment: .leading, spacing: 4) {
                 NavigationLink {
@@ -483,11 +496,15 @@ private struct SharedSeasonEpisodeRow: View {
 }
 
 private struct SharedEpisodeButtons: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let row: SharedEpisodeProgress
     let update: ([RemoteEpisode], SharedEpisodeAction) -> Void
 
     var body: some View {
-        HStack {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+            : AnyLayout(HStackLayout(alignment: .center, spacing: 8))
+        layout {
             Button(row.watchedAt == nil ? "Mark watched" : "Unwatch") {
                 update([row.episode], .watched(row.watchedAt == nil))
             }
@@ -496,7 +513,7 @@ private struct SharedEpisodeButtons: View {
                 update([row.episode], .skipped(!row.skipped))
             }.disabled(row.watchedAt != nil)
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(WatchActionButtonStyle())
         .font(.caption)
     }
 }
@@ -509,7 +526,7 @@ private struct SharedEpisodeStatus: View {
             if let date = Dates.parse(row.episode.firstAired) {
                 if !AirDates.hasAired(date) { Text("Airs: \(Text(date, style: .date))") }
                 else { Text("Aired: \(Text(date, style: .date))") }
-                if row.isFuture { Text("Scheduled").foregroundStyle(.orange) }
+                if row.isFuture { Text("Scheduled").foregroundStyle(.primary) }
             } else { Text("Air date unknown") }
             if let date = row.watchedAt {
                 if date == .distantPast { Text("Watched together · date unknown") }
@@ -518,7 +535,7 @@ private struct SharedEpisodeStatus: View {
             if row.skipped { Text("Skipped in this shared list") }
             if let runtime = row.episode.runtime, runtime > 0 { Text("\(runtime) min") }
         }
-        .font(.caption).foregroundStyle(.secondary)
+        .font(.caption).foregroundStyle(Color.readableSecondary)
     }
 }
 

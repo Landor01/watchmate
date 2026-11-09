@@ -20,7 +20,7 @@ struct CoffeeTipSection: View {
                 CoffeeTipOptions()
                 Text("This app was built to address a need I had to track shows across platforms and is released on a non-commercial basis. All existing and new features are free, forever! However, if you find the app useful, I'd appreciate a positive review, and a coffee! This is entirely optional though.")
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondary)
 //                    .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -59,7 +59,7 @@ private struct CoffeeTipHeader: View {
                     .accessibilityAddTraits(.isHeader)
                 Text("Buy me a coffee and help support future development work.")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondary)
             }
             .fixedSize(horizontal: false, vertical: true)
         }
@@ -120,7 +120,7 @@ private struct CoffeeTipOptions: View {
             if let message = tips.message {
                 Text(message)
                     .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity, alignment: .center)
             }

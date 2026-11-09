@@ -39,7 +39,7 @@ struct UpNextView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("^[\(count) episode](inflect: true) left to watch")
                             .font(.headline)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.readableSecondary)
                         Label("Watched: \(duration(of: snapshot?.watchedRuntimes ?? []))", systemImage: "clock")
                         Label("Left to watch: \(duration(of: snapshot?.waitingRuntimes ?? []))", systemImage: "hourglass")
                     }
@@ -58,7 +58,7 @@ struct UpNextView: View {
                 }
             }
             if snapshot == nil { ProgressView("Loading your shows…") }
-            if let message = snapshot?.message { Text(message).foregroundStyle(.secondary) }
+            if let message = snapshot?.message { Text(message).foregroundStyle(Color.readableSecondary) }
             if entries.isEmpty && sharedNext.isEmpty && snapshot != nil && snapshot?.message == nil {
                 ContentUnavailableView("You're caught up", systemImage: "checkmark.circle", description: Text("Add programmes using + in My Shows, or connect Trakt."))
             }
@@ -87,7 +87,7 @@ struct UpNextView: View {
                                 Task { if let episode = liveEpisode(entry) { await store.skip(episode) } }
                             }
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(WatchActionButtonStyle())
                         .font(.caption)
                         .disabled(store.busy)
                     }
@@ -291,7 +291,7 @@ struct SharedDiscoveryRow: View {
                         Text(entry.title).font(.headline)
                         if showsListName {
                             Label(entry.listName, systemImage: "person.2")
-                                .font(.caption).foregroundStyle(.secondary)
+                                .font(.caption).foregroundStyle(Color.readableSecondary)
                         }
                         Text("S\(entry.episode.season) E\(entry.episode.number) · \(entry.episode.title ?? "Episode")")
                             .font(.subheadline)
@@ -301,12 +301,12 @@ struct SharedDiscoveryRow: View {
                                 if AirDates.hasAired(date) { Text("Aired: \(Text(date, style: .date))") }
                                 else { Text("Airs: \(Text(date, style: .date))") }
                             }
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(.caption).foregroundStyle(Color.readableSecondary)
                         }
                         if providers.isEmpty {
-                            Text("Streaming availability unknown").font(.caption).foregroundStyle(.secondary)
+                            Text("Streaming availability unknown").font(.caption).foregroundStyle(Color.readableSecondary)
                         } else {
-                            ProviderNamesView(providers: providers).font(.caption).foregroundStyle(.secondary)
+                            ProviderNamesView(providers: providers).font(.caption).foregroundStyle(Color.readableSecondary)
                         }
                     }
                     if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 0) }
@@ -323,7 +323,7 @@ struct SharedDiscoveryRow: View {
                     Button("Mark watched") { update(.watched(true)) }
                     Button("Skip") { update(.skipped(true)) }
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(WatchActionButtonStyle())
                 .font(.caption)
                 .disabled(store.busy)
             }

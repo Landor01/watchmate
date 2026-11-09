@@ -22,8 +22,8 @@ struct SearchView: View {
             } else if !query.isEmpty {
                 if searching { ProgressView("Searching…") }
                 if loadingAvailability { ProgressView("Checking streaming availability…") }
-                if let message { Text(message).foregroundStyle(.secondary) }
-                if let artworkMessage { Text(artworkMessage).font(.caption).foregroundStyle(.secondary) }
+                if let message { Text(message).foregroundStyle(Color.readableSecondary) }
+                if let artworkMessage { Text(artworkMessage).font(.caption).foregroundStyle(Color.readableSecondary) }
                 if !searching && !loadingAvailability && results.isEmpty && query.count >= 2 && message == nil {
                     Text("No shows found.")
                 }
@@ -39,7 +39,7 @@ struct SearchView: View {
                             PosterImageView(posterPath: details[show.id]?.posterPath, width: 40)
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(show.title).font(.headline)
-                                if let year = show.year { Text(String(year)).font(.caption).foregroundStyle(.secondary) }
+                                if let year = show.year { Text(String(year)).font(.caption).foregroundStyle(Color.readableSecondary) }
                                 ProgrammeAvailabilityView(details: details[show.id])
                             }
                             Spacer(minLength: 0)
@@ -114,11 +114,12 @@ private struct SearchWelcomeView: View {
                         .background(.background, in: Circle())
                         .offset(x: 12, y: 8)
                 }
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondary)
                 .padding(.bottom, 8)
                 .accessibilityHidden(true)
                 Text("Find your next watch")
                     .font(.title2.bold())
+                    .accessibilityAddTraits(.isHeader)
             }
         } description: {
             Text("Search for a programme to see where it’s streaming and add it to My Shows.")
@@ -147,7 +148,7 @@ struct ProgrammeAvailabilityView: View {
             }
         }
         .font(.caption)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(Color.readableSecondary)
     }
 }
 
@@ -175,7 +176,7 @@ private struct SearchProgrammeDetailView: View {
                     PosterImageView(posterPath: details?.posterPath, width: 96)
                     VStack(alignment: .leading, spacing: 8) {
                         Text(show.title).font(.title2.bold()).accessibilityAddTraits(.isHeader)
-                        if let year = show.year { Text(String(year)).foregroundStyle(.secondary) }
+                        if let year = show.year { Text(String(year)).foregroundStyle(Color.readableSecondary) }
                         ProgrammeAvailabilityView(details: details)
                     }
                 }
@@ -188,12 +189,12 @@ private struct SearchProgrammeDetailView: View {
                 .disabled(added || store.busy)
             }
             if loading { ProgressView("Loading programme details…") }
-            if let message { Text(message).foregroundStyle(.secondary) }
+            if let message { Text(message).foregroundStyle(Color.readableSecondary) }
             Section("Synopsis") {
                 Text(details?.overview.isEmpty == false ? details?.overview ?? "" : "No synopsis available.")
             }
             Text("Streaming availability powered by JustWatch. Listings are for the series, not individual episodes.")
-                .font(.caption).foregroundStyle(.secondary)
+                .font(.caption).foregroundStyle(Color.readableSecondary)
         }
         .navigationTitle(show.title)
         .navigationBarTitleDisplayMode(.inline)

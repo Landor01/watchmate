@@ -151,7 +151,7 @@ struct WhatsNewView: View {
                     }
                     Divider()
                     Text(footerText)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondary)
                 }
                 .frame(maxWidth: 600, alignment: .leading)
                 .padding(24)
@@ -179,7 +179,7 @@ private struct WhatsNewHeader: View {
         VStack(alignment: .leading, spacing: 12) {
             Text(introduction)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondary)
             Divider()
             Text("What’s New in \(version)")
                 .font(.title2.bold())
@@ -203,7 +203,7 @@ private struct WhatsNewFeatureRow: View {
                     .font(.headline)
                 Text(item.detail)
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondary)
             }
         }
         .accessibilityElement(children: .combine)

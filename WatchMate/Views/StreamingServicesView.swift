@@ -16,11 +16,11 @@ struct StreamingServicesView: View {
                     ProgressView("Loading streaming services…")
                 } else if let loadError {
                     Text(loadError)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondary)
                     Button("Retry loading services") { retryCount += 1 }
                 } else if providers.isEmpty {
                     Text("No streaming services are listed for this region.")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondary)
                 } else {
                     ForEach(providers) { provider in
                         Toggle(provider.name, isOn: Binding(

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ShowDetailView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(AppStore.self) private var store
     let show: Show
     @State private var hideConfirmation = false
@@ -35,7 +36,10 @@ struct ShowDetailView: View {
         let groups = seasonGroups
         ThemedList {
             Section {
-                HStack(alignment: .top, spacing: 16) {
+                let layout = dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 16))
+                    : AnyLayout(HStackLayout(alignment: .top, spacing: 16))
+                layout {
                     PosterView(show: show, width: 96)
                     VStack(alignment: .leading, spacing: 8) {
                         Text(show.title).font(.title2.bold()).accessibilityAddTraits(.isHeader)
@@ -81,12 +85,12 @@ struct ShowDetailView: View {
                     ), displayedComponents: .hourAndMinute)
                     .disabled(store.busy || store.settings.demoMode)
                     Text("Remind me at this local time on each scheduled air date.")
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(.caption).foregroundStyle(Color.readableSecondary)
                 }
             }
             ShowNotesSection(show: show)
             if groups.ready.isEmpty && groups.upcoming.isEmpty && groups.completed.isEmpty {
-                Text("Episode details haven't loaded. Pull to refresh to try again.").foregroundStyle(.secondary)
+                Text("Episode details haven't loaded. Pull to refresh to try again.").foregroundStyle(Color.readableSecondary)
             }
             ForEach(groups.ready, id: \.self) { season in
                 SeasonSection(show: show, season: season, posterPath: seasonPosters[season] ?? show.posterPath, selectedEpisode: $selectedEpisode)
@@ -121,7 +125,7 @@ struct ShowDetailView: View {
             Section {
                 Button("Remove from My Shows", role: .destructive) { hideConfirmation = true }.disabled(store.busy)
                 Text("This removes the programme from WatchMate. Your Trakt history and watchlist are kept. Use + in My Shows to add it again.")
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(Color.readableSecondary)
             }
         }.navigationTitle(show.title).navigationBarTitleDisplayMode(.inline)
             .alert("Streaming availability", isPresented: $showingStreamingInfo) {
@@ -194,6 +198,7 @@ struct ShowNotesSection: View {
 }
 
 private struct SeasonSection: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(AppStore.self) private var store
     let show: Show
     let season: Int
@@ -209,7 +214,10 @@ private struct SeasonSection: View {
     var body: some View {
         let seasonEpisodes = episodes
         Section {
-            HStack(alignment: .center, spacing: 12) {
+            let layout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+                : AnyLayout(HStackLayout(alignment: .center, spacing: 12))
+            layout {
                 Button {
                     withAnimation(reduceMotion ? nil : .easeInOut) {
                         expanded.toggle()
@@ -222,7 +230,7 @@ private struct SeasonSection: View {
                                 .font(.headline)
                             Text("\(seasonEpisodes.filter { $0.watchedAt != nil }.count) of \(seasonEpisodes.count) watched")
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(Color.readableSecondary)
                         }
                         Spacer()
                     }
@@ -242,7 +250,7 @@ private struct SeasonSection: View {
                     }
                     .disabled(seasonEpisodes.allSatisfy { $0.watchedAt != nil || $0.isSkipped })
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(WatchActionButtonStyle())
                 .font(.caption)
                 .disabled(store.busy)
 
@@ -253,7 +261,7 @@ private struct SeasonSection: View {
                 } label: {
                     Image(systemName: expanded ? "chevron.down" : "chevron.right")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondary)
                         .frame(minWidth: 44, minHeight: 44)
                         .contentShape(Rectangle())
                 }
@@ -279,12 +287,16 @@ private struct SeasonSection: View {
 }
 
 private struct SeasonEpisodeRow: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(AppStore.self) private var store
     let episode: Episode
     @Binding var selectedEpisode: Episode?
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+            : AnyLayout(HStackLayout(alignment: .top, spacing: 12))
+        layout {
             if let show = episode.show {
                 EpisodeArtworkView(show: show, episode: episode, width: 72, squareCrop: true)
             } else {
@@ -299,8 +311,10 @@ private struct SeasonEpisodeRow: View {
                         Spacer()
                         Image(systemName: "chevron.right")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.readableSecondary)
+                            .accessibilityHidden(true)
                     }
+                    .frame(minHeight: 44)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -314,29 +328,32 @@ private struct SeasonEpisodeRow: View {
                         }
                     }
                     .font(.caption)
-                    .foregroundStyle(.secondary)
-                    if !AirDates.hasAired(date) { Text("Scheduled").font(.caption).foregroundStyle(.orange) }
-                } else { Text("Air date unknown").font(.caption).foregroundStyle(.secondary) }
+                    .foregroundStyle(Color.readableSecondary)
+                    if !AirDates.hasAired(date) { Text("Scheduled").font(.caption).foregroundStyle(.primary) }
+                } else { Text("Air date unknown").font(.caption).foregroundStyle(Color.readableSecondary) }
                 if let watchedAt = episode.watchedAt {
                     if watchedAt == .distantPast {
                         Text("Watched · date unknown")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.readableSecondary)
                     } else {
                         Text("Watched on \(watchedAt, format: .dateTime.day().month(.abbreviated).year())")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.readableSecondary)
                     }
                 }
-                if episode.isSkipped { Text("Skipped in WatchMate").font(.caption).foregroundStyle(.secondary) }
-                HStack {
+                if episode.isSkipped { Text("Skipped in WatchMate").font(.caption).foregroundStyle(Color.readableSecondary) }
+                let layout = dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+                    : AnyLayout(HStackLayout(alignment: .center, spacing: 8))
+                layout {
                     Button(episode.watchedAt == nil ? "Mark watched" : "Unwatch") {
                         Task { await store.setWatched(episode, watched: episode.watchedAt == nil) }
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(WatchActionButtonStyle())
                     .disabled(episode.watchedAt == nil && episode.isScheduledInFuture)
                     Button(episode.isSkipped ? "Unskip" : "Skip") { Task { await store.skip(episode) } }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(WatchActionButtonStyle())
                         .disabled(episode.watchedAt != nil)
                 }.font(.caption).disabled(store.busy)
             }

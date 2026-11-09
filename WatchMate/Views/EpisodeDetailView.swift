@@ -64,7 +64,7 @@ private struct EpisodeSynopsisSection: View {
         Section("Synopsis") {
             if overview.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Text("No synopsis is available for this episode yet.")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondary)
             } else {
                 Text(overview)
             }
@@ -89,16 +89,20 @@ struct EpisodeDetailView: View {
 }
 
 struct EpisodeSummarySection<Artwork: View>: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let details: EpisodeDetails
     @ViewBuilder let artwork: Artwork
 
     var body: some View {
         Section {
-            HStack(alignment: .top, spacing: 16) {
+            let layout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 16))
+                : AnyLayout(HStackLayout(alignment: .top, spacing: 16))
+            layout {
                 artwork
                 VStack(alignment: .leading, spacing: 8) {
                     if let showTitle = details.showTitle {
-                        Text(showTitle).font(.subheadline).foregroundStyle(.secondary)
+                        Text(showTitle).font(.subheadline).foregroundStyle(Color.readableSecondary)
                     }
                     Text(details.title).font(.title2.bold()).accessibilityAddTraits(.isHeader)
                     Text("Season \(details.season) · Episode \(details.number)")
@@ -136,13 +140,13 @@ private struct EpisodeStreamingSection: View {
             if let show, show.providerRegion == store.settings.region {
                 if show.providers.isEmpty {
                     Text("Streaming availability unknown")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondary)
                 } else {
                     ProviderNamesView(providers: show.providers)
                 }
             } else {
                 Text("Streaming availability unknown")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondary)
             }
         } header: {
             Text("Where to watch")
@@ -183,7 +187,7 @@ struct EpisodeWatchSection: View {
 
     var body: some View {
         Section("Watch status") {
-            HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 8) {
                 if let watchedAt {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(.tint)
@@ -191,27 +195,26 @@ struct EpisodeWatchSection: View {
                     if watchedAt != .distantPast {
                         Text(watchedAt, format: .dateTime.day().month(.abbreviated).year())
                             .font(.body)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.readableSecondary)
                             .accessibilityLabel(isShared
                                 ? Text("Watched together on \(watchedAt.formatted(date: .abbreviated, time: .omitted))")
                                 : Text("Watched on \(watchedAt.formatted(date: .abbreviated, time: .omitted))"))
                     }
                 } else if isSkipped {
                     Image(systemName: "forward.end.circle")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondary)
                         .accessibilityLabel(isShared ? Text("Skipped in this shared list") : Text("Skipped"))
                 } else {
                     Label("Unwatched", systemImage: "circle")
                         .font(.body)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondary)
                 }
-                Spacer(minLength: 8)
                 Button(watchedAt == nil ? "Mark watched" : "Unwatch", action: toggleWatched)
                     .disabled(watchedAt == nil && isFuture)
                 Button(isSkipped ? "Unskip" : "Skip", action: toggleSkipped)
                     .disabled(watchedAt != nil)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(WatchActionButtonStyle())
             .font(.caption)
             .disabled(isDisabled)
             if isUpdating {

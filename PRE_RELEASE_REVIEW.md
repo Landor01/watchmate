@@ -1,6 +1,33 @@
 # WatchMate pre-release review
 
-Reviewed 23 October 2026. This is an engineering review, not an App Review approval or a complete accessibility certification.
+Latest pass: 6 November 2026. This is an engineering review, not an App Review approval or a complete accessibility certification.
+
+## Final pass — 6 November 2026
+
+**Release verdict: remaining release gates prevent an unconditional sign-off.** The current code builds and the full test suite passes on iOS 18.4. The outstanding privacy-policy, signed distribution, live-account and device checks below remain necessary.
+
+### Fixes in this pass
+
+- Reproduced two-digit calendar dates rendering as ellipses at Accessibility XXXL. The calendar now keeps dates at their natural text size and scrolls horizontally at accessibility sizes, with extra column spacing. Normal-size layout is unchanged. Simulator checks verified scrolling to the final column, selecting a date, and updating the selected-date heading.
+- Replaced translucent secondary foreground styling throughout app views with a shared opaque secondary text color. Light uses 32% white and dark uses 75% white; Increase Contrast uses the system label color. Against the custom theme tile colors the light minimum is 5.94:1; against the custom dark chart surfaces the minimum is 6.73:1. This addresses the weak secondary-text contrast observed in the Ocean/light simulator capture.
+- Changed small orange “Scheduled” labels to primary text in personal/shared episode rows, and exposed the search welcome title as a VoiceOver heading.
+
+### Validation and limits
+
+- Xcode Debug build passed with no reported warnings. Unsigned device Release build passed; the production-configuration validation script also passed. App and widget versions match at **1.0 (1)**. The built app contains its privacy manifest and populated Trakt/TMDB/callback settings; credential values were not printed.
+- **114 tests passed on iPhone 16 / iOS 18.4:** 106 Swift Testing tests and 8 XCTest tests, zero failures. Result bundle: `/tmp/WatchMate-prerelease-ios18-tests.xcresult`.
+- The Xcode test tool initially returned 114 tests not run. A direct iOS 27 run subsequently stalled after many passing tests and emitted duplicate XCTest automation-framework warnings; it was interrupted. The iOS 18.4 run completed successfully, but this does not establish a passing iOS 27 test run.
+- iPhone 17 Pro / iOS 27 smoke testing passed Up Next, episode details, Coming Soon, My Shows, the disconnected Shared Shows state, and opening Settings using isolated demo fixtures. Calendar Accessibility XXXL interaction was also exercised; normal calendar layout and visibly clearer light-mode secondary text were rechecked. The final additional 8-point accessibility column spacing has build validation but was not recaptured. Numerical contrast values above are source-color calculations, not screenshot measurements. Device sessions were closed. Live accounts were not modified.
+- Plist/entitlement/privacy-manifest syntax checks and `git diff --check` passed. Source review confirmed PKCE/state validation, device-only Keychain storage, no automatic HTTP write retries, startup failure recovery, and Reduce Motion handling for custom season animations.
+- **VoiceOver source audit: PASS for inspected controls.** Meaningful labels and photo-crop adjustment actions are present. Spoken navigation, focus ordering and all live sharing states still need a device run.
+- **Dynamic Type full-product verdict: FAIL for unconditional certification.** The reproduced calendar defect is fixed and inspected app text uses scalable styles, but compact widgets still intentionally truncate long titles at accessibility sizes. Full widget/detail/sharing coverage at all sizes has not been established.
+- **Contrast verdict: NEEDS VERIFICATION for the complete product.** The corrected custom secondary-text pairs exceed 4.5:1; system materials, widget accents, all theme/control states and Increase Contrast still need comprehensive rendered verification.
+- Follow-up: previously observed 28-point Mark watched/Skip controls now use a shared button style with a 44 × 44 point minimum. Detail/season layouts and shared photo controls adapt at accessibility sizes. Effective hit-area and activation checks remain open; see [ACCESSIBILITY_REVIEW.md](ACCESSIBILITY_REVIEW.md).
+- After these accessibility changes, Xcode device build/build-for-testing passed and all **114 regression tests passed again** on iPhone 16 / iOS 18.4 (106 Swift Testing + 8 XCTest, zero failures). Latest bundle: `/tmp/WatchMate-accessibility-final-tests.xcresult`.
+
+The highest-priority remaining gates are a real hosted WatchMate privacy-policy link in Settings/App Store Connect, signed archive/Organizer validation, production CloudKit and real Trakt flows, and the remaining accessibility/device matrix. No hosted policy URL was supplied during this pass, so none was invented.
+
+## Earlier review — 23 October 2026
 
 ## Changes made
 
@@ -30,7 +57,7 @@ Season-history follow-up: build and all 73 tests passed. Season marking now uses
 5. **Accessibility remains open.** Both app and widget fixed-text-size overrides are now removed. Widgets use a simpler layout from XX Large upward, retaining 44-point actions and exposing full episode titles/air dates to VoiceOver. Small widgets still truncate long titles because their bounds cannot grow; this is not a full Dynamic Type certification. Run VoiceOver navigation, contrast checks for every theme in light/dark mode, Reduce Motion, and accessibility-size layouts across all detail/calendar/sharing screens.
 6. **Device/platform coverage.** Test iOS 18 (minimum deployment target), the current OS, small iPhones, iPad portrait/landscape and multitasking, cold launch, upgrade with an existing library, no network, low storage, camera denial, photo selection, and notification permission changes. Verify small/medium/large widgets and their action routing on both minimum and current OS versions.
 7. **StoreKit and licensing.** Tips are disabled in Release unless `ENABLE_TIPS` is supplied. If enabling them, confirm licensing and App Store Connect consumable products/agreements, and test sandbox purchases, cancellation, pending approval, interrupted transactions, and relaunch. The local StoreKit file is not selected in the checked-in scheme and does not create production products.
-8. **Submission metadata.** Set the intended release version/build (currently 0.1.0 / 5), age-rating answers, screenshots for supported device families, support/privacy links, review instructions and account access as needed. Verify the distribution Xcode/SDK against [Apple’s current submission requirements](https://developer.apple.com/app-store/submitting/).
+8. **Submission metadata.** Confirm the intended release version/build (currently 1.0 / 1), age-rating answers, screenshots for supported device families, support/privacy links, review instructions and account access as needed. Verify the distribution Xcode/SDK against [Apple’s current submission requirements](https://developer.apple.com/app-store/submitting/).
 
 ## Refactoring priorities
 

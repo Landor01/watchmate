@@ -16,7 +16,7 @@ struct SharedShowsView: View {
             } else {
                 if store.sharedShows.loading && store.sharedShows.lists.isEmpty { ProgressView("Loading shared lists…") }
                 if let message = store.sharedShows.refreshMessage {
-                    Text(message).font(.caption).foregroundStyle(.secondary)
+                    Text(message).font(.caption).foregroundStyle(Color.readableSecondary)
                 }
                 if store.sharedShows.lists.isEmpty && !store.sharedShows.loading {
                     ContentUnavailableView("Watch together", systemImage: "person.2",
@@ -42,7 +42,7 @@ struct SharedShowsView: View {
                                 .accessibilityHidden(true)
                             VStack(alignment: .leading) {
                                 Text(list.name).font(.headline)
-                                Text("\(list.programmes.count) programmes").font(.caption).foregroundStyle(.secondary)
+                                Text("\(list.programmes.count) programmes").font(.caption).foregroundStyle(Color.readableSecondary)
                             }
                         }
                     }
@@ -283,7 +283,7 @@ private struct SharedProgrammeRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(programme.show.title).font(.headline)
                 Text("\(programme.episodes.count) episodes watched together")
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(Color.readableSecondary)
                 SharedListSummaryView(list: list, programme: programme)
                 if programme.addedBy != store.settings.traktAccountID {
                     Text("View viewing history").font(.caption).foregroundStyle(.tint)
@@ -328,7 +328,7 @@ private struct MoveSharedProgrammeView: View {
                     confirming = true
                 }
                 Text("Keep your personal Trakt history. To use the shared progress instead, sync viewing history from the programme’s menu before moving it.")
-                    .font(.footnote).foregroundStyle(.secondary)
+                    .font(.footnote).foregroundStyle(Color.readableSecondary)
             }
             Section("Move to another shared list") {
                 ForEach(destinations) { list in
@@ -340,7 +340,7 @@ private struct MoveSharedProgrammeView: View {
                         VStack(alignment: .leading) {
                             Text(list.name)
                             if alreadyAdded {
-                                Text("Already contains this programme").font(.caption).foregroundStyle(.secondary)
+                                Text("Already contains this programme").font(.caption).foregroundStyle(Color.readableSecondary)
                             }
                         }
                     }
@@ -348,11 +348,11 @@ private struct MoveSharedProgrammeView: View {
                 }
                 if destinations.isEmpty {
                     Text("Create another list in Shared Shows first.")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondary)
                 }
             }
             if working { ProgressView("Moving programme…") }
-            if let errorMessage { Text(errorMessage).foregroundStyle(.secondary) }
+            if let errorMessage { Text(errorMessage).foregroundStyle(Color.readableSecondary) }
         }
         .disabled(working || store.busy)
         .navigationTitle("Move programme")
@@ -417,11 +417,11 @@ struct SharedProgrammePicker: View {
         ThemedList {
             Section {
                 Text("Moving a programme shares its current watched progress across every season. Your Trakt history stays intact. Other people choose whether to overwrite their own progress.")
-                    .font(.subheadline).foregroundStyle(.secondary)
+                    .font(.subheadline).foregroundStyle(Color.readableSecondary)
             }
             if working { ProgressView("Reading viewing history and sharing programme…") }
             if searching { ProgressView("Searching…") }
-            if let message { Text(message).foregroundStyle(.secondary) }
+            if let message { Text(message).foregroundStyle(Color.readableSecondary) }
             if query.isEmpty {
                 Section("Move from My Shows") {
                     ForEach(personal) { show in
@@ -447,7 +447,7 @@ struct SharedProgrammePicker: View {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(show.title).font(.headline)
                                     if let year = show.year {
-                                        Text(String(year)).font(.caption).foregroundStyle(.secondary)
+                                        Text(String(year)).font(.caption).foregroundStyle(Color.readableSecondary)
                                     }
                                 }
                                 Spacer(minLength: 0)
@@ -500,7 +500,7 @@ struct SharedProgrammePicker: View {
                         if remindersEnabled {
                             DatePicker("Reminder time", selection: $reminderTime, displayedComponents: .hourAndMinute)
                             Text("Remind me at this local time on each scheduled air date (note that reminders are personal to you).")
-                                .font(.caption).foregroundStyle(.secondary)
+                                .font(.caption).foregroundStyle(Color.readableSecondary)
                         }
                     }
                     if working {
@@ -599,7 +599,7 @@ struct SharedHistoryImportView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         ProgressView("Comparing your progress…").font(.headline)
                         Text("Checking every season and special. Nothing changes until you confirm.")
-                            .font(.subheadline).foregroundStyle(.secondary)
+                            .font(.subheadline).foregroundStyle(Color.readableSecondary)
                     }
                     .padding(.vertical, 8)
                 }
@@ -613,7 +613,7 @@ struct SharedHistoryImportView: View {
                             Label("Allow at least \(max(1, Int(ceil(Double(preview.batches.count) * 1.1 / 60)))) min", systemImage: "clock")
                                 .font(.subheadline.weight(.medium))
                             Text("Large libraries can take several minutes. Keep WatchMate open and connected. Network delays and Trakt limits may add time.")
-                                .font(.caption).foregroundStyle(.secondary)
+                                .font(.caption).foregroundStyle(Color.readableSecondary)
                             Button(role: .destructive) { confirming = true } label: {
                                 HStack(spacing: 8) {
                                     Image(systemName: "arrow.triangle.2.circlepath")
@@ -643,13 +643,13 @@ struct SharedHistoryImportView: View {
                             Text(importer.currentShowTitle)
                                 .font(.headline)
                         }
-                        Text(importer.currentEpisode).font(.caption).foregroundStyle(.secondary)
+                        Text(importer.currentEpisode).font(.caption).foregroundStyle(Color.readableSecondary)
                         Text("Keep WatchMate open and connected to the internet.")
-                            .font(.subheadline).foregroundStyle(.secondary)
+                            .font(.subheadline).foregroundStyle(Color.readableSecondary)
                         Button("Stop syncing", role: .cancel) { importer.cancel() }
                             .buttonStyle(.bordered)
                         Text("Stopping keeps changes already made. Review and sync again to finish.")
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(.caption).foregroundStyle(Color.readableSecondary)
                     }
                     .padding(.vertical, 8)
                 }
@@ -715,7 +715,7 @@ private struct SharedHistoryImportHeader: View {
                 Text(selectionTitle)
                     .font(.headline).foregroundStyle(accent)
                 Text("Match your Trakt viewing history to the shared progress.")
-                    .font(.subheadline).foregroundStyle(.secondary)
+                    .font(.subheadline).foregroundStyle(Color.readableSecondary)
             }
             .multilineTextAlignment(.center)
 
@@ -739,7 +739,7 @@ private struct SharedHistoryChangeSummary: View {
                 Label("You're already in sync", systemImage: "checkmark.circle.fill")
                     .font(.title3.bold())
                 Text("Your viewing progress matches. There's nothing to change.")
-                    .font(.subheadline).foregroundStyle(.secondary)
+                    .font(.subheadline).foregroundStyle(Color.readableSecondary)
             } else {
                 Text("Here's what will change")
                     .font(.headline)
@@ -749,9 +749,9 @@ private struct SharedHistoryChangeSummary: View {
                                                title: "Mark unwatched", symbol: "arrow.uturn.backward.circle.fill", color: .orange)
             }
             Label("\(preview.existingCount) currently watched on Trakt", systemImage: "clock.arrow.circlepath")
-                .font(.subheadline).foregroundStyle(.secondary)
+                .font(.subheadline).foregroundStyle(Color.readableSecondary)
             Text("Includes all seasons and specials for your selection.")
-                .font(.caption).foregroundStyle(.secondary)
+                .font(.caption).foregroundStyle(Color.readableSecondary)
         }
         .padding(.vertical, 8)
     }
@@ -784,7 +784,7 @@ private struct SharedHistoryChangesDisclosure: View {
                             Text("S\(change.episode.season) E\(change.episode.number)")
                                 .font(.subheadline).monospacedDigit()
                             if let episodeTitle = change.episodeTitle, !episodeTitle.isEmpty {
-                                Text(episodeTitle).font(.caption).foregroundStyle(.secondary)
+                                Text(episodeTitle).font(.caption).foregroundStyle(Color.readableSecondary)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -831,7 +831,7 @@ private struct SharedHistoryOverwriteNotice: View {
             Label("This replaces your progress", systemImage: "exclamationmark.triangle.fill")
                 .font(.headline)
             Text("Episodes watched beyond the shared progress will become unwatched. Their Trakt watch history, including repeat watches, will be removed.")
-                .font(.subheadline).foregroundStyle(.secondary)
+                .font(.subheadline).foregroundStyle(Color.readableSecondary)
             Text("This cannot be automatically undone.")
                 .font(.subheadline.weight(.semibold))
         }
@@ -947,7 +947,7 @@ private struct SharedHistoryInboxHeader: View {
                     .font(.title2.bold())
                 Text("Match your progress for \(count) shared programmes.")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondary)
             }
             .multilineTextAlignment(.center)
             Button(action: syncAll) {
@@ -988,10 +988,10 @@ private struct SharedHistoryOfferRow: View {
                         .font(.headline)
                     Text(offer.listName)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondary)
                     Label("\(offer.programme.episodes.count) watched", systemImage: "checkmark.circle")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondary)
                 }
             }
             .accessibilityElement(children: .combine)

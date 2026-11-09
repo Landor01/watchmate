@@ -44,7 +44,7 @@ private struct HelpShowsSection: View {
                     description: "Tap + in My Shows and search by title. Tap a result to explore its details, or tap Add to follow it. Search requires a connected Trakt account.")
             Text("Air dates come from Trakt and may differ from release dates on your local streaming services.")
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondary)
         }
     }
 }
@@ -104,7 +104,7 @@ private struct HelpWidgetsSection: View {
                     description: "When no aired episodes remain, the widget shows that you’re caught up and the next known air date, if available. Open WatchMate and refresh to check for new episode information.")
             Text("The widget uses the latest information saved by WatchMate. Home Screen updates are scheduled by iOS, so changes may take a moment to appear. Undo watched or skipped episodes from the app.")
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondary)
         }
     }
 }
@@ -148,7 +148,7 @@ private struct HelpRow: View {
                 Text(title).font(.headline)
                 Text(description)
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondary)
             }
             .padding(.vertical, 2)
         } icon: {

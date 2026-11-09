@@ -70,7 +70,7 @@ struct OnboardingView: View {
                             if signInUnavailable {
                                 Text("Trakt sign-in is unavailable in this version of WatchMate. You can still explore demo mode.")
                                     .font(.footnote)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(Color.readableSecondary)
                             }
                         }
                         .controlSize(.large)
@@ -130,7 +130,7 @@ private struct OnboardingIntroduction: View {
                 .font(.largeTitle.bold())
                 .accessibilityAddTraits(.isHeader)
             Text("Keep track of your shows and discover what to watch next.")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.readableSecondary)
             Text("Connect your Trakt account, or create one on the Trakt sign-in page. Then choose your viewing preferences and streaming services. You can also explore with sample shows in demo mode.")
         }
     }
@@ -150,7 +150,7 @@ private struct OnboardingPreferencesView: View {
                     .font(.title2.bold())
                     .accessibilityAddTraits(.isHeader)
                 Text("Set your region and choose your streaming services. You can change these choices later in Settings.")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondary)
             }
             Section("Viewing preferences") {
                 StreamingRegionPicker()
@@ -209,14 +209,14 @@ private struct OnboardingServicesSection: View {
                 ProgressView("Loading streaming services…")
             } else if let loadError {
                 Text(loadError)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondary)
                 Button("Retry loading services") { retryCount += 1 }
                 Text("You can continue and choose your services later in Settings.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondary)
             } else if providers.isEmpty {
                 Text("No streaming services are listed for this region.")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondary)
             } else {
                 ForEach(providers) { provider in
                     Toggle(provider.name, isOn: Binding(

@@ -324,7 +324,7 @@ struct SeasonUpdateOverlay: View {
                     .font(.headline)
                 Text("Processing \(total) episodes")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.readableSecondary)
             }
             .multilineTextAlignment(.center)
             .padding(28)
@@ -412,17 +412,17 @@ struct ShowRow: View {
                             }
                         }
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.readableSecondary)
                     }
                 } else {
                     let total = show.episodes.filter { store.settings.includeSpecials || $0.season > 0 }.count
                     let seen = show.episodes.filter { $0.watchedAt != nil && (store.settings.includeSpecials || $0.season > 0) }.count
-                    Text("\(seen) of \(total) episodes watched").font(.subheadline).foregroundStyle(.secondary)
+                    Text("\(seen) of \(total) episodes watched").font(.subheadline).foregroundStyle(Color.readableSecondary)
                     if total > 0 { ProgressView(value: Double(seen), total: Double(total)).frame(maxWidth: 150) }
                 }
                 if !displayedProviders.isEmpty {
-                    ProviderNamesView(providers: displayedProviders).font(.caption).foregroundStyle(.secondary)
-                } else { Text("Streaming availability unknown").font(.caption).foregroundStyle(.secondary) }
+                    ProviderNamesView(providers: displayedProviders).font(.caption).foregroundStyle(Color.readableSecondary)
+                } else { Text("Streaming availability unknown").font(.caption).foregroundStyle(Color.readableSecondary) }
             }
             if !dynamicTypeSize.isAccessibilitySize {
                 Spacer(minLength: 0)
