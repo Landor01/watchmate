@@ -142,10 +142,9 @@ final class AppStore {
                     try context.save()
                     settings.hiddenShowIDs = []
                 }
-                if shows.isEmpty || isLegacyDemo {
-                    try seedDemo()
-                    publishWidgetSnapshot()
-                }
+                try seedDemo()
+                publishWidgetSnapshot()
+                await prepareUpNext()
             } catch { errorMessage = error.localizedDescription }
         } else if connected {
             // Cached SwiftData is already visible. No library import on ordinary launches.
@@ -602,7 +601,7 @@ final class AppStore {
     }
 
     func refreshSharedShows() async {
-        guard !busy else { return }
+        guard !settings.demoMode, !busy else { return }
         busy = true
         defer { busy = false }
         await sharedShows.refresh()
@@ -1261,6 +1260,7 @@ final class AppStore {
 
     private func seedDemo() throws {
         try DemoLibrary.seed(in: context)
+        sharedShows.prepareDemo(shows: try allShows())
         providerOptions = Array(Set(try allShows().flatMap(\.providers))).sorted { $0.name < $1.name }
         status = "Demo data · sample viewing progress"
     }

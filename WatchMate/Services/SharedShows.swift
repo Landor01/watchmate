@@ -49,7 +49,46 @@ final class SharedShows {
     @ObservationIgnored var onMembershipChanged: (() -> Void)?
     @ObservationIgnored var onProgressChanged: (() -> Void)?
     @ObservationIgnored var onAccountInvalidated: (() -> Void)?
+    private(set) var isDemo = false
     private var cachedOwnerVerified = false
+
+    func prepareDemo(shows: [Show]) {
+        guard !isDemo else { return }
+        activate(accountID: nil)
+        isDemo = true
+        // Shared demo programmes appear once in combined discovery feeds.
+        personalShowIDs = []
+        let groups: [(String, String, [Int])] = [
+            ("demo-friday", "Friday night TV", [-1, -2, -3]),
+            ("demo-family", "Family favourites", [-4, -6])
+        ]
+        lists = groups.map { key, name, ids in
+            let programmes = ids.compactMap { id -> SharedProgramme? in
+                guard let show = shows.first(where: { $0.traktID == id }) else { return nil }
+                let aired = show.episodes.filter { $0.firstAired.map { AirDates.hasAired($0) } == true }
+                    .sorted { ($0.season, $0.number) < ($1.season, $1.number) }
+                let watched = aired.prefix(id == -3 ? aired.count : 2).map {
+                    SharedEpisode(id: $0.traktID, season: $0.season, number: $0.number,
+                                  watchedAt: $0.firstAired ?? .distantPast)
+                }
+                return SharedProgramme(
+                    show: RemoteShow(title: show.title, year: nil, ids: IDs(trakt: id, tmdb: nil)),
+                    addedBy: "demo", episodes: watched,
+                    notes: "Save the next episode for our next evening together.",
+                    revision: key + ":" + String(id))
+            }
+            return HouseholdList(zoneID: CKRecordZone.ID(zoneName: key, ownerName: "demo"),
+                                 name: name, shared: false, programmes: programmes)
+        }
+    }
+
+    private func replaceDemoProgramme(_ programme: SharedProgramme, in list: HouseholdList) {
+        guard let index = lists.firstIndex(where: { $0.id == list.id }) else { return }
+        let current = lists[index]
+        lists[index] = HouseholdList(zoneID: current.zoneID, name: current.name, shared: current.shared,
+                                    programmes: current.programmes.map { $0.id == programme.id ? programme : $0 },
+                                    photoData: current.photoData)
+    }
     var widgetListNames: [Int: [String]] { Self.listNames(in: lists) }
 
     private static func listNames(in lists: [HouseholdList]) -> [Int: [String]] {
@@ -92,6 +131,7 @@ final class SharedShows {
     deinit { accountTask?.cancel() }
 
     private func invalidateCloudAccount() {
+        guard !isDemo else { return }
         generation = UUID()
         cache = nil
         cachedOwnerVerified = false
@@ -122,7 +162,8 @@ final class SharedShows {
     }
 
     func activate(accountID: String?) {
-        guard self.accountID != accountID else { return }
+        guard self.accountID != accountID || isDemo else { return }
+        isDemo = false
         self.accountID = accountID
         personalShowIDs = Set(UserDefaults.standard.array(forKey: "sharedPersonalShows:" + (accountID ?? "")) as? [Int] ?? [])
         reviewedOffers = Set(UserDefaults.standard.stringArray(forKey: "sharedHistoryReviewed:" + (accountID ?? "")) ?? [])
@@ -146,7 +187,7 @@ final class SharedShows {
     }
 
     func refresh(reportErrors: Bool = true, automatic: Bool = false) async {
-        guard !PreviewEnvironment.isRunning else { return }
+        guard !PreviewEnvironment.isRunning, !isDemo else { return }
         guard let accountID else { return }
         if loading {
             // A write or pull-to-refresh during a fetch needs a follow-up, not a dropped refresh.
@@ -497,6 +538,12 @@ final class SharedShows {
     }
 
     func setNotes(_ notes: String, for programme: SharedProgramme, in list: HouseholdList) async throws {
+        if isDemo {
+            guard var current = lists.first(where: { $0.id == list.id })?.programmes.first(where: { $0.id == programme.id }) else { return }
+            current.notes = notes
+            replaceDemoProgramme(current, in: list)
+            return
+        }
         let session = generation
         let database = database(for: list)
         let id = CKRecord.ID(recordName: "show-\(programme.id)", zoneID: list.zoneID)
@@ -551,6 +598,38 @@ final class SharedShows {
     /// Fetch and save episodes in batches, retaining confirmed saves if part of a batch fails.
     func updateEpisodes(_ episodes: [RemoteEpisode], showID: Int, in list: HouseholdList,
                         action: SharedEpisodeAction, progress: (Int) -> Void = { _ in }) async throws {
+        if isDemo {
+            guard let current = lists.first(where: { $0.id == list.id })?.programmes.first(where: { $0.id == showID }) else {
+                throw APIError.message("This programme is no longer shared.")
+            }
+            var watched = current.episodes
+            var skipped = current.skippedEpisodeIDs ?? []
+            for episode in episodes {
+                switch action {
+                case .watched(let value):
+                    if value {
+                        guard Dates.parse(episode.firstAired).map({ AirDates.hasAired($0) }) != false else { continue }
+                        if !watched.contains(where: { $0.id == episode.ids.trakt }) {
+                            watched.append(SharedEpisode(id: episode.ids.trakt, season: episode.season,
+                                                         number: episode.number, watchedAt: Date()))
+                        }
+                        skipped.remove(episode.ids.trakt)
+                    } else {
+                        watched.removeAll { $0.id == episode.ids.trakt }
+                    }
+                case .skipped(let value):
+                    if value && !watched.contains(where: { $0.id == episode.ids.trakt }) {
+                        skipped.insert(episode.ids.trakt)
+                    } else {
+                        skipped.remove(episode.ids.trakt)
+                    }
+                }
+            }
+            replaceDemoProgramme(SharedProgramme(show: current.show, addedBy: current.addedBy, episodes: watched,
+                                                skippedEpisodeIDs: skipped, notes: current.notes, revision: current.revision), in: list)
+            progress(episodes.count)
+            return
+        }
         let database = database(for: list)
         let session = generation
         guard let programme = list.programmes.first(where: { $0.id == showID }) else {

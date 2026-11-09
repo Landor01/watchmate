@@ -65,17 +65,26 @@ enum DemoLibrary {
     @MainActor
     static func seed(in context: ModelContext) throws {
         let fixture = try library.get()
+        let existingShows = try context.fetch(Show.withEpisodes)
         for source in fixture.shows {
-            // Keep local fixture identifiers separate from real Trakt IDs.
-            // Artwork and metadata are bundled, so demo mode needs no network.
-            let show = Show(traktID: source.id, tmdbID: nil, title: source.title)
-            show.overview = source.overview
-            show.posterPath = source.posterPath
-            show.providers = source.providers
-            show.providerRegion = "GB"
-            show.watchURL = source.watchURL
-            context.insert(show)
+            // Merge bundled additions without resetting existing demo viewing progress.
+            let show: Show
+            if let existing = existingShows.first(where: { $0.traktID == source.id }) {
+                show = existing
+            } else {
+                show = Show(traktID: source.id, tmdbID: nil, title: source.title)
+                show.overview = source.overview
+                show.posterPath = source.posterPath
+                show.providers = source.providers
+                show.providerRegion = "GB"
+                show.watchURL = source.watchURL
+                context.insert(show)
+            }
+            show.catalogueUpdatedAt = calendarDate
             for chapter in source.episodes {
+                guard !show.episodes.contains(where: {
+                    $0.season == chapter.season && $0.number == chapter.number
+                }) else { continue }
                 let remote = RemoteEpisode(
                     season: chapter.season, number: chapter.number, title: chapter.title,
                     ids: IDs(trakt: source.id * 1000 - chapter.number, tmdb: nil),

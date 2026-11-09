@@ -248,6 +248,7 @@ private struct SeasonSection: View {
                     Button("Skip") {
                         Task { await store.skipSeason(show, season: season) }
                     }
+                    .buttonStyle(WatchActionButtonStyle(isSecondary: true))
                     .disabled(seasonEpisodes.allSatisfy { $0.watchedAt != nil || $0.isSkipped })
                 }
                 .buttonStyle(WatchActionButtonStyle())
@@ -344,7 +345,7 @@ private struct SeasonEpisodeRow: View {
                 }
                 if episode.isSkipped { Text("Skipped in WatchMate").font(.caption).foregroundStyle(Color.readableSecondary) }
                 let layout = dynamicTypeSize.isAccessibilitySize
-                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+                    ? AnyLayout(VStackLayout(alignment: .trailing, spacing: 8))
                     : AnyLayout(HStackLayout(alignment: .center, spacing: 8))
                 layout {
                     Button(episode.watchedAt == nil ? "Mark watched" : "Unwatch") {
@@ -353,9 +354,12 @@ private struct SeasonEpisodeRow: View {
                     .buttonStyle(WatchActionButtonStyle())
                     .disabled(episode.watchedAt == nil && episode.isScheduledInFuture)
                     Button(episode.isSkipped ? "Unskip" : "Skip") { Task { await store.skip(episode) } }
-                        .buttonStyle(WatchActionButtonStyle())
+                        .buttonStyle(WatchActionButtonStyle(isSecondary: true))
                         .disabled(episode.watchedAt != nil)
-                }.font(.caption).disabled(store.busy)
+                }
+                .font(.caption)
+                .disabled(store.busy)
+                .frame(maxWidth: .infinity, alignment: .trailing)
             }
         }.padding(.vertical, 4)
     }

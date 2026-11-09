@@ -94,8 +94,10 @@ struct SharedProgrammeView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
-                    Button("Sync my Trakt history", systemImage: "arrow.triangle.2.circlepath") {
-                        if let programme { presentedSheet = .history(programme) }
+                    if !store.settings.demoMode {
+                        Button("Sync my Trakt history", systemImage: "arrow.triangle.2.circlepath") {
+                            if let programme { presentedSheet = .history(programme) }
+                        }
                     }
                     Button("About shared progress", systemImage: "info.circle") { showingHistoryInfo = true }
                 } label: { Image(systemName: "ellipsis.circle") }
@@ -165,7 +167,7 @@ struct SharedProgrammeView: View {
 
     private func loadEpisodes(forceRefresh: Bool = false) async {
         guard let programme else { return }
-        if PreviewEnvironment.isRunning {
+        if PreviewEnvironment.isRunning || store.settings.demoMode {
             if let show = try? store.show(id: showID) {
                 localShow = show
                 posterPath = show.posterPath
@@ -435,6 +437,7 @@ private struct SharedSeasonSection: View {
                     Button("Skip") {
                         update(season.episodes.filter { $0.watchedAt == nil && !$0.skipped }.map(\.episode), .skipped(true))
                     }
+                    .buttonStyle(WatchActionButtonStyle(isSecondary: true))
                     .disabled(season.episodes.allSatisfy { $0.watchedAt != nil || $0.skipped })
                 }
                 .buttonStyle(WatchActionButtonStyle())
@@ -490,6 +493,7 @@ private struct SharedSeasonEpisodeRow: View {
                 }
                 SharedEpisodeStatus(row: row)
                 SharedEpisodeButtons(row: row, update: update)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
             }
         }.padding(.vertical, 4)
     }
@@ -502,7 +506,7 @@ private struct SharedEpisodeButtons: View {
 
     var body: some View {
         let layout = dynamicTypeSize.isAccessibilitySize
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+            ? AnyLayout(VStackLayout(alignment: .trailing, spacing: 8))
             : AnyLayout(HStackLayout(alignment: .center, spacing: 8))
         layout {
             Button(row.watchedAt == nil ? "Mark watched" : "Unwatch") {
@@ -511,7 +515,9 @@ private struct SharedEpisodeButtons: View {
             .disabled(row.watchedAt == nil && row.isFuture)
             Button(row.skipped ? "Unskip" : "Skip") {
                 update([row.episode], .skipped(!row.skipped))
-            }.disabled(row.watchedAt != nil)
+            }
+            .buttonStyle(WatchActionButtonStyle(isSecondary: true))
+            .disabled(row.watchedAt != nil)
         }
         .buttonStyle(WatchActionButtonStyle())
         .font(.caption)

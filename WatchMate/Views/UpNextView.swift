@@ -86,6 +86,7 @@ struct UpNextView: View {
                             Button("Skip") {
                                 Task { if let episode = liveEpisode(entry) { await store.skip(episode) } }
                             }
+                            .buttonStyle(WatchActionButtonStyle(isSecondary: true))
                         }
                         .buttonStyle(WatchActionButtonStyle())
                         .font(.caption)
@@ -322,6 +323,7 @@ struct SharedDiscoveryRow: View {
                     if !dynamicTypeSize.isAccessibilitySize { Spacer() }
                     Button("Mark watched") { update(.watched(true)) }
                     Button("Skip") { update(.skipped(true)) }
+                        .buttonStyle(WatchActionButtonStyle(isSecondary: true))
                 }
                 .buttonStyle(WatchActionButtonStyle())
                 .font(.caption)

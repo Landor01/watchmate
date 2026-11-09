@@ -242,17 +242,18 @@ struct WatchActionButtonStyle: ButtonStyle {
     @Environment(\.themeAccent) private var themeAccent
     @Environment(\.isEnabled) private var isEnabled
 
+    var isSecondary = false
+
     func makeBody(configuration: ButtonStyleConfiguration) -> some View {
+        let color = isSecondary ? Color.readableSecondary : themeAccent
         configuration.label
+            .fontWeight(.medium)
             .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.vertical, 5)
+            .foregroundStyle(color)
+            .background(color.opacity(configuration.isPressed ? 0.20 : 0.10), in: Capsule())
+            // Enlarge the hit area without enlarging the visible pill.
             .frame(minWidth: 44, minHeight: 44)
-            .foregroundStyle(themeAccent)
-            .background(themeAccent.opacity(configuration.isPressed ? 0.03 : 0.06), in: RoundedRectangle(cornerRadius: 10))
-            .overlay {
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(themeAccent, lineWidth: 1)
-            }
             .contentShape(Rectangle())
             .opacity(isEnabled ? 1 : 0.45)
     }

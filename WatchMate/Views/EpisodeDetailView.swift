@@ -187,32 +187,19 @@ struct EpisodeWatchSection: View {
 
     var body: some View {
         Section("Watch status") {
-            VStack(alignment: .leading, spacing: 8) {
-                if let watchedAt {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.tint)
-                        .accessibilityLabel(isShared ? Text("Watched together") : Text("Watched"))
-                    if watchedAt != .distantPast {
-                        Text(watchedAt, format: .dateTime.day().month(.abbreviated).year())
-                            .font(.body)
-                            .foregroundStyle(Color.readableSecondary)
-                            .accessibilityLabel(isShared
-                                ? Text("Watched together on \(watchedAt.formatted(date: .abbreviated, time: .omitted))")
-                                : Text("Watched on \(watchedAt.formatted(date: .abbreviated, time: .omitted))"))
-                    }
-                } else if isSkipped {
-                    Image(systemName: "forward.end.circle")
-                        .foregroundStyle(Color.readableSecondary)
-                        .accessibilityLabel(isShared ? Text("Skipped in this shared list") : Text("Skipped"))
-                } else {
-                    Label("Unwatched", systemImage: "circle")
-                        .font(.body)
-                        .foregroundStyle(Color.readableSecondary)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) {
+                    watchStatus
+                    Spacer(minLength: 16)
+                    watchActions
                 }
-                Button(watchedAt == nil ? "Mark watched" : "Unwatch", action: toggleWatched)
-                    .disabled(watchedAt == nil && isFuture)
-                Button(isSkipped ? "Unskip" : "Skip", action: toggleSkipped)
-                    .disabled(watchedAt != nil)
+                VStack(alignment: .leading, spacing: 8) {
+                    watchStatus
+                    VStack(alignment: .trailing, spacing: 8) {
+                        watchActions
+                    }
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                }
             }
             .buttonStyle(WatchActionButtonStyle())
             .font(.caption)
@@ -221,6 +208,40 @@ struct EpisodeWatchSection: View {
                 ProgressView("Updating shared progress…")
             }
         }
+    }
+
+    @ViewBuilder
+    private var watchStatus: some View {
+        if let watchedAt {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.tint)
+                .accessibilityLabel(isShared ? Text("Watched together") : Text("Watched"))
+            if watchedAt != .distantPast {
+                Text(watchedAt, format: .dateTime.day().month(.abbreviated).year())
+                    .font(.body)
+                    .foregroundStyle(Color.readableSecondary)
+                    .accessibilityLabel(isShared
+                        ? Text("Watched together on \(watchedAt.formatted(date: .abbreviated, time: .omitted))")
+                        : Text("Watched on \(watchedAt.formatted(date: .abbreviated, time: .omitted))"))
+            }
+        } else if isSkipped {
+            Image(systemName: "forward.end.circle")
+                .foregroundStyle(Color.readableSecondary)
+                .accessibilityLabel(isShared ? Text("Skipped in this shared list") : Text("Skipped"))
+        } else {
+            Label("Unwatched", systemImage: "circle")
+                .font(.body)
+                .foregroundStyle(Color.readableSecondary)
+        }
+    }
+
+    @ViewBuilder
+    private var watchActions: some View {
+        Button(watchedAt == nil ? "Mark watched" : "Unwatch", action: toggleWatched)
+            .disabled(watchedAt == nil && isFuture)
+        Button(isSkipped ? "Unskip" : "Skip", action: toggleSkipped)
+            .buttonStyle(WatchActionButtonStyle(isSecondary: true))
+            .disabled(watchedAt != nil)
     }
 }
 

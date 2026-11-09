@@ -61,6 +61,14 @@ final class SharedDiscoveryCatalogue {
         let ids = store.sharedShows.showIDs
         episodes = episodes.filter { ids.contains($0.key) }
         for id in ids.sorted() {
+            if store.settings.demoMode {
+                episodes[id] = shows.first(where: { $0.traktID == id })?.episodes.map {
+                    RemoteEpisode(season: $0.season, number: $0.number, title: $0.title,
+                                  ids: IDs(trakt: $0.traktID, tmdb: nil), overview: $0.overview,
+                                  firstAired: $0.firstAired.map { Dates.string($0) }, runtime: $0.runtime)
+                } ?? []
+                continue
+            }
             let cached = await EpisodeCatalogueCache.read(id)
             guard !Task.isCancelled, revision == loadRevision else { return }
             let localDate = shows.first { $0.traktID == id }?.catalogueUpdatedAt ?? .distantPast

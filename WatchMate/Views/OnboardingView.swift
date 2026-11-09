@@ -167,8 +167,17 @@ private struct OnboardingPreferencesView: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
+                .listRowSeparator(finishing ? .hidden : .automatic, edges: .bottom)
                 if finishing {
-                    ProgressView("Applying your preferences…")
+                    VStack(spacing: 0) {
+                        Divider()
+                        ProgressView("Applying your preferences…")
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                    }
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden, edges: .top)
                 }
             } footer: {
                 Text("No streaming services? You can continue without selecting any and see all your shows.")

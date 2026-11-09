@@ -10,10 +10,16 @@ struct SharedShowsView: View {
 
     var body: some View {
         ThemedList {
-            if (!store.connected || store.settings.demoMode) && !PreviewEnvironment.isRunning {
+            if !store.connected && !store.settings.demoMode && !PreviewEnvironment.isRunning {
                 ContentUnavailableView("Connect Trakt first", systemImage: "person.crop.circle",
                                        description: Text("Connect your own Trakt account in Settings. Shared Shows also requires iCloud."))
             } else {
+                if store.settings.demoMode {
+                    Section {
+                        Text("Sample shared lists. Try watching or skipping episodes; changes last for this demo session.")
+                            .font(.footnote).foregroundStyle(Color.readableSecondary)
+                    }
+                }
                 if store.sharedShows.loading && store.sharedShows.lists.isEmpty { ProgressView("Loading shared lists…") }
                 if let message = store.sharedShows.refreshMessage {
                     Text(message).font(.caption).foregroundStyle(Color.readableSecondary)
@@ -22,7 +28,7 @@ struct SharedShowsView: View {
                     ContentUnavailableView("Watch together", systemImage: "person.2",
                                            description: Text("Create a list, then invite someone to share it."))
                 }
-                if store.sharedShows.lists.contains(where: { !$0.programmes.isEmpty }) {
+                if !store.settings.demoMode && store.sharedShows.lists.contains(where: { !$0.programmes.isEmpty }) {
                     Section {
                         NavigationLink("Sync all viewing progress to Trakt") {
                             SharedHistoryImportView(programmes: store.sharedShows.lists.flatMap(\.programmes))
@@ -47,8 +53,10 @@ struct SharedShowsView: View {
                         }
                     }
                 }
-                Button("Create Shared Shows list", systemImage: "plus") { creating = true }
-                    .disabled(working)
+                if !store.settings.demoMode {
+                    Button("Create Shared Shows list", systemImage: "plus") { creating = true }
+                        .disabled(working)
+                }
             }
         }
         .navigationTitle("Shared Shows")
@@ -92,7 +100,8 @@ private struct HouseholdListView: View {
         ThemedList {
             if let list {
                 SharedListPhotoSection(list: list)
-                if !list.programmes.isEmpty {
+                    .disabled(store.settings.demoMode)
+                if !store.settings.demoMode && !list.programmes.isEmpty {
                     Section {
                         NavigationLink("Sync all viewing progress to Trakt") {
                             SharedHistoryImportView(programmes: list.programmes)
@@ -145,7 +154,7 @@ private struct HouseholdListView: View {
                     }
                 } label: { Image(systemName: "ellipsis.circle") }
                 .accessibilityLabel("List actions")
-                .disabled(list == nil || working || store.busy)
+                .disabled(list == nil || working || store.busy || store.settings.demoMode)
             }
         }
         .refreshable {
@@ -213,12 +222,16 @@ private struct HouseholdListView: View {
             }
             .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
             .swipeActions(allowsFullSwipe: false) {
-                Button("Move", systemImage: "folder") { moving = programme }.tint(themeAccent)
-                Button("Remove", role: .destructive) { removing = programme }
+                if !store.settings.demoMode {
+                    Button("Move", systemImage: "folder") { moving = programme }.tint(themeAccent)
+                    Button("Remove", role: .destructive) { removing = programme }
+                }
             }
             .contextMenu {
-                Button("Move to My Shows or another list", systemImage: "folder") { moving = programme }
-                Button("Remove from shared list", role: .destructive) { removing = programme }
+                if !store.settings.demoMode {
+                    Button("Move to My Shows or another list", systemImage: "folder") { moving = programme }
+                    Button("Remove from shared list", role: .destructive) { removing = programme }
+                }
             }
         }
     }
@@ -250,7 +263,7 @@ private struct HouseholdListView: View {
     }
 
     private func loadCatalogues(forceRefresh: Bool = false) async {
-        guard let list else { return }
+        guard let list, !store.settings.demoMode else { return }
         for programme in list.programmes {
             if !forceRefresh, let show = shows.first(where: { $0.traktID == programme.id }), show.catalogueUpdatedAt != nil { continue }
             if !forceRefresh, let cached = await EpisodeCatalogueCache.read(programme.id) {
@@ -285,7 +298,7 @@ private struct SharedProgrammeRow: View {
                 Text("\(programme.episodes.count) episodes watched together")
                     .font(.caption).foregroundStyle(Color.readableSecondary)
                 SharedListSummaryView(list: list, programme: programme)
-                if programme.addedBy != store.settings.traktAccountID {
+                if !store.settings.demoMode && programme.addedBy != store.settings.traktAccountID {
                     Text("View viewing history").font(.caption).foregroundStyle(.tint)
                 }
             }
@@ -293,7 +306,7 @@ private struct SharedProgrammeRow: View {
         }
         .padding(.vertical, 6)
         .task(id: programme.show.ids.tmdb) {
-            if PreviewEnvironment.isRunning {
+            if PreviewEnvironment.isRunning || store.settings.demoMode {
                 posterPath = try? store.show(id: programme.id)?.posterPath
                 return
             }

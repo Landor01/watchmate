@@ -109,6 +109,96 @@
           "runtime": 44,
           "artwork": "fixture:dzx8D2B0ELncXuCNwtPCags43Q.jpg",
           "watched": false
+        },
+        {
+          "number": 10,
+          "season": 1,
+          "title": "Demo episode 1",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-11-02",
+          "runtime": 59,
+          "artwork": "fixture:sP3GZe9j7BY3CAyZGFuZxxnGpN1.jpg",
+          "watched": false
+        },
+        {
+          "number": 11,
+          "season": 1,
+          "title": "Demo episode 2",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-11-09",
+          "runtime": 57,
+          "artwork": "fixture:wIQP0P2tyE7VRIN3xR8Efq7UgKt.jpg",
+          "watched": false
+        },
+        {
+          "number": 12,
+          "season": 1,
+          "title": "Demo episode 3",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-11-16",
+          "runtime": 60,
+          "artwork": "fixture:yezUFOqLt0U3haSYc5gIBzfsPvo.jpg",
+          "watched": false
+        },
+        {
+          "number": 13,
+          "season": 1,
+          "title": "Demo episode 4",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-11-23",
+          "runtime": 50,
+          "artwork": "fixture:dzQJeDznS0I4spAqTImiLH9p252.jpg",
+          "watched": false
+        },
+        {
+          "number": 14,
+          "season": 1,
+          "title": "Demo episode 5",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-11-30",
+          "runtime": 47,
+          "artwork": "fixture:oy4BZotFbNX5YoPkWuWF3kcdMVw.jpg",
+          "watched": false
+        },
+        {
+          "number": 15,
+          "season": 1,
+          "title": "Demo episode 6",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-12-07",
+          "runtime": 44,
+          "artwork": "fixture:3fQp0pUtgDkqqyEbXY8KKCZPMU7.jpg",
+          "watched": false
+        },
+        {
+          "number": 16,
+          "season": 1,
+          "title": "Demo episode 7",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-12-14",
+          "runtime": 53,
+          "artwork": "fixture:gHoKlbC2esqq3SXm0ZCcl3bzpFZ.jpg",
+          "watched": false
+        },
+        {
+          "number": 17,
+          "season": 1,
+          "title": "Demo episode 8",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-12-21",
+          "runtime": 50,
+          "artwork": "fixture:8Gv9ELume0jo7gz7R2h4tPmVLsD.jpg",
+          "watched": false
+        },
+        {
+          "number": 18,
+          "season": 1,
+          "title": "Demo episode 9",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-12-28",
+          "runtime": 44,
+          "artwork": "fixture:dzx8D2B0ELncXuCNwtPCags43Q.jpg",
+          "watched": false
         }
       ]
     },
@@ -228,6 +318,96 @@
           "airDate": "2023-06-29",
           "runtime": 49,
           "artwork": "fixture:qcqkEv0S8Re5V2UV9LFUWzHYyq3.jpg",
+          "watched": false
+        },
+        {
+          "number": 11,
+          "season": 1,
+          "title": "Demo episode 1",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-11-05",
+          "runtime": 62,
+          "artwork": "fixture:rpZhJcWPpyLvPC5Vid61GD6JHVu.jpg",
+          "watched": false
+        },
+        {
+          "number": 12,
+          "season": 1,
+          "title": "Demo episode 2",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-11-12",
+          "runtime": 52,
+          "artwork": "fixture:bRYHFClG8YkTJTy8fx73hgCd8Ac.jpg",
+          "watched": false
+        },
+        {
+          "number": 13,
+          "season": 1,
+          "title": "Demo episode 3",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-11-19",
+          "runtime": 66,
+          "artwork": "fixture:8hQB4jxk9ydj55Mrl9sY95smV7.jpg",
+          "watched": false
+        },
+        {
+          "number": 14,
+          "season": 1,
+          "title": "Demo episode 4",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-11-26",
+          "runtime": 49,
+          "artwork": "fixture:x3fMuXhTx5f91tQgjXNzopo5B5g.jpg",
+          "watched": false
+        },
+        {
+          "number": 15,
+          "season": 1,
+          "title": "Demo episode 5",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-12-03",
+          "runtime": 54,
+          "artwork": "fixture:yzLUNo2jU82N5rdRG0xZ2A2ed79.jpg",
+          "watched": false
+        },
+        {
+          "number": 16,
+          "season": 1,
+          "title": "Demo episode 6",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-12-10",
+          "runtime": 55,
+          "artwork": "fixture:k5UxYAS4Xmcsn3GZdCklXGMIBMd.jpg",
+          "watched": false
+        },
+        {
+          "number": 17,
+          "season": 1,
+          "title": "Demo episode 7",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-12-17",
+          "runtime": 51,
+          "artwork": "fixture:ukzV8BZbjlIU6WOKdoZqhHMg2yi.jpg",
+          "watched": false
+        },
+        {
+          "number": 18,
+          "season": 1,
+          "title": "Demo episode 8",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-12-24",
+          "runtime": 48,
+          "artwork": "fixture:sZaeOvZYS4evALQtm2wfC3eJxit.jpg",
+          "watched": false
+        },
+        {
+          "number": 19,
+          "season": 1,
+          "title": "Demo episode 9",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-12-31",
+          "runtime": 48,
+          "artwork": "fixture:mogTf95jiLdvSXwnjpQcIs6Wxh2.jpg",
           "watched": false
         }
       ]
@@ -612,6 +792,96 @@
           "airDate": "2022-11-23",
           "runtime": 53,
           "artwork": "fixture:3b42P1FuxWC9JXVIfnKAUUuq0zP.jpg",
+          "watched": false
+        },
+        {
+          "number": 9,
+          "season": 1,
+          "title": "Demo episode 1",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-11-05",
+          "runtime": 60,
+          "artwork": "fixture:vaoNDFmj7DQH7PpAy9YWgLVylPP.jpg",
+          "watched": false
+        },
+        {
+          "number": 10,
+          "season": 1,
+          "title": "Demo episode 2",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-11-12",
+          "runtime": 49,
+          "artwork": "fixture:nSGdaI0sDBqgMMuskIKNNT1KbS8.jpg",
+          "watched": false
+        },
+        {
+          "number": 11,
+          "season": 1,
+          "title": "Demo episode 3",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-11-19",
+          "runtime": 49,
+          "artwork": "fixture:yikI4l7vKK4LkfFEIa5dXaqO97s.jpg",
+          "watched": false
+        },
+        {
+          "number": 12,
+          "season": 1,
+          "title": "Demo episode 4",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-11-26",
+          "runtime": 50,
+          "artwork": "fixture:wV2de1W3td4zxaW97HATfktHjfd.jpg",
+          "watched": false
+        },
+        {
+          "number": 13,
+          "season": 1,
+          "title": "Demo episode 5",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-12-03",
+          "runtime": 53,
+          "artwork": "fixture:j3Tx4CXDhzOV103TuTwz461EdjF.jpg",
+          "watched": false
+        },
+        {
+          "number": 14,
+          "season": 1,
+          "title": "Demo episode 6",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-12-10",
+          "runtime": 51,
+          "artwork": "fixture:cPHlYQ00832jS7IDqfHS7RWTz2k.jpg",
+          "watched": false
+        },
+        {
+          "number": 15,
+          "season": 1,
+          "title": "Demo episode 7",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-12-17",
+          "runtime": 48,
+          "artwork": "fixture:aEmccS7KyFPQMAnuQ2C5sbyn5fc.jpg",
+          "watched": false
+        },
+        {
+          "number": 16,
+          "season": 1,
+          "title": "Demo episode 8",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-12-24",
+          "runtime": 53,
+          "artwork": "fixture:3b42P1FuxWC9JXVIfnKAUUuq0zP.jpg",
+          "watched": false
+        },
+        {
+          "number": 17,
+          "season": 1,
+          "title": "Demo episode 9",
+          "overview": "Sample upcoming episode for the demo calendar. This is an illustrative schedule.",
+          "airDate": "2026-12-31",
+          "runtime": 60,
+          "artwork": "fixture:vaoNDFmj7DQH7PpAy9YWgLVylPP.jpg",
           "watched": false
         }
       ]
