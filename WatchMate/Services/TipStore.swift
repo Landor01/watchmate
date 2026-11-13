@@ -10,14 +10,8 @@ final class TipStore {
         "watchmate.tip.lrg"
     ]
 
-    // Enable Release tips only after licensing is settled and the product is approved.
-    static var isEnabled: Bool {
-        #if DEBUG || ENABLE_TIPS
-        true
-        #else
-        false
-        #endif
-    }
+    // The consumable tip products are approved and available in the App Store.
+    static let isEnabled = true
 
     private(set) var products: [Product] = []
     private(set) var loading = false
