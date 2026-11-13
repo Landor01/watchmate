@@ -52,7 +52,7 @@ struct SharedProgrammeView: View {
                         presentedSheet = .notes(programme, list)
                     }
                 }
-                if loading { ProgressView("Loading episodes…") }
+                if loading { ProgressView("Loading episodes…").centeredProgressMessage() }
                 if let message { Text(message).foregroundStyle(Color.readableSecondary) }
                 if !loading && episodes.isEmpty {
                     Text("Episode details haven't loaded. Pull to refresh to try again.")

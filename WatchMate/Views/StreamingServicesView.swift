@@ -13,7 +13,7 @@ struct StreamingServicesView: View {
         ThemedForm {
             Section {
                 if loading || loadedRegion != store.settings.region {
-                    ProgressView("Loading streaming services…")
+                    ProgressView("Loading streaming services…").centeredProgressMessage()
                 } else if let loadError {
                     Text(loadError)
                         .foregroundStyle(Color.readableSecondary)

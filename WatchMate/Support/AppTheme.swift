@@ -237,6 +237,19 @@ struct ThemedForm<Content: View>: View {
     }
 }
 
+extension View {
+    /// Centers transient progress messages and keeps their list separators edge to edge.
+    func centeredProgressMessage() -> some View {
+        self
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+            .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
+            .alignmentGuide(.listRowSeparatorTrailing) { $0[.trailing] }
+    }
+}
+
 /// Keeps episode actions easy to tap even when their labels use a caption style.
 struct WatchActionButtonStyle: ButtonStyle {
     @Environment(\.themeAccent) private var themeAccent

@@ -118,11 +118,13 @@ struct SharedListPhotoSection: View {
                     photoControls
                 }
                 .buttonStyle(.borderless)
-                if saving { ProgressView("Saving list photo…") }
+                if saving { ProgressView("Saving list photo…").centeredProgressMessage() }
                 Divider()
+                    .padding(.horizontal, -16)
                 SharedListSummaryView(list: list)
             }
             .frame(maxWidth: .infinity)
+            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
             .disabled(saving)
         }
         .task(id: requestingCamera) {
@@ -275,7 +277,7 @@ struct SharedListSummaryView: View {
                         .font(.caption).foregroundStyle(Color.readableSecondary)
                 }
             } else if loading {
-                ProgressView("Loading summary…")
+                ProgressView("Loading summary…").centeredProgressMessage()
             } else {
                 Text("Summary unavailable until episode details load.")
                     .foregroundStyle(Color.readableSecondary)

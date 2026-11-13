@@ -205,7 +205,7 @@ struct EpisodeWatchSection: View {
             .font(.caption)
             .disabled(isDisabled)
             if isUpdating {
-                ProgressView("Updating shared progress…")
+                ProgressView("Updating shared progress…").centeredProgressMessage()
             }
         }
     }

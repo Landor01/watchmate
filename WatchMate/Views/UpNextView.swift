@@ -57,7 +57,7 @@ struct UpNextView: View {
                     .accessibilityLabel("About air dates and streaming availability")
                 }
             }
-            if snapshot == nil { ProgressView("Loading your shows…") }
+            if snapshot == nil { ProgressView("Loading your shows…").centeredProgressMessage() }
             if let message = snapshot?.message { Text(message).foregroundStyle(Color.readableSecondary) }
             if entries.isEmpty && sharedNext.isEmpty && snapshot != nil && snapshot?.message == nil {
                 ContentUnavailableView("You're caught up", systemImage: "checkmark.circle", description: Text("Add programmes using + in My Shows, or connect Trakt."))

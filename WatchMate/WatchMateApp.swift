@@ -41,7 +41,7 @@ private struct AppStartupView: View {
                         .buttonStyle(.borderedProminent)
                 }
             } else {
-                ProgressView("Opening your library…")
+                ProgressView("Opening your library…").centeredProgressMessage()
             }
         }
         .task { loadServices() }

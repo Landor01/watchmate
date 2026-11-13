@@ -20,8 +20,8 @@ struct SearchView: View {
             } else if !store.connected {
                 ContentUnavailableView("Connect Trakt first", systemImage: "person.crop.circle", description: Text("Open Settings to sign in."))
             } else if !query.isEmpty {
-                if searching { ProgressView("Searching…") }
-                if loadingAvailability { ProgressView("Checking streaming availability…") }
+                if searching { ProgressView("Searching…").centeredProgressMessage() }
+                if loadingAvailability { ProgressView("Checking streaming availability…").centeredProgressMessage() }
                 if let message { Text(message).foregroundStyle(Color.readableSecondary) }
                 if let artworkMessage { Text(artworkMessage).font(.caption).foregroundStyle(Color.readableSecondary) }
                 if !searching && !loadingAvailability && results.isEmpty && query.count >= 2 && message == nil {
@@ -188,7 +188,7 @@ private struct SearchProgrammeDetailView: View {
                 }
                 .disabled(added || store.busy)
             }
-            if loading { ProgressView("Loading programme details…") }
+            if loading { ProgressView("Loading programme details…").centeredProgressMessage() }
             if let message { Text(message).foregroundStyle(Color.readableSecondary) }
             Section("Synopsis") {
                 Text(details?.overview.isEmpty == false ? details?.overview ?? "" : "No synopsis available.")

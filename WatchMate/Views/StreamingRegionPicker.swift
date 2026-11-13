@@ -33,7 +33,7 @@ struct StreamingRegionPicker: View {
             }
             .disabled(store.busy)
             if loading {
-                ProgressView("Loading regions…")
+                ProgressView("Loading regions…").centeredProgressMessage()
                     .font(.caption)
             }
             if let loadError {

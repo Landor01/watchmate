@@ -197,7 +197,7 @@ private struct DeviceRemindersControl: View {
             }
             .disabled(checkingPermission || updating || store.busy || store.settings.demoMode)
             if updating {
-                ProgressView("Updating reminders…")
+                ProgressView("Updating reminders…").centeredProgressMessage()
             }
             Text("Controls reminders on this device for shows you have enabled. Your per-show reminder choices are kept when reminders are disabled.")
                 .font(.caption)
@@ -247,7 +247,7 @@ private struct DebugConnectionTestButton: View {
             }
             .disabled(testing)
             if testing {
-                ProgressView("Testing connection…")
+                ProgressView("Testing connection…").centeredProgressMessage()
                     .font(.caption)
             }
             if let result {

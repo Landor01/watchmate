@@ -71,7 +71,7 @@ struct ComingSoonView: View {
                         .frame(width: 1)
 
                     ThemedList {
-                        if sharedCatalogue.loading { ProgressView("Loading shared programmes…") }
+                        if sharedCatalogue.loading { ProgressView("Loading shared programmes…").centeredProgressMessage() }
                         if let message = sharedCatalogue.message { Text(message).foregroundStyle(Color.readableSecondary) }
                         ScheduledDateSection(entries: visibleEntries, selectedDate: selectedDate)
                     }
@@ -89,7 +89,7 @@ struct ComingSoonView: View {
                 .frame(width: geometry.size.width, height: geometry.size.height)
             } else {
                 ThemedList {
-                    if sharedCatalogue.loading { ProgressView("Loading shared programmes…") }
+                    if sharedCatalogue.loading { ProgressView("Loading shared programmes…").centeredProgressMessage() }
                     if let message = sharedCatalogue.message { Text(message).foregroundStyle(Color.readableSecondary) }
                     if calendarMode {
                         Section {

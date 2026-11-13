@@ -65,7 +65,7 @@ struct OnboardingView: View {
                             .disabled(signingIn || store.busy)
     
                             if signingIn {
-                                ProgressView("Connecting to Trakt and loading your shows…")
+                                ProgressView("Connecting to Trakt and loading your shows…").centeredProgressMessage()
                             }
                             if signInUnavailable {
                                 Text("Trakt sign-in is unavailable in this version of WatchMate. You can still explore demo mode.")
@@ -215,7 +215,7 @@ private struct OnboardingServicesSection: View {
         @Bindable var settings = store.settings
         Section {
             if loading || loadedRegion != settings.region {
-                ProgressView("Loading streaming services…")
+                ProgressView("Loading streaming services…").centeredProgressMessage()
             } else if let loadError {
                 Text(loadError)
                     .foregroundStyle(Color.readableSecondary)

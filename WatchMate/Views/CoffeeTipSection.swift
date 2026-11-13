@@ -75,7 +75,7 @@ private struct CoffeeTipOptions: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             if tips.loading {
-                ProgressView("Loading tip prices…")
+                ProgressView("Loading tip prices…").centeredProgressMessage()
             }
             ForEach(tips.products) { product in
                 Button {
@@ -115,7 +115,7 @@ private struct CoffeeTipOptions: View {
                 .frame(maxWidth: .infinity, alignment: .center)
             }
             if tips.purchasing {
-                ProgressView("Waiting for purchase…")
+                ProgressView("Waiting for purchase…").centeredProgressMessage()
             }
             if let message = tips.message {
                 Text(message)

@@ -11,6 +11,12 @@ struct WhatsNewView: View {
     // Launch highlights. Give each feature a unique, stable ID when updating future releases.
     static let defaultItems: [Item] = [
         Item(
+            id: "tip-section",
+            systemImage: "cup.and.saucer.fill",
+            title: "Tip the developer",
+            detail: "If you're finding WatchMate useful, please consider buying me a coffee to show your appreciation."
+        ),
+        Item(
             id: "shared-shows",
             systemImage: "person.2",
             title: "Watch together with Shared Shows",

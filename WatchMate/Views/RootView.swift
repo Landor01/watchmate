@@ -270,6 +270,7 @@ private struct ActivityToastModifier: ViewModifier {
                         ProgressView()
                         Text(store.status)
                             .font(.caption)
+                            .multilineTextAlignment(.center)
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)

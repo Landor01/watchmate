@@ -20,7 +20,7 @@ struct SharedShowsView: View {
                             .font(.footnote).foregroundStyle(Color.readableSecondary)
                     }
                 }
-                if store.sharedShows.loading && store.sharedShows.lists.isEmpty { ProgressView("Loading shared lists…") }
+                if store.sharedShows.loading && store.sharedShows.lists.isEmpty { ProgressView("Loading shared lists…").centeredProgressMessage() }
                 if let message = store.sharedShows.refreshMessage {
                     Text(message).font(.caption).foregroundStyle(Color.readableSecondary)
                 }
@@ -126,7 +126,7 @@ private struct HouseholdListView: View {
                     }
                 }
             } else if store.sharedShows.loading || !checkedMissingList {
-                ProgressView("Loading shared list…")
+                ProgressView("Loading shared list…").centeredProgressMessage()
             } else if store.sharedShows.refreshMessage != nil {
                 ContentUnavailableView("Couldn’t load list", systemImage: "arrow.clockwise",
                                        description: Text("Please pull to refresh to try again."))
@@ -364,7 +364,7 @@ private struct MoveSharedProgrammeView: View {
                         .foregroundStyle(Color.readableSecondary)
                 }
             }
-            if working { ProgressView("Moving programme…") }
+            if working { ProgressView("Moving programme…").centeredProgressMessage() }
             if let errorMessage { Text(errorMessage).foregroundStyle(Color.readableSecondary) }
         }
         .disabled(working || store.busy)
@@ -432,8 +432,8 @@ struct SharedProgrammePicker: View {
                 Text("Moving a programme shares its current watched progress across every season. Your Trakt history stays intact. Other people choose whether to overwrite their own progress.")
                     .font(.subheadline).foregroundStyle(Color.readableSecondary)
             }
-            if working { ProgressView("Reading viewing history and sharing programme…") }
-            if searching { ProgressView("Searching…") }
+            if working { ProgressView("Reading viewing history and sharing programme…").centeredProgressMessage() }
+            if searching { ProgressView("Searching…").centeredProgressMessage() }
             if let message { Text(message).foregroundStyle(Color.readableSecondary) }
             if query.isEmpty {
                 Section("Move from My Shows") {
@@ -517,7 +517,7 @@ struct SharedProgrammePicker: View {
                         }
                     }
                     if working {
-                        ProgressView("Sharing programme…")
+                        ProgressView("Sharing programme…").centeredProgressMessage()
                             .frame(maxWidth: .infinity, alignment: .center)
                             .multilineTextAlignment(.center)
                     }
@@ -609,11 +609,12 @@ struct SharedHistoryImportView: View {
             }
             if importer.preparing {
                 Section {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(spacing: 12) {
                         ProgressView("Comparing your progress…").font(.headline)
                         Text("Checking every season and special. Nothing changes until you confirm.")
                             .font(.subheadline).foregroundStyle(Color.readableSecondary)
                     }
+                    .centeredProgressMessage()
                     .padding(.vertical, 8)
                 }
             }
@@ -646,7 +647,7 @@ struct SharedHistoryImportView: View {
             }
             if importer.running {
                 Section("Syncing to Trakt") {
-                    VStack(alignment: .leading, spacing: 16) {
+                    VStack(spacing: 16) {
                         Label("Matching your shared progress", systemImage: "arrow.triangle.2.circlepath")
                             .font(.headline)
                         Text("\(importer.completed) of \(importer.total)")
@@ -664,6 +665,7 @@ struct SharedHistoryImportView: View {
                         Text("Stopping keeps changes already made. Review and sync again to finish.")
                             .font(.caption).foregroundStyle(Color.readableSecondary)
                     }
+                    .centeredProgressMessage()
                     .padding(.vertical, 8)
                 }
             }
